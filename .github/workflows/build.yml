@@ -1,0 +1,21 @@
+name: Build
+on:
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.3.1"
+      - name: Cairo lint
+        run: scarb fmt --check
+      - name: Cairo build
+        run: scarb build
