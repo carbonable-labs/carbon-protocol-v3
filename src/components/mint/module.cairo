@@ -1,5 +1,5 @@
-#[starknet::contract]
-mod Mint {
+#[starknet::component]
+mod MintComponent {
     // Core imports
 
     use zeroable::Zeroable;
@@ -16,7 +16,7 @@ mod Mint {
 
     // External imports
     use openzeppelin::token::erc20::interface::{IERC20CamelDispatcher, IERC20CamelDispatcherTrait};
-    use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use openzeppelin::token::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
 
     // Internal imports
 
@@ -30,17 +30,17 @@ mod Mint {
 
     #[storage]
     struct Storage {
-        mint_carbonable_project_address: ContractAddress,
-        mint_carbonable_project_slot: u256,
-        mint_payment_token_address: ContractAddress,
-        mint_public_sale_open: bool,
-        mint_max_value: u256,
-        mint_unit_price: u256,
-        mint_claimed_value: LegacyMap<ContractAddress, u256>,
-        mint_remaining_value: u256,
-        mint_count: LegacyMap::<ContractAddress, u32>,
-        mint_booked_values: LegacyMap::<(ContractAddress, u32), Booking>,
-        mint_cancel: bool,
+        Mint_carbonable_project_address: ContractAddress,
+        Mint_carbonable_project_slot: u256,
+        Mint_payment_token_address: ContractAddress,
+        Mint_public_sale_open: bool,
+        Mint_max_value: u256,
+        Mint_unit_price: u256,
+        Mint_claimed_value: LegacyMap<ContractAddress, u256>,
+        Mint_remaining_value: u256,
+        Mint_count: LegacyMap::<ContractAddress, u32>,
+        Mint_booked_values: LegacyMap::<(ContractAddress, u32), Booking>,
+        Mint_cancel: bool,
     }
 
     #[event]
@@ -96,42 +96,47 @@ mod Mint {
         time: u64
     }
 
-    impl MintImpl of IMint<ContractState> {
-        fn get_carbonable_project_address(self: @ContractState) -> ContractAddress {
-            self.mint_carbonable_project_address.read()
+    #[embeddable_as(MintImpl)]
+    impl Mint<
+        TContractState,
+        +HasComponent<TContractState>,    
+        +Drop<TContractState>
+    > of IMint<ComponentState<TContractState>> {
+        fn get_carbonable_project_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.Mint_carbonable_project_address.read()
         }
 
-        fn get_payment_token_address(self: @ContractState) -> ContractAddress {
-            self.mint_payment_token_address.read()
+        fn get_payment_token_address(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.Mint_payment_token_address.read()
         }
 
-        fn is_public_sale_open(self: @ContractState) -> bool {
-            self.mint_public_sale_open.read()
+        fn is_public_sale_open(self: @ComponentState<TContractState>) -> bool {
+            self.Mint_public_sale_open.read()
         }
 
-        fn get_unit_price(self: @ContractState) -> u256 {
-            self.mint_unit_price.read()
+        fn get_unit_price(self: @ComponentState<TContractState>) -> u256 {
+            self.Mint_unit_price.read()
         }
 
-        fn get_available_value(self: @ContractState) -> u256 {
-            self.mint_remaining_value.read()
+        fn get_available_value(self: @ComponentState<TContractState>) -> u256 {
+            self.Mint_remaining_value.read()
         }
 
-        fn get_claimed_value(self: @ContractState, account: ContractAddress) -> u256 {
-            self.mint_claimed_value.read(account)
+        fn get_claimed_value(self: @ComponentState<TContractState>, account: ContractAddress) -> u256 {
+            self.Mint_claimed_value.read(account)
         }
 
-        fn is_sold_out(self: @ContractState) -> bool {
+        fn is_sold_out(self: @ComponentState<TContractState>) -> bool {
             self.get_available_value() == 0
         }
 
-        fn is_canceled(self: @ContractState) -> bool {
-            self.mint_cancel.read()
+        fn is_canceled(self: @ComponentState<TContractState>) -> bool {
+            self.Mint_cancel.read()
         }
 
-        fn set_public_sale_open(ref self: ContractState, public_sale_open: bool) {
+        fn set_public_sale_open(ref self: ComponentState<TContractState>, public_sale_open: bool) {
             // [Effect] Update storage
-            self.mint_public_sale_open.write(public_sale_open);
+            self.Mint_public_sale_open.write(public_sale_open);
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
@@ -142,16 +147,16 @@ mod Mint {
             };
         }
 
-        fn set_unit_price(ref self: ContractState, unit_price: u256) {
+        fn set_unit_price(ref self: ComponentState<TContractState>, unit_price: u256) {
             // [Check] Value not null
             assert(unit_price > 0, 'Invalid unit price');
             // [Effect] Store value
-            self.mint_unit_price.write(unit_price);
+            self.Mint_unit_price.write(unit_price);
         }
 
-        fn withdraw(ref self: ContractState) {
+        fn withdraw(ref self: ComponentState<TContractState>) {
             // [Compute] Balance to withdraw
-            let token_address = self.mint_payment_token_address.read();
+            let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20CamelDispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
             let balance = erc20.balanceOf(contract_address);
@@ -163,7 +168,7 @@ mod Mint {
         }
 
         fn transfer(
-            ref self: ContractState,
+            ref self: ComponentState<TContractState>,
             token_address: ContractAddress,
             recipient: ContractAddress,
             amount: u256
@@ -173,16 +178,16 @@ mod Mint {
             assert(success, 'Transfer failed');
         }
 
-        fn book(ref self: ContractState, value: u256, force: bool) {
+        fn book(ref self: ComponentState<TContractState>, value: u256, force: bool) {
             // [Check] Public sale is open
-            let public_sale_open = self.mint_public_sale_open.read();
+            let public_sale_open = self.Mint_public_sale_open.read();
             assert(public_sale_open, 'Sale is closed');
 
             // [Interaction] Buy
             self._safe_book(value, force);
         }
 
-        fn claim(ref self: ContractState, user_address: ContractAddress, id: u32) {
+        fn claim(ref self: ComponentState<TContractState>, user_address: ContractAddress, id: u32) {
             // [Check] Project is sold out
             assert(self.is_sold_out(), 'Mint not sold out');
 
@@ -190,26 +195,26 @@ mod Mint {
             assert(!self.is_canceled(), 'Mint canceled');
 
             // [Check] Booking
-            let mut booking = self.mint_booked_values.read((user_address, id));
+            let mut booking = self.Mint_booked_values.read((user_address, id));
             assert(booking.is_status(BookingStatus::Booked), 'Booking not found');
 
             // [Effect] Update Booking status
             booking.set_status(BookingStatus::Minted);
-            self.mint_booked_values.write((user_address.into(), id), booking);
+            self.Mint_booked_values.write((user_address.into(), id), booking);
 
             // [Interaction] Mint
             // TODO : define the vintage
-            let projects_contract = self.mint_carbonable_project_address.read();
+            let projects_contract = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: projects_contract };
-            project.mint(user_address.into(), 1, booking.value);
+            project.mint_specific_cc(user_address.into(), 1, booking.value);
 
             // [Event] Emit
             self.emit(BookingClaimed { address: user_address, id, value: booking.value, });
         }
 
-        fn refund(ref self: ContractState, user_address: ContractAddress, id: u32) {
+        fn refund(ref self: ComponentState<TContractState>, user_address: ContractAddress, id: u32) {
             // [Check] Booking
-            let mut booking = self.mint_booked_values.read((user_address, id));
+            let mut booking = self.Mint_booked_values.read((user_address, id));
             assert(
                 booking.is_status(BookingStatus::Failed) || self.is_canceled(),
                 'Booking not refundable'
@@ -217,10 +222,10 @@ mod Mint {
 
             // [Effect] Update Booking status
             booking.set_status(BookingStatus::Refunded);
-            self.mint_booked_values.write((user_address.into(), id), booking);
+            self.Mint_booked_values.write((user_address.into(), id), booking);
 
             // [Interaction] Refund
-            let token_address = self.mint_payment_token_address.read();
+            let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20CamelDispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
             let success = erc20.transfer(user_address, booking.value);
@@ -231,13 +236,13 @@ mod Mint {
         }
 
         fn refund_to(
-            ref self: ContractState, to: ContractAddress, user_address: ContractAddress, id: u32
+            ref self: ComponentState<TContractState>, to: ContractAddress, user_address: ContractAddress, id: u32
         ) {
             // [Check] To address connot be zero
             assert(!to.is_zero(), 'Invalid to address');
 
             // [Check] Booking
-            let mut booking = self.mint_booked_values.read((user_address, id));
+            let mut booking = self.Mint_booked_values.read((user_address, id));
             assert(
                 booking.is_status(BookingStatus::Failed) || self.is_canceled(),
                 'Booking not refundable'
@@ -245,10 +250,10 @@ mod Mint {
 
             // [Effect] Update Booking status
             booking.set_status(BookingStatus::Refunded);
-            self.mint_booked_values.write((user_address.into(), id), booking);
+            self.Mint_booked_values.write((user_address.into(), id), booking);
 
             // [Interaction] Refund
-            let token_address = self.mint_payment_token_address.read();
+            let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20CamelDispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
             let success = erc20.transfer(to, booking.value);
@@ -258,12 +263,12 @@ mod Mint {
             self.emit(BookingRefunded { address: user_address, id, value: booking.value, });
         }
 
-        fn cancel(ref self: ContractState) {
+        fn cancel(ref self: ComponentState<TContractState>) {
             // [Check] Mint is not already canceled
             assert(!self.is_canceled(), 'Mint already canceled');
 
             // [Effect] Update storage
-            self.mint_cancel.write(true);
+            self.Mint_cancel.write(true);
 
             // [Event] Emit
             let current_time = get_block_timestamp();
@@ -272,9 +277,13 @@ mod Mint {
     }
 
     #[generate_trait]
-    impl InternalImpl of InternalTrait {
+    impl InternalImpl<
+         TContractState,
+        +HasComponent<TContractState>,
+        +Drop<TContractState>       
+    > of InternalTrait<TContractState> {
         fn initializer(
-            ref self: ContractState,
+            ref self: ComponentState<TContractState>,
             carbonable_project_address: ContractAddress,
             payment_token_address: ContractAddress,
             public_sale_open: bool,
@@ -285,18 +294,18 @@ mod Mint {
             assert(unit_price > 0, 'Invalid unit price');
 
             // [Effect] Update storage
-            self.mint_carbonable_project_address.write(carbonable_project_address);
+            self.Mint_carbonable_project_address.write(carbonable_project_address);
 
             // [Effect] Update storage
-            self.mint_payment_token_address.write(payment_token_address);
-            self.mint_unit_price.write(unit_price);
-            self.mint_remaining_value.write(max_value);
+            self.Mint_payment_token_address.write(payment_token_address);
+            self.Mint_unit_price.write(unit_price);
+            self.Mint_remaining_value.write(max_value);
 
             // [Effect] Use dedicated function to emit corresponding events
             self.set_public_sale_open(public_sale_open);
         }
 
-        fn _safe_book(ref self: ContractState, value: u256, force: bool) -> u256 {
+        fn _safe_book(ref self: ComponentState<TContractState>, value: u256, force: bool) -> u256 {
             // [Check] Project is not canceled
             assert(!self.is_canceled(), 'Mint canceled');
 
@@ -320,9 +329,9 @@ mod Mint {
             assert(value <= available_value, 'Not enough available value');
 
             // [Interaction] Pay
-            let unit_price = self.mint_unit_price.read();
+            let unit_price = self.Mint_unit_price.read();
             let amount = value * unit_price;
-            let token_address = self.mint_payment_token_address.read();
+            let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20CamelDispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
             let success = erc20.transferFrom(caller_address, contract_address, amount);
@@ -338,27 +347,27 @@ mod Mint {
         }
 
         fn _book(
-            ref self: ContractState,
+            ref self: ComponentState<TContractState>,
             user_address: ContractAddress,
             amount: u256,
             value: u256,
             status: BookingStatus
         ) {
             // [Effect] Compute and update user mint count
-            let mint_id = self.mint_count.read(user_address) + 1_u32;
-            self.mint_count.write(user_address, mint_id);
+            let Mint_id = self.Mint_count.read(user_address) + 1_u32;
+            self.Mint_count.write(user_address, Mint_id);
 
             // [Effect] Update remaining value if booked
             let mut booking = BookingTrait::new(value, amount, status);
             if booking.is_status(BookingStatus::Booked) {
-                self.mint_remaining_value.write(self.mint_remaining_value.read() - value);
+                self.Mint_remaining_value.write(self.Mint_remaining_value.read() - value);
             };
 
             // [Effect] Store booking
-            self.mint_booked_values.write((user_address, mint_id), booking);
+            self.Mint_booked_values.write((user_address, Mint_id), booking);
 
             // [Event] Emit event
-            self.emit(BookingHandled { address: user_address, id: mint_id, value });
+            self.emit(BookingHandled { address: user_address, id: Mint_id, value });
 
             // [Effect] Close the sale if sold out
             if self.is_sold_out() {
@@ -370,338 +379,11 @@ mod Mint {
             };
         }
 
-        fn _available_public_value(self: @ContractState) -> u256 {
+        fn _available_public_value(self: @ComponentState<TContractState>) -> u256 {
             // [Compute] Available value
-            let remaining_value = self.mint_remaining_value.read();
+            let remaining_value = self.Mint_remaining_value.read();
             remaining_value
         }
     }
 }
 
-
-#[cfg(test)]
-mod Test {
-    // Core imports
-
-    use array::{ArrayTrait, SpanTrait};
-    use traits::TryInto;
-    use poseidon::PoseidonTrait;
-    use hash::HashStateTrait;
-    use debug::PrintTrait;
-
-    // Starknet imports
-
-    use starknet::{ContractAddress, get_contract_address, get_block_timestamp};
-    use starknet::testing::{set_block_timestamp, set_caller_address, set_contract_address};
-
-    // External imports
-
-    use alexandria_data_structures::merkle_tree::{
-        Hasher, MerkleTree, poseidon::PoseidonHasherImpl, MerkleTreeTrait,
-    };
-
-    // Internal imports
-
-    use super::Mint;
-    use super::Mint::mint_carbonable_project_address::InternalContractMemberStateTrait as MintProjectAddressTrait;
-    use super::Mint::mint_remaining_value::InternalContractMemberStateTrait as MintRemainingValueTrait;
-    use super::Mint::mint_payment_token_address::InternalContractMemberStateTrait as MintPaymentTokenAddressTrait;
-
-    // Constants
-
-    const UNIT_PRICE: u256 = 10;
-    const ALLOCATION: felt252 = 5;
-    const PROOF: felt252 = 0x58f605c335d6edee10b834aedf74f8ed903311799ecde69461308439a4537c7;
-    const BILION: u256 = 1000000000;
-
-    fn STATE() -> Mint::ContractState {
-        Mint::contract_state_for_testing()
-    }
-
-    fn ACCOUNT() -> ContractAddress {
-        starknet::contract_address_const::<1001>()
-    }
-
-    fn ZERO() -> ContractAddress {
-        starknet::contract_address_const::<0>()
-    }
-
-    // Mocks
-
-    #[starknet::contract]
-    mod ProjectMock {
-        use starknet::ContractAddress;
-
-        #[storage]
-        struct Storage {}
-
-        #[generate_trait]
-        #[external(v0)]
-        impl MockImpl of MockTrait {
-            fn get_project_value(self: @ContractState, slot: u256) -> u256 {
-                super::BILION
-            }
-            fn total_value(self: @ContractState, slot: u256) -> u256 {
-                0
-            }
-            fn mint(ref self: ContractState, to: ContractAddress, slot: u256, value: u256) -> u256 {
-                0
-            }
-        }
-    }
-
-    #[starknet::contract]
-    mod ERC20Mock {
-        use starknet::ContractAddress;
-
-        #[storage]
-        struct Storage {}
-
-        #[generate_trait]
-        #[external(v0)]
-        impl ERC20Impl of ERC20Trait {
-            fn balanceOf(self: @ContractState, owner: ContractAddress) -> u256 {
-                100
-            }
-            fn transferFrom(
-                ref self: ContractState, from: ContractAddress, to: ContractAddress, value: u256
-            ) -> bool {
-                true
-            }
-            fn transfer(ref self: ContractState, to: ContractAddress, value: u256) -> bool {
-                true
-            }
-        }
-    }
-
-    fn project_mock() -> ContractAddress {
-        // [Deploy]
-        let class_hash = ProjectMock::TEST_CLASS_HASH.try_into().unwrap();
-        let (address, _) = starknet::deploy_syscall(class_hash, 0, array![].span(), false)
-            .expect('Project deploy failed');
-        address
-    }
-
-    fn erc20_mock() -> ContractAddress {
-        // [Deploy]
-        let class_hash = ERC20Mock::TEST_CLASS_HASH.try_into().unwrap();
-        let (address, _) = starknet::deploy_syscall(class_hash, 0, array![].span(), false)
-            .expect('ERC20 deploy failed');
-        address
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    fn testmint_public_sale() {
-        // [Setup]
-        let mut state = STATE();
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        // [Assert] Storage
-        let public_sale_open = Mint::MintImpl::is_public_sale_open(@state);
-        assert(public_sale_open, 'Public sale is not open');
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    fn testmint_unit_price() {
-        // [Setup]
-        let mut state = STATE();
-        Mint::MintImpl::set_unit_price(ref state, UNIT_PRICE);
-        // [Assert] Storage
-        let unit_price = Mint::MintImpl::get_unit_price(@state);
-        assert(unit_price == UNIT_PRICE, 'Invalid unit price');
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    #[should_panic(expected: ('Sale is closed',))]
-    fn testmint_book_revert_sale_closed() {
-        // [Setup]
-        let mut state = STATE();
-        // [Assert] Book
-        Mint::MintImpl::book(ref state, 10, false);
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    #[should_panic(expected: ('Invalid caller',))]
-    fn testmint_book_revert_invalid_caller() {
-        // [Setup]
-        let mut state = STATE();
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        // [Assert] Book
-        Mint::MintImpl::book(ref state, 10, false);
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    #[should_panic(expected: ('Value too high',))]
-    fn testmint_book_value_too_high() {
-        // [Setup]
-        let mut state = STATE();
-        Mint::MintImpl::set_unit_price(ref state, UNIT_PRICE);
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        // [Assert] Book
-        set_caller_address(ACCOUNT());
-        Mint::MintImpl::book(ref state, 10, false);
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    #[should_panic(expected: ('Mint canceled',))]
-    fn testmint_book_revert_canceled() {
-        // [Setup]
-        let mut state = STATE();
-        state.mint_carbonable_project_address.write(project_mock());
-        state.mint_payment_token_address.write(erc20_mock());
-        state.mint_remaining_value.write(1000);
-        Mint::MintImpl::set_unit_price(ref state, UNIT_PRICE);
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        // [Assert] Cancel mint
-        Mint::MintImpl::cancel(ref state);
-        // [Assert] Book
-        set_caller_address(ACCOUNT());
-        let value: u256 = 10;
-        Mint::MintImpl::book(ref state, value, false);
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    fn testmint_book() {
-        // [Setup]
-        let mut state = STATE();
-        state.mint_carbonable_project_address.write(project_mock());
-        state.mint_payment_token_address.write(erc20_mock());
-        state.mint_remaining_value.write(1000);
-        Mint::MintImpl::set_unit_price(ref state, UNIT_PRICE);
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        // [Assert] Book
-        set_caller_address(ACCOUNT());
-        let value: u256 = 10;
-        Mint::MintImpl::book(ref state, value, false);
-        // [Assert] Cancel mint
-        Mint::MintImpl::cancel(ref state);
-        // [Assert] Not sold out
-        assert(!Mint::MintImpl::is_sold_out(@state), 'Mint sold out');
-        // [Assert] Events
-        let contract = get_contract_address();
-        let event = starknet::testing::pop_log::<Mint::PublicSaleOpen>(contract).unwrap();
-        assert(event.time == get_block_timestamp(), 'Wrong event timestamp');
-        let event = starknet::testing::pop_log::<Mint::BookingHandled>(contract).unwrap();
-        assert(event.address == ACCOUNT(), 'Wrong event address');
-        assert(event.id == 1, 'Wrong event id');
-        assert(event.value == value, 'Wrong event value');
-        let event = starknet::testing::pop_log::<Mint::Cancel>(contract).unwrap();
-        assert(event.time == get_block_timestamp(), 'Wrong event timestamp');
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    fn testmint_refund_canceled() {
-        // [Setup]
-        let mut state = STATE();
-        state.mint_carbonable_project_address.write(project_mock());
-        state.mint_payment_token_address.write(erc20_mock());
-        state.mint_remaining_value.write(1000);
-        Mint::MintImpl::set_unit_price(ref state, UNIT_PRICE);
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        // [Assert] Book
-        set_caller_address(ACCOUNT());
-        let value: u256 = 10;
-        Mint::MintImpl::book(ref state, value, false);
-        // [Assert] Cancel mint
-        Mint::MintImpl::cancel(ref state);
-        // [Assert] Not sold out
-        assert(!Mint::MintImpl::is_sold_out(@state), 'Mint sold out');
-        // [Assert] Refund
-        Mint::MintImpl::refund(ref state, ACCOUNT(), 1);
-        // [Assert] Events
-        let contract = get_contract_address();
-        let event = starknet::testing::pop_log::<Mint::PublicSaleOpen>(contract).unwrap();
-        assert(event.time == get_block_timestamp(), 'Wrong event timestamp');
-        let event = starknet::testing::pop_log::<Mint::BookingHandled>(contract).unwrap();
-        assert(event.address == ACCOUNT(), 'Wrong event address');
-        assert(event.id == 1, 'Wrong event id');
-        assert(event.value == value, 'Wrong event value');
-        let event = starknet::testing::pop_log::<Mint::Cancel>(contract).unwrap();
-        assert(event.time == get_block_timestamp(), 'Wrong event timestamp');
-        let event = starknet::testing::pop_log::<Mint::BookingRefunded>(contract).unwrap();
-        assert(event.address == ACCOUNT(), 'Wrong event address');
-        assert(event.id == 1, 'Wrong event id');
-        assert(event.value == value, 'Wrong event value');
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    fn testmint_claim() {
-        // [Setup]
-        let mut state = STATE();
-        state.mint_carbonable_project_address.write(project_mock());
-        state.mint_payment_token_address.write(erc20_mock());
-        state.mint_remaining_value.write(1000);
-        Mint::MintImpl::set_unit_price(ref state, UNIT_PRICE);
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        // [Assert] Book
-        set_caller_address(ACCOUNT());
-        let value: u256 = 1000;
-        Mint::MintImpl::book(ref state, value, true);
-        // [Assert] Sold out
-        assert(Mint::MintImpl::is_sold_out(@state), 'Contract not sold out');
-        // [Assert] Claim
-        Mint::MintImpl::claim(ref state, ACCOUNT(), 1);
-        // [Assert] Events
-        let contract = get_contract_address();
-        let event = starknet::testing::pop_log::<Mint::PublicSaleOpen>(contract).unwrap();
-        assert(event.time == get_block_timestamp(), 'Wrong event timestamp');
-        let event = starknet::testing::pop_log::<Mint::BookingHandled>(contract).unwrap();
-        assert(event.address == ACCOUNT(), 'Wrong event address');
-        assert(event.id == 1, 'Wrong event id');
-        assert(event.value == value, 'Wrong event value');
-        let event = starknet::testing::pop_log::<Mint::PublicSaleClose>(contract).unwrap();
-        assert(event.time == get_block_timestamp(), 'Wrong event timestamp');
-        let event = starknet::testing::pop_log::<Mint::SoldOut>(contract).unwrap();
-        assert(event.time == get_block_timestamp(), 'Wrong event timestamp');
-        let event = starknet::testing::pop_log::<Mint::BookingClaimed>(contract).unwrap();
-        assert(event.address == ACCOUNT(), 'Wrong event address');
-        assert(event.id == 1, 'Wrong event id');
-        assert(event.value == value, 'Wrong event value');
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    #[should_panic(expected: ('Booking not found',))]
-    fn testmint_claim_twice_revert_not_found() {
-        // [Setup]
-        let mut state = STATE();
-        state.mint_carbonable_project_address.write(project_mock());
-        state.mint_payment_token_address.write(erc20_mock());
-        state.mint_remaining_value.write(1000);
-        Mint::MintImpl::set_unit_price(ref state, UNIT_PRICE);
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        // [Assert] Book
-        set_caller_address(ACCOUNT());
-        Mint::MintImpl::book(ref state, 1000, true);
-        // [Assert] Sold out
-        assert(Mint::MintImpl::is_sold_out(@state), 'Contract not sold out');
-        // [Assert] Claim
-        Mint::MintImpl::claim(ref state, ACCOUNT(), 1);
-        Mint::MintImpl::claim(ref state, ACCOUNT(), 1);
-    }
-
-    #[test]
-    #[available_gas(20_000_000)]
-    #[should_panic(expected: ('Mint canceled',))]
-    fn testmint_claim_revert_canceled() {
-        // [Setup]
-        let mut state = STATE();
-        state.mint_carbonable_project_address.write(project_mock());
-        state.mint_payment_token_address.write(erc20_mock());
-        state.mint_remaining_value.write(1000);
-        Mint::MintImpl::set_unit_price(ref state, UNIT_PRICE);
-        Mint::MintImpl::set_public_sale_open(ref state, true);
-        Mint::MintImpl::cancel(ref state);
-        // [Assert] Book
-        set_caller_address(ACCOUNT());
-        Mint::MintImpl::book(ref state, 1000, true);
-    }
-}

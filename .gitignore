@@ -27,3 +27,4 @@ build
 
 tmp
 .tmp*
+old*
