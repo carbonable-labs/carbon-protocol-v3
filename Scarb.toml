@@ -8,7 +8,7 @@ version = "0.1.0"
 starknet = ">=2.3.1"
 alexandria_storage = { git = "https://github.com/tekkac/alexandria", branch = "feat/interpolation-fast" }
 alexandria_numeric = { git = "https://github.com/tekkac/alexandria", branch = "feat/interpolation-fast" }
-openzeppelin = { git = "https://github.com/cloudvenger/cairo-contracts.git", rev = "8836cdd494908dc40457e2c900ed1cc1fd84a436" }
+openzeppelin = { git = "https://github.com/cloudvenger/cairo-contracts.git", rev = "fd41fdb9d04a701b2353c4cd0a8bd19f3139e88a" }
 
 [[target.starknet-contract]]
 sierra = true

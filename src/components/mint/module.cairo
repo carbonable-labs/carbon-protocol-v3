@@ -206,7 +206,7 @@ mod MintComponent {
             // TODO : define the vintage
             let projects_contract = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: projects_contract };
-            project.mint_specific_cc(user_address.into(), 1, booking.value);
+            project.mint(user_address.into(), 1, booking.value);
 
             // [Event] Emit
             self.emit(BookingClaimed { address: user_address, id, value: booking.value, });

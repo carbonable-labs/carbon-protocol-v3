@@ -2,8 +2,10 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 trait IExternal<ContractState> {
-    fn mint_specific_cc(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256);
-    fn burn_specific_cc(ref self: ContractState, token_id: u256, value: u256);
+    fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256);
+    fn burn(ref self: ContractState, token_id: u256, value: u256);
+    fn batch_mint(ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>);
+    fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>);
     fn set_uri(ref self: ContractState, token_id: u256, uri: felt252);
     fn set_list_uri(ref self: ContractState, token_ids: Span<u256>, uris: Span<felt252>);
 }
@@ -84,7 +86,6 @@ use core::traits::Into;
     }
 
     mod Errors {
-        const UNEQUAL_ARRAYS_VALUES: felt252 = 'Values array len do not match';
         const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';
     }
 
@@ -104,12 +105,20 @@ use core::traits::Into;
     #[external(v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
 
-        fn mint_specific_cc(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+        fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
             self.erc1155._mint(to, token_id, value);
         }
 
-        fn burn_specific_cc(ref self: ContractState, token_id: u256, value: u256) {
-            self.erc1155._burn(token_id, value);
+        fn burn(ref self: ContractState, token_id: u256, value: u256) {
+            self.erc1155._burn(get_caller_address(), token_id, value);
+        }
+
+        fn batch_mint(ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>) {
+            self.erc1155._batch_mint(to, token_ids, values);
+        }
+    
+        fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>) {
+            self.erc1155._batch_burn(get_caller_address(), token_ids, values);
         }
 
         fn set_uri(ref self: ContractState, token_id: u256, uri: felt252) {
