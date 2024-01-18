@@ -11,3 +11,5 @@ alexandria_numeric = { git = "https://github.com/tekkac/alexandria", branch = "f
 openzeppelin = { git = "https://github.com/cloudvenger/cairo-contracts.git", rev = "8836cdd494908dc40457e2c900ed1cc1fd84a436" }
 
 [[target.starknet-contract]]
+sierra = true
+casm = false

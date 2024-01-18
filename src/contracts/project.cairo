@@ -4,6 +4,8 @@ use starknet::ContractAddress;
 trait IExternal<ContractState> {
     fn mint_specific_cc(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256);
     fn burn_specific_cc(ref self: ContractState, token_id: u256, value: u256);
+    fn set_uri(ref self: ContractState, token_id: u256, uri: felt252);
+    fn set_list_uri(ref self: ContractState, token_ids: Span<u256>, uris: Span<felt252>);
 }
 
 
@@ -108,6 +110,24 @@ use core::traits::Into;
 
         fn burn_specific_cc(ref self: ContractState, token_id: u256, value: u256) {
             self.erc1155._burn(token_id, value);
+        }
+
+        fn set_uri(ref self: ContractState, token_id: u256, uri: felt252) {
+            self.erc1155._set_uri(token_id, uri);
+        }
+
+        fn set_list_uri(ref self: ContractState,mut token_ids: Span<u256>,mut uris: Span<felt252>) {
+            assert(token_ids.len() == uris.len(), Errors::UNEQUAL_ARRAYS_URI);
+
+            loop {
+                if token_ids.len() == 0 {
+                    break;
+                }
+                let id = *token_ids.pop_front().unwrap();
+                let uri = *uris.pop_front().unwrap();
+
+                self.erc1155._set_uri(id, uri);
+            }
         }
     }
 }
