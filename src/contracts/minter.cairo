@@ -20,7 +20,8 @@ mod Minter {
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     #[abi(embed_v0)]
-    impl OwnableCamelOnlyImpl = OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
+    impl OwnableCamelOnlyImpl =
+        OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
     impl MintImpl = MintComponent::MintImpl<ContractState>;
 
@@ -62,15 +63,16 @@ mod Minter {
         unit_price: u256,
         reserved_value: u256,
         owner: ContractAddress
-    ) {    
+    ) {
         self.ownable.initializer(owner);
-        self.mint.initializer(
-            carbonable_project_address,
-            payment_token_address,
-            public_sale_open,
-            max_value,
-            unit_price
-        );
+        self
+            .mint
+            .initializer(
+                carbonable_project_address,
+                payment_token_address,
+                public_sale_open,
+                max_value,
+                unit_price
+            );
     }
-
 }

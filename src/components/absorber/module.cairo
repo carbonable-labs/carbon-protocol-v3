@@ -45,9 +45,7 @@ mod AbsorberComponent {
 
     #[embeddable_as(AbsorberImpl)]
     impl Absorber<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of IAbsorber<ComponentState<TContractState>> {
         // Absorption
         fn get_start_time(self: @ComponentState<TContractState>) -> u64 {
@@ -129,9 +127,9 @@ mod AbsorberComponent {
             assert(ton_equivalent > 0, 'Ton equivalent must be positive');
 
             // [Effect] Clean times and absorptions
-            let mut stored_times :List<u64> = self.Absorber_times.read();
+            let mut stored_times: List<u64> = self.Absorber_times.read();
             stored_times.len = 0;
-            let mut stored_absorptions :List<u64> = self.Absorber_absorptions.read();
+            let mut stored_absorptions: List<u64> = self.Absorber_absorptions.read();
             stored_absorptions.len = 0;
 
             // [Effect] Store new times and absorptions
@@ -164,22 +162,17 @@ mod AbsorberComponent {
             self.Absorber_project_value.write(project_value);
 
             // [Event] Emit event
-            self
-                .emit(
-                    Event::ProjectValueUpdate(
-                        ProjectValueUpdate { value: project_value }
-                    )
-                );
+            self.emit(Event::ProjectValueUpdate(ProjectValueUpdate { value: project_value }));
         }
     }
 
     #[generate_trait]
     impl InternalImpl<
-        TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of InternalTrait<TContractState> {
-        fn __list_u64_into_u256(self: @ComponentState<TContractState>, list: @List<u64>) -> Span<u256> {
+        fn __list_u64_into_u256(
+            self: @ComponentState<TContractState>, list: @List<u64>
+        ) -> Span<u256> {
             let mut array = ArrayTrait::<u256>::new();
             let mut index = 0;
             loop {

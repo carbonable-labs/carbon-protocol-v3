@@ -98,11 +98,11 @@ mod MintComponent {
 
     #[embeddable_as(MintImpl)]
     impl Mint<
-        TContractState,
-        +HasComponent<TContractState>,    
-        +Drop<TContractState>
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of IMint<ComponentState<TContractState>> {
-        fn get_carbonable_project_address(self: @ComponentState<TContractState>) -> ContractAddress {
+        fn get_carbonable_project_address(
+            self: @ComponentState<TContractState>
+        ) -> ContractAddress {
             self.Mint_carbonable_project_address.read()
         }
 
@@ -122,7 +122,9 @@ mod MintComponent {
             self.Mint_remaining_value.read()
         }
 
-        fn get_claimed_value(self: @ComponentState<TContractState>, account: ContractAddress) -> u256 {
+        fn get_claimed_value(
+            self: @ComponentState<TContractState>, account: ContractAddress
+        ) -> u256 {
             self.Mint_claimed_value.read(account)
         }
 
@@ -212,7 +214,9 @@ mod MintComponent {
             self.emit(BookingClaimed { address: user_address, id, value: booking.value, });
         }
 
-        fn refund(ref self: ComponentState<TContractState>, user_address: ContractAddress, id: u32) {
+        fn refund(
+            ref self: ComponentState<TContractState>, user_address: ContractAddress, id: u32
+        ) {
             // [Check] Booking
             let mut booking = self.Mint_booked_values.read((user_address, id));
             assert(
@@ -236,7 +240,10 @@ mod MintComponent {
         }
 
         fn refund_to(
-            ref self: ComponentState<TContractState>, to: ContractAddress, user_address: ContractAddress, id: u32
+            ref self: ComponentState<TContractState>,
+            to: ContractAddress,
+            user_address: ContractAddress,
+            id: u32
         ) {
             // [Check] To address connot be zero
             assert(!to.is_zero(), 'Invalid to address');
@@ -278,9 +285,7 @@ mod MintComponent {
 
     #[generate_trait]
     impl InternalImpl<
-         TContractState,
-        +HasComponent<TContractState>,
-        +Drop<TContractState>       
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of InternalTrait<TContractState> {
         fn initializer(
             ref self: ComponentState<TContractState>,

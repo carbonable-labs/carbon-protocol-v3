@@ -4,7 +4,9 @@ use starknet::ContractAddress;
 trait IExternal<ContractState> {
     fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256);
     fn burn(ref self: ContractState, token_id: u256, value: u256);
-    fn batch_mint(ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>);
+    fn batch_mint(
+        ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
+    );
     fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>);
     fn set_uri(ref self: ContractState, token_id: u256, uri: felt252);
     fn set_list_uri(ref self: ContractState, token_ids: Span<u256>, uris: Span<felt252>);
@@ -14,7 +16,7 @@ trait IExternal<ContractState> {
 #[starknet::contract]
 mod Project {
     use openzeppelin::token::erc1155::erc1155::ERC1155Component::InternalTrait;
-use core::traits::Into;
+    use core::traits::Into;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
 
     // Ownable
@@ -45,16 +47,22 @@ use core::traits::Into;
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     #[abi(embed_v0)]
-    impl OwnableCamelOnlyImpl = OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
+    impl OwnableCamelOnlyImpl =
+        OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
     impl AbsorberImpl = AbsorberComponent::AbsorberImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+
 
     impl ERC1155InternalImpl = ERC1155Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
+    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
 
     // Constants
-    const IERC165_BACKWARD_COMPATIBLE_ID: u32 = 0x80ac58cd_u32;
+    const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
+    const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
 
     #[storage]
     struct Storage {
@@ -92,19 +100,18 @@ use core::traits::Into;
     // Constructor
     #[constructor]
     fn constructor(
-        ref self: ContractState,
-        name: felt252,
-        symbol: felt252, 
-        owner: ContractAddress
+        ref self: ContractState, name: felt252, symbol: felt252, owner: ContractAddress
     ) {
         self.erc1155.initializer(name, symbol);
         self.ownable.initializer(owner);
+
+        self.src5.register_interface(OLD_IERC1155_ID);
+        self.src5.register_interface(IERC165_BACKWARD_COMPATIBLE_ID);
     }
 
     // Externals
     #[external(v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
-
         fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
             self.erc1155._mint(to, token_id, value);
         }
@@ -113,10 +120,12 @@ use core::traits::Into;
             self.erc1155._burn(get_caller_address(), token_id, value);
         }
 
-        fn batch_mint(ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>) {
+        fn batch_mint(
+            ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
+        ) {
             self.erc1155._batch_mint(to, token_ids, values);
         }
-    
+
         fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>) {
             self.erc1155._batch_burn(get_caller_address(), token_ids, values);
         }
@@ -125,7 +134,9 @@ use core::traits::Into;
             self.erc1155._set_uri(token_id, uri);
         }
 
-        fn set_list_uri(ref self: ContractState,mut token_ids: Span<u256>,mut uris: Span<felt252>) {
+        fn set_list_uri(
+            ref self: ContractState, mut token_ids: Span<u256>, mut uris: Span<felt252>
+        ) {
             assert(token_ids.len() == uris.len(), Errors::UNEQUAL_ARRAYS_URI);
 
             loop {
