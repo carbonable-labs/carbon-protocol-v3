@@ -34,10 +34,7 @@ trait IAbsorber<TContractState> {
 
     /// Setup the absorption curve parameters.
     fn set_absorptions(
-        ref self: TContractState,
-        times: Span<u64>,
-        absorptions: Span<u64>,
-        ton_equivalent: u64
+        ref self: TContractState, times: Span<u64>, absorptions: Span<u64>, ton_equivalent: u64
     );
 
     /// Setup the project value for the given slot.

@@ -7,6 +7,7 @@ keystore.json
 __pycache__
 env
 .env
+.env.*
 test.*
 
 # starknet 
@@ -27,3 +28,4 @@ build
 
 tmp
 .tmp*
+old*

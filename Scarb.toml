@@ -8,7 +8,8 @@ version = "0.1.0"
 starknet = ">=2.3.1"
 alexandria_storage = { git = "https://github.com/tekkac/alexandria", branch = "feat/interpolation-fast" }
 alexandria_numeric = { git = "https://github.com/tekkac/alexandria", branch = "feat/interpolation-fast" }
-openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.7.0" }
-token = { git = "https://github.com/dojoengine/origami.git",  rev = "60d8eb7875d4c0367d75a337b0ce607ee5992e4b" }
+openzeppelin = { git = "https://github.com/cloudvenger/cairo-contracts.git", rev = "fd41fdb9d04a701b2353c4cd0a8bd19f3139e88a" }
 
 [[target.starknet-contract]]
+sierra = true
+casm = false
