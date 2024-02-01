@@ -6,7 +6,6 @@ trait IMint<TContractState> {
     fn get_payment_token_address(self: @TContractState) -> ContractAddress;
     fn get_unit_price(self: @TContractState) -> u256;
     fn get_available_money_amount(self: @TContractState) -> u256;
-    fn get_claimed_value(self: @TContractState, account: ContractAddress) -> u256;
     fn get_max_money_amount(self: @TContractState) -> u256;
     fn is_public_sale_open(self: @TContractState) -> bool;
     fn is_sold_out(self: @TContractState) -> bool;

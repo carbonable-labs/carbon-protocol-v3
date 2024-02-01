@@ -38,7 +38,6 @@ mod MintComponent {
     #[storage]
     struct Storage {
         Mint_carbonable_project_address: ContractAddress,
-        Mint_carbonable_project_slot: u256,
         Mint_payment_token_address: ContractAddress,
         Mint_public_sale_open: bool,
         Mint_max_money_amount: u256,
@@ -47,8 +46,6 @@ mod MintComponent {
         Mint_unit_price: u256,
         Mint_claimed_value: LegacyMap::<ContractAddress, u256>,
         Mint_remaining_money_amount: u256,
-        Mint_count: LegacyMap::<ContractAddress, u32>,
-        Mint_booked_values: LegacyMap::<(ContractAddress, u32), Booking>,
         Mint_cancel: bool,
     }
 
@@ -112,12 +109,6 @@ mod MintComponent {
 
         fn get_available_money_amount(self: @ComponentState<TContractState>) -> u256 {
             self.Mint_remaining_money_amount.read()
-        }
-
-        fn get_claimed_value(
-            self: @ComponentState<TContractState>, account: ContractAddress
-        ) -> u256 {
-            self.Mint_claimed_value.read(account)
         }
 
         fn is_sold_out(self: @ComponentState<TContractState>) -> bool {
