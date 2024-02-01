@@ -28,7 +28,7 @@ mod Project {
     // ERC1155
     use openzeppelin::token::erc1155::ERC1155Component;
     // Absorber
-    use carbon_v3::components::absorber::module::AbsorberComponent;
+    use carbon_v3::components::absorber::carbon::AbsorberComponent;
 
 
     component!(path: ERC1155Component, storage: erc1155, event: ERC1155Event);
@@ -51,6 +51,8 @@ mod Project {
         OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
     impl AbsorberImpl = AbsorberComponent::AbsorberImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl CarbonCreditsImpl = AbsorberComponent::CarbonCreditsImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 

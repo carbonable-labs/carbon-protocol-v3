@@ -9,7 +9,7 @@ mod Minter {
     // Upgradable
     use openzeppelin::upgrades::upgradeable::UpgradeableComponent;
     // Mint
-    use carbon_v3::components::mint::module::MintComponent;
+    use carbon_v3::components::minter::mint::MintComponent;
 
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);

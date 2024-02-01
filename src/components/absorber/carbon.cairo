@@ -15,6 +15,12 @@ mod AbsorberComponent {
 
     // Internal imports
     use carbon_v3::components::absorber::interface::IAbsorber;
+    use carbon_v3::components::absorber::interface::ICarbonCredits;
+
+    // Constants
+
+    const YEAR_SECONDS: u64 = 31556925;
+    const MULT_ACCURATE_SHARE: u256 = 1_000_000;
 
     #[storage]
     struct Storage {
@@ -41,6 +47,10 @@ mod AbsorberComponent {
     struct ProjectValueUpdate {
         #[key]
         value: u256
+    }
+
+    mod Errors {
+        const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: invalid array length';
     }
 
     #[embeddable_as(AbsorberImpl)]
@@ -166,6 +176,52 @@ mod AbsorberComponent {
         }
     }
 
+    #[embeddable_as(CarbonCreditsImpl)]
+    impl CarbonCredits<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
+    > of ICarbonCredits<ComponentState<TContractState>> {
+    
+        fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<u256>{
+            let times = self.Absorber_times.read();
+            let mut cc_vintages: Array<u256> = Default::default();
+            let mut index = 0;
+            loop {
+                if index == times.len() {
+                    break ();
+                }
+                cc_vintages.append(index.into()+1);
+                index += 1;
+            };
+            cc_vintages.span()
+        }
+        
+
+        fn compute_cc_distribution(
+            self: @ComponentState<TContractState>, share: u256
+        ) -> Span<u256> {
+            let times = self.Absorber_times.read();
+            let absorptions = self.Absorber_absorptions.read();
+            let absorptions_u256 = self.__span_u64_into_u256(absorptions.array().span());
+
+            // [Check] list time and absorptions are equal size
+            assert(times.len() == absorptions.len(), Errors::INVALID_ARRAY_LENGTH);
+
+            let mut cc_distribution: Array<u256> = Default::default();
+            let mut index = 0;
+            loop {
+                if index == times.len() {
+                    break ();
+                }
+                cc_distribution.append(
+                    (*absorptions_u256[index] * share / MULT_ACCURATE_SHARE).try_into()
+                        .expect('CC: Distribution overflow')
+                );                
+                index += 1;
+            };
+            cc_distribution.span()
+        }
+    }
+
     #[generate_trait]
     impl InternalImpl<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>
@@ -180,6 +236,19 @@ mod AbsorberComponent {
                     break ();
                 }
                 array.append(list[index].into());
+                index += 1;
+            };
+            array.span()
+        }
+
+        fn __span_u64_into_u256(self: @ComponentState<TContractState>, span: Span<u64>) -> Span<u256> {
+            let mut array = ArrayTrait::<u256>::new();
+            let mut index = 0;
+            loop {
+                if index == span.len() {
+                    break ();
+                }
+                array.append((*span[index]).into());
                 index += 1;
             };
             array.span()
