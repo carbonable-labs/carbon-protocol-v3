@@ -48,4 +48,7 @@ trait ICarbonCredits<TContractState> {
 
     /// Compute number of Carbon Credit of each vintage for given value
     fn compute_cc_distribution(self: @TContractState, share: u256) -> Span<u256>;
+
+    // Get number of decimal for total supply to have a carbon credit
+    fn get_cc_decimals(self: @TContractState) -> u8;
 }

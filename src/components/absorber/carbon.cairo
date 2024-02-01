@@ -21,6 +21,8 @@ mod AbsorberComponent {
 
     const YEAR_SECONDS: u64 = 31556925;
     const MULT_ACCURATE_SHARE: u256 = 1_000_000;
+    const CREDIT_CARBON_TON: u256 = 1_000_000;
+    const CC_DECIMALS: u8 = 6;
 
     #[storage]
     struct Storage {
@@ -211,15 +213,26 @@ mod AbsorberComponent {
                 if index == times.len() {
                     break ();
                 }
+                let mut current_absorption: u256 = 0;
+                if index == 0 {
+                    current_absorption = *absorptions_u256[index];
+                }else{
+                   current_absorption = *absorptions_u256[index] - *absorptions_u256[index - 1];
+                }
+                
                 cc_distribution
                     .append(
-                        (*absorptions_u256[index] * share / MULT_ACCURATE_SHARE)
+                        (current_absorption * share / MULT_ACCURATE_SHARE)
                             .try_into()
                             .expect('CC: Distribution overflow')
                     );
                 index += 1;
             };
             cc_distribution.span()
+        }
+
+        fn get_cc_decimals(self: @ComponentState<TContractState>) -> u8 {
+            CC_DECIMALS
         }
     }
 
