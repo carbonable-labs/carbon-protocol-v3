@@ -23,7 +23,9 @@ mod MintComponent {
     use carbon_v3::components::minter::interface::IMint;
     use carbon_v3::components::minter::booking::{Booking, BookingStatus, BookingTrait};
     use carbon_v3::components::absorber::interface::{IAbsorberDispatcher, IAbsorberDispatcherTrait};
-    use carbon_v3::components::absorber::interface::{ICarbonCreditsDispatcher, ICarbonCreditsDispatcherTrait};
+    use carbon_v3::components::absorber::interface::{
+        ICarbonCreditsDispatcher, ICarbonCreditsDispatcherTrait
+    };
     use carbon_v3::contracts::project::{
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
@@ -170,7 +172,9 @@ mod MintComponent {
             assert(success, 'Transfer failed');
         }
 
-        fn public_buy(ref self: ComponentState<TContractState>, value: u256, force: bool) -> Span<u256> {
+        fn public_buy(
+            ref self: ComponentState<TContractState>, value: u256, force: bool
+        ) -> Span<u256> {
             // [Check] Public sale is open
             let public_sale_open = self.Mint_public_sale_open.read();
             assert(public_sale_open, 'Sale is closed');
@@ -179,7 +183,9 @@ mod MintComponent {
             self._buy(value, force)
         }
 
-        fn set_max_money_amount_per_tx(ref self: ComponentState<TContractState>, max_money_amount_per_tx: u256) {
+        fn set_max_money_amount_per_tx(
+            ref self: ComponentState<TContractState>, max_money_amount_per_tx: u256
+        ) {
             // [Check] Value in range
             let max_money_amount = self.Mint_max_money_amount.read();
             assert(max_money_amount_per_tx <= max_money_amount, 'Invalid max value per tx');
@@ -189,7 +195,9 @@ mod MintComponent {
             self.Mint_max_money_amount_per_tx.write(max_money_amount_per_tx);
         }
 
-        fn set_min_money_amount_per_tx(ref self: ComponentState<TContractState>, min_money_amount_per_tx: u256) {
+        fn set_min_money_amount_per_tx(
+            ref self: ComponentState<TContractState>, min_money_amount_per_tx: u256
+        ) {
             // [Check] Value in range
             let max_money_amount_per_tx = self.Mint_max_money_amount_per_tx.read();
             assert(max_money_amount_per_tx >= min_money_amount_per_tx, 'Invalid min value per tx');
@@ -229,7 +237,9 @@ mod MintComponent {
             self.set_public_sale_open(public_sale_open);
         }
 
-        fn _buy(ref self: ComponentState<TContractState>, money_amount: u256, force: bool) -> Span<u256> {
+        fn _buy(
+            ref self: ComponentState<TContractState>, money_amount: u256, force: bool
+        ) -> Span<u256> {
             // [Check] Value not null
             assert(money_amount > 0, 'Invalid amount of money');
 
@@ -260,12 +270,11 @@ mod MintComponent {
             let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20CamelDispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
-            
+
             let success = erc20.transferFrom(caller_address, contract_address, amount);
 
             // [Check] Transfer successful
             assert(success, 'Transfer failed');
-
 
             // [Interaction] Mint
             let project = IProjectDispatcher { contract_address: project_address };
@@ -275,7 +284,9 @@ mod MintComponent {
             let current_time = get_block_timestamp();
             self
                 .emit(
-                    Event::Buy(Buy { address: caller_address, cc_vintage, cc_distributed: cc_distribution })
+                    Event::Buy(
+                        Buy { address: caller_address, cc_vintage, cc_distributed: cc_distribution }
+                    )
                 );
 
             // [Effect] Close the sale if sold out

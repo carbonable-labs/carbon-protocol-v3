@@ -180,8 +180,7 @@ mod AbsorberComponent {
     impl CarbonCredits<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of ICarbonCredits<ComponentState<TContractState>> {
-    
-        fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<u256>{
+        fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<u256> {
             let times = self.Absorber_times.read();
             let mut cc_vintages: Array<u256> = Default::default();
             let mut index = 0;
@@ -189,12 +188,12 @@ mod AbsorberComponent {
                 if index == times.len() {
                     break ();
                 }
-                cc_vintages.append(index.into()+1);
+                cc_vintages.append(index.into() + 1);
                 index += 1;
             };
             cc_vintages.span()
         }
-        
+
 
         fn compute_cc_distribution(
             self: @ComponentState<TContractState>, share: u256
@@ -212,10 +211,12 @@ mod AbsorberComponent {
                 if index == times.len() {
                     break ();
                 }
-                cc_distribution.append(
-                    (*absorptions_u256[index] * share / MULT_ACCURATE_SHARE).try_into()
-                        .expect('CC: Distribution overflow')
-                );                
+                cc_distribution
+                    .append(
+                        (*absorptions_u256[index] * share / MULT_ACCURATE_SHARE)
+                            .try_into()
+                            .expect('CC: Distribution overflow')
+                    );
                 index += 1;
             };
             cc_distribution.span()
@@ -241,7 +242,9 @@ mod AbsorberComponent {
             array.span()
         }
 
-        fn __span_u64_into_u256(self: @ComponentState<TContractState>, span: Span<u64>) -> Span<u256> {
+        fn __span_u64_into_u256(
+            self: @ComponentState<TContractState>, span: Span<u64>
+        ) -> Span<u256> {
             let mut array = ArrayTrait::<u256>::new();
             let mut index = 0;
             loop {

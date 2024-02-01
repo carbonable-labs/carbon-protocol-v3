@@ -43,7 +43,6 @@ trait IAbsorber<TContractState> {
 
 #[starknet::interface]
 trait ICarbonCredits<TContractState> {
-
     /// Returns the carbon credits vintage list.
     fn get_cc_vintages(self: @TContractState) -> Span<u256>;
 
