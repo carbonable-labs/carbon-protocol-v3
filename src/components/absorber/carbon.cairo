@@ -128,9 +128,7 @@ mod AbsorberComponent {
                 * self.Absorber_ton_equivalent.read().into() != 0
         }
         fn set_absorptions(
-            ref self: ComponentState<TContractState>,
-            times: Span<u64>,
-            absorptions: Span<u64>
+            ref self: ComponentState<TContractState>, times: Span<u64>, absorptions: Span<u64>
         ) {
             // [Check] Times and prices are defined
             assert(times.len() == absorptions.len(), 'Times and absorptions mismatch');
@@ -211,10 +209,10 @@ mod AbsorberComponent {
                 let mut current_absorption: u256 = 0;
                 if index == 0 {
                     current_absorption = *absorptions_u256[index];
-                }else{
-                   current_absorption = *absorptions_u256[index] - *absorptions_u256[index - 1];
+                } else {
+                    current_absorption = *absorptions_u256[index] - *absorptions_u256[index - 1];
                 }
-                
+
                 cc_distribution
                     .append(
                         (current_absorption * share / MULT_ACCURATE_SHARE)

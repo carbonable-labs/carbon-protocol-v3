@@ -17,7 +17,7 @@ trait IExternal<ContractState> {
 #[starknet::contract]
 mod Project {
     use carbon_v3::components::absorber::interface::ICarbonCredits;
-use openzeppelin::token::erc1155::erc1155::ERC1155Component::InternalTrait;
+    use openzeppelin::token::erc1155::erc1155::ERC1155Component::InternalTrait;
     use core::traits::Into;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
 

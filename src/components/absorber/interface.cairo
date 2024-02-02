@@ -33,9 +33,7 @@ trait IAbsorber<TContractState> {
     fn is_setup(self: @TContractState) -> bool;
 
     /// Setup the absorption curve parameters.
-    fn set_absorptions(
-        ref self: TContractState, times: Span<u64>, absorptions: Span<u64>
-    );
+    fn set_absorptions(ref self: TContractState, times: Span<u64>, absorptions: Span<u64>);
 
     /// Setup the project value for the given slot.
     fn set_project_value(ref self: TContractState, project_value: u256);
