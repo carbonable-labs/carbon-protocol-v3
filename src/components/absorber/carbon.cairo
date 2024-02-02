@@ -130,13 +130,11 @@ mod AbsorberComponent {
         fn set_absorptions(
             ref self: ComponentState<TContractState>,
             times: Span<u64>,
-            absorptions: Span<u64>,
-            ton_equivalent: u64
+            absorptions: Span<u64>
         ) {
             // [Check] Times and prices are defined
             assert(times.len() == absorptions.len(), 'Times and absorptions mismatch');
             assert(times.len() > 0, 'Inputs cannot be empty');
-            assert(ton_equivalent > 0, 'Ton equivalent must be positive');
 
             // [Effect] Clean times and absorptions
             let mut stored_times: List<u64> = self.Absorber_times.read();
@@ -161,9 +159,6 @@ mod AbsorberComponent {
                 stored_times.append(*times[index]);
                 stored_absorptions.append(*absorptions[index]);
             };
-
-            // [Effect] Store new ton equivalent
-            self.Absorber_ton_equivalent.write(ton_equivalent);
 
             // [Event] Emit event
             let current_time = get_block_timestamp();

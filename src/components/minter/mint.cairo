@@ -41,7 +41,6 @@ mod MintComponent {
         Mint_payment_token_address: ContractAddress,
         Mint_public_sale_open: bool,
         Mint_max_money_amount: u256,
-        Mint_max_money_amount_per_tx: u256,
         Mint_min_money_amount_per_tx: u256,
         Mint_unit_price: u256,
         Mint_claimed_value: LegacyMap::<ContractAddress, u256>,
@@ -111,6 +110,10 @@ mod MintComponent {
             self.Mint_remaining_money_amount.read()
         }
 
+        fn get_min_money_amount_per_tx(self: @ComponentState<TContractState>) -> u256 {
+            self.Mint_min_money_amount_per_tx.read()
+        }
+
         fn is_sold_out(self: @ComponentState<TContractState>) -> bool {
             self.get_available_money_amount() == 0
         }
@@ -174,24 +177,9 @@ mod MintComponent {
             self._buy(value, force)
         }
 
-        fn set_max_money_amount_per_tx(
-            ref self: ComponentState<TContractState>, max_money_amount_per_tx: u256
-        ) {
-            // [Check] Value in range
-            let max_money_amount = self.Mint_max_money_amount.read();
-            assert(max_money_amount_per_tx <= max_money_amount, 'Invalid max value per tx');
-            let min_money_amount_per_tx = self.Mint_min_money_amount_per_tx.read();
-            assert(max_money_amount_per_tx >= min_money_amount_per_tx, 'Invalid max value per tx');
-            // [Effect] Store value
-            self.Mint_max_money_amount_per_tx.write(max_money_amount_per_tx);
-        }
-
         fn set_min_money_amount_per_tx(
             ref self: ComponentState<TContractState>, min_money_amount_per_tx: u256
         ) {
-            // [Check] Value in range
-            let max_money_amount_per_tx = self.Mint_max_money_amount_per_tx.read();
-            assert(max_money_amount_per_tx >= min_money_amount_per_tx, 'Invalid min value per tx');
             // [Effect] Store value
             self.Mint_min_money_amount_per_tx.write(min_money_amount_per_tx);
         }
@@ -223,6 +211,7 @@ mod MintComponent {
             self.Mint_payment_token_address.write(payment_token_address);
             self.Mint_unit_price.write(unit_price);
             self.Mint_remaining_money_amount.write(max_money_amount);
+            self.Mint_max_money_amount.write(max_money_amount);
 
             // [Effect] Use dedicated function to emit corresponding events
             self.set_public_sale_open(public_sale_open);
@@ -241,8 +230,10 @@ mod MintComponent {
             // [Check] Allowed value
             let min_money_amount_per_tx = self.Mint_min_money_amount_per_tx.read();
             assert(money_amount >= min_money_amount_per_tx, 'Value too low');
-            let max_money_amount_per_tx = self.Mint_max_money_amount_per_tx.read();
-            assert(money_amount <= max_money_amount_per_tx, 'Value too high');
+
+            // [Check] Allowed enough remaining_money
+            let remaining_money_amount = self.Mint_remaining_money_amount.read();
+            assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
 
             // [Interaction] Comput share of the amount of project
             let max_money_amount = self.Mint_max_money_amount.read();
@@ -255,17 +246,17 @@ mod MintComponent {
             let cc_vintage: Span<u256> = carbon_credits.get_cc_vintages();
 
             // [Interaction] Pay
-            // TODO : verify why multiply with unit_price
-            let unit_price = self.Mint_unit_price.read();
-            let amount = money_amount * unit_price;
             let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20CamelDispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
 
-            let success = erc20.transferFrom(caller_address, contract_address, amount);
+            let success = erc20.transferFrom(caller_address, contract_address, money_amount);
 
             // [Check] Transfer successful
             assert(success, 'Transfer failed');
+
+            // [Interaction] Update remaining money amount
+            self.Mint_remaining_money_amount.write(remaining_money_amount - money_amount);
 
             // [Interaction] Mint
             let project = IProjectDispatcher { contract_address: project_address };
@@ -291,12 +282,6 @@ mod MintComponent {
 
             // [Return] cc distribution
             cc_distribution
-        }
-
-        fn _available_public_money_amount(self: @ComponentState<TContractState>) -> u256 {
-            // [Compute] Available value
-            let remaining_money_amount = self.Mint_remaining_money_amount.read();
-            remaining_money_amount
         }
     }
 }
