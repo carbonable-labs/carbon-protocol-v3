@@ -1,4 +1,4 @@
-mod module;
+mod carbon;
 mod interface;
 
-use module::AbsorberComponent;
+use carbon::AbsorberComponent;

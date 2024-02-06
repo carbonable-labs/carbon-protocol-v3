@@ -9,7 +9,7 @@ mod Minter {
     // Upgradable
     use openzeppelin::upgrades::upgradeable::UpgradeableComponent;
     // Mint
-    use carbon_v3::components::mint::module::MintComponent;
+    use carbon_v3::components::minter::mint::MintComponent;
 
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -54,14 +54,10 @@ mod Minter {
     fn constructor(
         ref self: ContractState,
         carbonable_project_address: ContractAddress,
-        carbonable_project_slot: u256,
         payment_token_address: ContractAddress,
         public_sale_open: bool,
-        max_value_per_tx: u256,
-        min_value_per_tx: u256,
         max_value: u256,
         unit_price: u256,
-        reserved_value: u256,
         owner: ContractAddress
     ) {
         self.ownable.initializer(owner);

@@ -1,6 +1,6 @@
 mod components {
     mod absorber;
-    mod mint;
+    mod minter;
 }
 
 mod contracts {

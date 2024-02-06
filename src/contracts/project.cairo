@@ -10,11 +10,13 @@ trait IExternal<ContractState> {
     fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>);
     fn set_uri(ref self: ContractState, token_id: u256, uri: felt252);
     fn set_list_uri(ref self: ContractState, token_ids: Span<u256>, uris: Span<felt252>);
+    fn decimals(self: @ContractState) -> u8;
 }
 
 
 #[starknet::contract]
 mod Project {
+    use carbon_v3::components::absorber::interface::ICarbonCredits;
     use openzeppelin::token::erc1155::erc1155::ERC1155Component::InternalTrait;
     use core::traits::Into;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
@@ -28,8 +30,7 @@ mod Project {
     // ERC1155
     use openzeppelin::token::erc1155::ERC1155Component;
     // Absorber
-    use carbon_v3::components::absorber::module::AbsorberComponent;
-
+    use carbon_v3::components::absorber::carbon::AbsorberComponent;
 
     component!(path: ERC1155Component, storage: erc1155, event: ERC1155Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -51,6 +52,8 @@ mod Project {
         OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
     impl AbsorberImpl = AbsorberComponent::AbsorberImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl CarbonCreditsImpl = AbsorberComponent::CarbonCreditsImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
@@ -148,6 +151,10 @@ mod Project {
 
                 self.erc1155._set_uri(id, uri);
             }
+        }
+
+        fn decimals(self: @ContractState) -> u8 {
+            self.absorber.get_cc_decimals()
         }
     }
 }
