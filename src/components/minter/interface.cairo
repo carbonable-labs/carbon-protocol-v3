@@ -15,7 +15,7 @@ trait IMint<TContractState> {
     fn set_min_money_amount_per_tx(ref self: TContractState, min_money_amount_per_tx: u256);
     fn set_unit_price(ref self: TContractState, unit_price: u256);
     fn withdraw(ref self: TContractState);
-    fn transfer(
+    fn retrieve_amount(
         ref self: TContractState,
         token_address: ContractAddress,
         recipient: ContractAddress,

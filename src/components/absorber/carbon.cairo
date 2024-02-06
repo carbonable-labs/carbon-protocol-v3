@@ -52,7 +52,7 @@ mod AbsorberComponent {
     }
 
     mod Errors {
-        const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: invalid array length';
+        const INVALID_ARRAY_LENGTH: felt252 = 'Absorber: invalid array length';
     }
 
     #[embeddable_as(AbsorberImpl)]
@@ -213,12 +213,7 @@ mod AbsorberComponent {
                     current_absorption = *absorptions_u256[index] - *absorptions_u256[index - 1];
                 }
 
-                cc_distribution
-                    .append(
-                        (current_absorption * share / MULT_ACCURATE_SHARE)
-                            .try_into()
-                            .expect('CC: Distribution overflow')
-                    );
+                cc_distribution.append((current_absorption * share / MULT_ACCURATE_SHARE));
                 index += 1;
             };
             cc_distribution.span()

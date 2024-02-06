@@ -81,7 +81,7 @@ mod MintComponent {
     }
 
     mod Errors {
-        const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: invalid array length';
+        const INVALID_ARRAY_LENGTH: felt252 = 'Mint: invalid array length';
     }
 
     #[embeddable_as(MintImpl)]
@@ -180,6 +180,12 @@ mod MintComponent {
         fn set_min_money_amount_per_tx(
             ref self: ComponentState<TContractState>, min_money_amount_per_tx: u256
         ) {
+            // [Check] Value in range
+            let max_money_amount_per_tx = self.Mint_max_money_amount.read();
+            assert(
+                max_money_amount_per_tx >= min_money_amount_per_tx,
+                'Invalid min money amount per tx'
+            );
             // [Effect] Store value
             self.Mint_min_money_amount_per_tx.write(min_money_amount_per_tx);
         }
