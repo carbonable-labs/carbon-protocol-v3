@@ -155,7 +155,7 @@ mod MintComponent {
             assert(success, 'Transfer failed');
         }
 
-        fn transfer(
+        fn retrieve_amount(
             ref self: ComponentState<TContractState>,
             token_address: ContractAddress,
             recipient: ContractAddress,
