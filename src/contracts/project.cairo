@@ -8,8 +8,7 @@ trait IExternal<ContractState> {
         ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
     fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>);
-    fn set_uri(ref self: ContractState, token_id: u256, uri: felt252);
-    fn set_list_uri(ref self: ContractState, token_ids: Span<u256>, uris: Span<felt252>);
+    fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
 }
 
@@ -42,9 +41,9 @@ mod Project {
     #[abi(embed_v0)]
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
     #[abi(embed_v0)]
-    impl ERC1155MetadataImpl = ERC1155Component::ERC1155MetadataImpl<ContractState>;
+    impl ERC1155MetadataURIImpl = ERC1155Component::ERC1155MetadataURIImpl<ContractState>;
     #[abi(embed_v0)]
-    impl ERC1155CamelOnly = ERC1155Component::ERC1155CamelOnlyImpl<ContractState>;
+    impl ERC1155Camel = ERC1155Component::ERC1155CamelImpl<ContractState>;
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     #[abi(embed_v0)]
@@ -103,9 +102,9 @@ mod Project {
     // Constructor
     #[constructor]
     fn constructor(
-        ref self: ContractState, name: felt252, symbol: felt252, owner: ContractAddress
+        ref self: ContractState, base_uri: ByteArray, owner: ContractAddress
     ) {
-        self.erc1155.initializer(name, symbol);
+        self.erc1155.initializer(base_uri);
         self.ownable.initializer(owner);
 
         self.src5.register_interface(OLD_IERC1155_ID);
@@ -113,45 +112,46 @@ mod Project {
     }
 
     // Externals
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
         fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
-            self.erc1155._mint(to, token_id, value);
+            self.erc1155.mint_with_acceptance_check(to, token_id, value, array![].span());
         }
 
         fn burn(ref self: ContractState, token_id: u256, value: u256) {
-            self.erc1155._burn(get_caller_address(), token_id, value);
+            self.erc1155.burn(get_caller_address(), token_id, value);
         }
 
         fn batch_mint(
             ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
         ) {
-            self.erc1155._batch_mint(to, token_ids, values);
+            self.erc1155.batch_mint_with_acceptance_check(to, token_ids, values, array![].span());
         }
 
         fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>) {
-            self.erc1155._batch_burn(get_caller_address(), token_ids, values);
+            self.erc1155.batch_burn(get_caller_address(), token_ids, values);
         }
 
-        fn set_uri(ref self: ContractState, token_id: u256, uri: felt252) {
-            self.erc1155._set_uri(token_id, uri);
+        fn set_uri(ref self: ContractState, uri: ByteArray) {
+            self.erc1155.set_base_uri(uri);
         }
 
-        fn set_list_uri(
-            ref self: ContractState, mut token_ids: Span<u256>, mut uris: Span<felt252>
-        ) {
-            assert(token_ids.len() == uris.len(), Errors::UNEQUAL_ARRAYS_URI);
-
-            loop {
-                if token_ids.len() == 0 {
-                    break;
-                }
-                let id = *token_ids.pop_front().unwrap();
-                let uri = *uris.pop_front().unwrap();
-
-                self.erc1155._set_uri(id, uri);
-            }
-        }
+        
+        // fn set_list_uri(
+        //     ref self: ContractState, mut token_ids: Span<u256>, mut uris: Span<felt252>
+        // ) {
+        //     assert(token_ids.len() == uris.len(), Errors::UNEQUAL_ARRAYS_URI);
+        // 
+        //     loop {
+        //         if token_ids.len() == 0 {
+        //             break;
+        //         }
+        //         let id = *token_ids.pop_front().unwrap();
+        //         let uri = *uris.pop_front().unwrap();
+        // 
+        //         self.erc1155._set_uri(id, uri);
+        //     }
+        // }
 
         fn decimals(self: @ContractState) -> u8 {
             self.absorber.get_cc_decimals()

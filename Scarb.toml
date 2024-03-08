@@ -5,10 +5,10 @@ version = "0.1.0"
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest
 
 [dependencies]
-starknet = ">=2.3.1"
-alexandria_storage = { git = "https://github.com/tekkac/alexandria", branch = "feat/interpolation-fast" }
-alexandria_numeric = { git = "https://github.com/tekkac/alexandria", branch = "feat/interpolation-fast" }
-openzeppelin = { git = "https://github.com/cloudvenger/cairo-contracts.git", rev = "fd41fdb9d04a701b2353c4cd0a8bd19f3139e88a" }
+starknet = ">=2.5.3"
+alexandria_storage = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.5.4" }
+alexandria_numeric = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.5.4" }
+openzeppelin = { git = "https://github.com/cloudvenger/cairo-contracts.git", tag = "oz-cairo-2.5.3" }
 
 [[target.starknet-contract]]
 sierra = true
