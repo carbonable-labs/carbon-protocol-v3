@@ -41,7 +41,8 @@ mod Project {
     #[abi(embed_v0)]
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
     #[abi(embed_v0)]
-    impl ERC1155MetadataURIImpl = ERC1155Component::ERC1155MetadataURIImpl<ContractState>;
+    impl ERC1155MetadataURIImpl =
+        ERC1155Component::ERC1155MetadataURIImpl<ContractState>;
     #[abi(embed_v0)]
     impl ERC1155Camel = ERC1155Component::ERC1155CamelImpl<ContractState>;
     #[abi(embed_v0)]
@@ -101,9 +102,7 @@ mod Project {
 
     // Constructor
     #[constructor]
-    fn constructor(
-        ref self: ContractState, base_uri: ByteArray, owner: ContractAddress
-    ) {
+    fn constructor(ref self: ContractState, base_uri: ByteArray, owner: ContractAddress) {
         self.erc1155.initializer(base_uri);
         self.ownable.initializer(owner);
 
@@ -136,7 +135,7 @@ mod Project {
             self.erc1155.set_base_uri(uri);
         }
 
-        
+
         // fn set_list_uri(
         //     ref self: ContractState, mut token_ids: Span<u256>, mut uris: Span<felt252>
         // ) {

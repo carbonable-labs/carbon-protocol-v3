@@ -8,9 +8,7 @@ mod AbsorberComponent {
     use starknet::{get_block_timestamp, get_caller_address, ContractAddress};
 
     // External imports
-    use alexandria_numeric::interpolate::{
-        interpolate, Interpolation, Extrapolation
-    };
+    use alexandria_numeric::interpolate::{interpolate, Interpolation, Extrapolation};
     use alexandria_storage::list::{List, ListTrait};
 
     // Internal imports
@@ -195,7 +193,8 @@ mod AbsorberComponent {
         ) -> Span<u256> {
             let times = self.Absorber_times.read();
             let absorptions = self.Absorber_absorptions.read();
-            let absorptions_u256 = self.__span_u64_into_u256(absorptions.array().unwrap_or_default().span());
+            let absorptions_u256 = self
+                .__span_u64_into_u256(absorptions.array().unwrap_or_default().span());
 
             // [Check] list time and absorptions are equal size
             assert(times.len() == absorptions.len(), Errors::INVALID_ARRAY_LENGTH);
