@@ -8,9 +8,7 @@ mod AbsorberComponent {
     use starknet::{get_block_timestamp, get_caller_address, ContractAddress};
 
     // External imports
-    use alexandria_numeric::interpolate::{
-        interpolate_fast as interpolate, Interpolation, Extrapolation
-    };
+    use alexandria_numeric::interpolate::{interpolate, Interpolation, Extrapolation};
     use alexandria_storage::list::{List, ListTrait};
 
     // Internal imports
@@ -75,10 +73,10 @@ mod AbsorberComponent {
             times[times.len() - 1]
         }
         fn get_times(self: @ComponentState<TContractState>) -> Span<u64> {
-            self.Absorber_times.read().array().span()
+            self.Absorber_times.read().array().expect('Can\'t get times').span()
         }
         fn get_absorptions(self: @ComponentState<TContractState>) -> Span<u64> {
-            self.Absorber_absorptions.read().array().span()
+            self.Absorber_absorptions.read().array().expect('Can\'t get absorptions').span()
         }
         fn get_absorption(self: @ComponentState<TContractState>, time: u64) -> u64 {
             let times = self.Absorber_times.read();
@@ -142,8 +140,8 @@ mod AbsorberComponent {
 
             // [Effect] Store new times and absorptions
             let mut index = 0;
-            stored_times.append(*times[index]);
-            stored_absorptions.append(*absorptions[index]);
+            let _ = stored_times.append(*times[index]);
+            let _ = stored_absorptions.append(*absorptions[index]);
             loop {
                 index += 1;
                 if index == times.len() {
@@ -154,8 +152,8 @@ mod AbsorberComponent {
                 // [Check] Absorptions are sorted
                 assert(*absorptions[index] >= *absorptions[index - 1], 'Absorptions not sorted');
                 // [Effect] Store values
-                stored_times.append(*times[index]);
-                stored_absorptions.append(*absorptions[index]);
+                let _ = stored_times.append(*times[index]);
+                let _ = stored_absorptions.append(*absorptions[index]);
             };
 
             // [Event] Emit event
@@ -195,7 +193,8 @@ mod AbsorberComponent {
         ) -> Span<u256> {
             let times = self.Absorber_times.read();
             let absorptions = self.Absorber_absorptions.read();
-            let absorptions_u256 = self.__span_u64_into_u256(absorptions.array().span());
+            let absorptions_u256 = self
+                .__span_u64_into_u256(absorptions.array().expect('Can\'t get absorptions').span());
 
             // [Check] list time and absorptions are equal size
             assert(times.len() == absorptions.len(), Errors::INVALID_ARRAY_LENGTH);
