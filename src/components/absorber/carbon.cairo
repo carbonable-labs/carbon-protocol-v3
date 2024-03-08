@@ -73,7 +73,7 @@ mod AbsorberComponent {
             times[times.len() - 1]
         }
         fn get_times(self: @ComponentState<TContractState>) -> Span<u64> {
-            self.Absorber_times.read().array().unwrap_or_default().span()
+            self.Absorber_times.read().array().expect('Can\'t get times').span()
         }
         fn get_absorptions(self: @ComponentState<TContractState>) -> Span<u64> {
             self.Absorber_absorptions.read().array().unwrap_or_default().span()
