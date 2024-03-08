@@ -76,7 +76,7 @@ mod AbsorberComponent {
             self.Absorber_times.read().array().expect('Can\'t get times').span()
         }
         fn get_absorptions(self: @ComponentState<TContractState>) -> Span<u64> {
-            self.Absorber_absorptions.read().array().unwrap_or_default().span()
+            self.Absorber_absorptions.read().array().expect('Can\'t get absorptions').span()
         }
         fn get_absorption(self: @ComponentState<TContractState>, time: u64) -> u64 {
             let times = self.Absorber_times.read();
@@ -194,7 +194,7 @@ mod AbsorberComponent {
             let times = self.Absorber_times.read();
             let absorptions = self.Absorber_absorptions.read();
             let absorptions_u256 = self
-                .__span_u64_into_u256(absorptions.array().unwrap_or_default().span());
+                .__span_u64_into_u256(absorptions.array().expect('Can\'t get absorptions').span());
 
             // [Check] list time and absorptions are equal size
             assert(times.len() == absorptions.len(), Errors::INVALID_ARRAY_LENGTH);
