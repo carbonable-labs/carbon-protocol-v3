@@ -16,6 +16,7 @@ node.json
 artifacts
 target
 Scarb.lock
+.tool-versions
 
 # nile
 127.0.0.1.*
@@ -25,6 +26,9 @@ build
 *logs.json
 
 .DS_Store
+
+# Starknet foundry
+.snfoundry_cache
 
 # deployment
 tmp
