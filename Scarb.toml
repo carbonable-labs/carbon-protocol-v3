@@ -9,7 +9,11 @@ starknet = ">=2.5.3"
 alexandria_storage = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.5.4" }
 alexandria_numeric = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.5.4" }
 openzeppelin = { git = "https://github.com/cloudvenger/cairo-contracts.git", tag = "oz-cairo-2.5.3" }
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.17.1" }
+
+[scripts]
+test = "snforge test"
 
 [[target.starknet-contract]]
 sierra = true
-casm = false
+casm = true
