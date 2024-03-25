@@ -1,0 +1,53 @@
+name: Deploy Cairo Smart Contracts to Sepolia Testnet
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Cairo Contracts
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      
+      - name: Install scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.5.4"
+
+      - name: Install starkliup
+        run: |
+          curl https://get.starkli.sh | sh
+
+      - name: Install Starkli
+        run: |
+          /home/runner/.config/.starkli/bin/starkliup --version 0.1.20
+          sudo mv /home/runner/.config/.starkli/bin/starkli /usr/local/bin/
+
+      - name: 'Create env file'
+        run: |
+          touch .env
+          echo "${{ secrets.ENV }}" > .env
+
+      - name: Deploy contracts
+        run: |
+          minter_contract_address=$(./scripts/deploy_minter.sh | tail -n 1)
+          project_contract_address=$(./scripts/deploy_project.sh | tail -n 1)
+          echo "======================================" >> contract_addresses.txt
+          echo "Latest minter contract address: $minter_contract_address" >> contract_addresses.txt
+          echo "Latest project contract address: $project_contract_address" >> contract_addresses.txt
+
+      - name: Commit changes
+        run: |
+          git config --global user.name ${{ secrets.GH_NAME }}
+          git config --global user.email ${{ secrets.GH_EMAIL }}
+          git add contract_addresses.txt
+          git commit -m "Update contract addresses"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
