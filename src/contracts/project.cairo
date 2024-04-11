@@ -53,6 +53,8 @@ mod Project {
     #[abi(embed_v0)]
     impl AbsorberImpl = AbsorberComponent::AbsorberImpl<ContractState>;
     #[abi(embed_v0)]
+    impl CarbonCreditsHandlerImpl = AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
+    #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
 
@@ -103,12 +105,13 @@ mod Project {
     #[constructor]
     fn constructor(
         ref self: ContractState,
-        base_uri: ByteArray,
+        base_uri: felt252,
         owner: ContractAddress,
         starting_year: u64,
         number_of_years: u64
     ) {
-        self.erc1155.initializer(base_uri);
+        let base_uri_bytearray: ByteArray = format!("{}", base_uri);
+        self.erc1155.initializer(base_uri_bytearray);
         self.ownable.initializer(owner);
         self.absorber.initializer(starting_year, number_of_years);
 

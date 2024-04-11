@@ -77,7 +77,7 @@ mod MintComponent {
     struct Buy {
         #[key]
         address: ContractAddress,
-        cc_vintage: Span<u256>,
+        cc_years_vintages: Span<u256>,
         cc_distributed: Span<u256>,
     }
 
@@ -255,7 +255,7 @@ mod MintComponent {
                 contract_address: project_address
             };
             let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
-            let cc_vintages: Span<CarbonVintage> = carbon_credits.get_cc_vintages();
+            let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
 
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
@@ -273,7 +273,7 @@ mod MintComponent {
             // [Interaction] Mint
             // Implement Span<u256> to return the list of cc_vintage (token_id & year)
             let project = IProjectDispatcher { contract_address: project_address };
-            project.batch_mint(caller_address, cc_vintages, cc_distribution);
+            project.batch_mint(caller_address, cc_years_vintages, cc_distribution);
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
@@ -281,7 +281,7 @@ mod MintComponent {
                 .emit(
                     Event::Buy(
                         Buy {
-                            address: caller_address, cc_vintages, cc_distributed: cc_distribution
+                            address: caller_address, cc_years_vintages: cc_years_vintages, cc_distributed: cc_distribution
                         }
                     )
                 );

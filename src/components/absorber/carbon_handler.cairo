@@ -147,6 +147,8 @@ mod AbsorberComponent {
             assert(times.len() == absorptions.len(), 'Times and absorptions mismatch');
             assert(times.len() > 0, 'Inputs cannot be empty');
 
+            let mut stored_vintage_cc: List<CarbonVintage> = self.Absorber_vintage_cc.read();
+
             // [Effect] Clean times and absorptions
             let mut stored_times: List<u64> = self.Absorber_times.read();
             stored_times.len = 0;
@@ -160,6 +162,7 @@ mod AbsorberComponent {
             // [Effect] 
             let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
             vintage.cc_supply = *absorptions[index];
+            let _ = stored_vintage_cc.set(index, vintage);
 
             loop {
                 index += 1;
@@ -176,6 +179,7 @@ mod AbsorberComponent {
                 let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
                 let mut current_absorption = *absorptions[index] - *absorptions[index - 1];
                 vintage.cc_supply = current_absorption;
+                let _ = stored_vintage_cc.set(index, vintage);
             };
 
             // [Event] Emit event
@@ -230,6 +234,21 @@ mod AbsorberComponent {
             self.Absorber_vintage_cc.read().array().expect('Can\'t get vintages').span()
         }
 
+        fn get_years_vintage(self: @ComponentState<TContractState>) -> Span<u256> {
+            let vintages = self.Absorber_vintage_cc.read();
+            let mut years: Array<u256> = Default::default();
+            let mut index = 0;
+            loop {
+                if index == vintages.len() {
+                    break ();
+                }
+                let vintage = vintages[index].clone();
+                years.append(vintage.cc_vintage);
+                index += 1;
+            };
+            years.span()
+        }
+
         fn get_specific_carbon_vintage(
             self: @ComponentState<TContractState>, year: u64
         ) -> CarbonVintage {
@@ -279,7 +298,7 @@ mod AbsorberComponent {
             stored_vintages.len = 0;
 
             // [Storage] Store new starting year
-            assert(starting_year <= 0, Errors::INVALID_STARTING_YEAR);
+            assert(starting_year > 0, Errors::INVALID_STARTING_YEAR);
             self.Absorber_starting_year.write(starting_year);
 
             // [Storage] Store new vintages
