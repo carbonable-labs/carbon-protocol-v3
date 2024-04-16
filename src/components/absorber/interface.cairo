@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+use carbon_v3::components::data::carbon_vintage::{CarbonVintage};
 
 #[starknet::interface]
 trait IAbsorber<TContractState> {
@@ -24,7 +25,7 @@ trait IAbsorber<TContractState> {
     fn get_final_absorption(self: @TContractState) -> u64;
 
     /// Returns the project value.
-    fn get_project_value(self: @TContractState) -> u256;
+    fn get_project_carbon(self: @TContractState) -> u256;
 
     /// Returns the ton equivalent.
     fn get_ton_equivalent(self: @TContractState) -> u64;
@@ -35,17 +36,21 @@ trait IAbsorber<TContractState> {
     /// Setup the absorption curve parameters.
     fn set_absorptions(ref self: TContractState, times: Span<u64>, absorptions: Span<u64>);
 
-    /// Setup the project value for the given slot.
-    fn set_project_value(ref self: TContractState, project_value: u256);
+    /// Setup the project carbon for the given slot.
+    fn set_project_carbon(ref self: TContractState, project_carbon: u256);
+
+    /// Compute number of Carbon Credit of each vintage for given value
+    fn compute_carbon_vintage_distribution(self: @TContractState, share: u256) -> Span<u256>;
 }
 
 #[starknet::interface]
-trait ICarbonCredits<TContractState> {
+trait ICarbonCreditsHandler<TContractState> {
     /// Returns the carbon credits vintage list.
-    fn get_cc_vintages(self: @TContractState) -> Span<u256>;
+    fn get_cc_vintages(self: @TContractState) -> Span<CarbonVintage>;
 
-    /// Compute number of Carbon Credit of each vintage for given value
-    fn compute_cc_distribution(self: @TContractState, share: u256) -> Span<u256>;
+    fn get_years_vintage(self: @TContractState) -> Span<u256>;
+
+    fn get_specific_carbon_vintage(self: @TContractState, year: u64) -> CarbonVintage;
 
     // Get number of decimal for total supply to have a carbon credit
     fn get_cc_decimals(self: @TContractState) -> u8;

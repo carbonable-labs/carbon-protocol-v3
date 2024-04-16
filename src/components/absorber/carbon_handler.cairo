@@ -13,7 +13,8 @@ mod AbsorberComponent {
 
     // Internal imports
     use carbon_v3::components::absorber::interface::IAbsorber;
-    use carbon_v3::components::absorber::interface::ICarbonCredits;
+    use carbon_v3::components::absorber::interface::ICarbonCreditsHandler;
+    use carbon_v3::components::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
 
@@ -25,9 +26,11 @@ mod AbsorberComponent {
     #[storage]
     struct Storage {
         Absorber_ton_equivalent: u64,
-        Absorber_project_value: u256,
+        Absorber_starting_year: u64,
+        Absorber_project_carbon: u256,
         Absorber_times: List<u64>,
         Absorber_absorptions: List<u64>,
+        Absorber_vintage_cc: List<CarbonVintage>,
     }
 
     #[event]
@@ -51,6 +54,7 @@ mod AbsorberComponent {
 
     mod Errors {
         const INVALID_ARRAY_LENGTH: felt252 = 'Absorber: invalid array length';
+        const INVALID_STARTING_YEAR: felt252 = 'Absorber: invalid starting year';
     }
 
     #[embeddable_as(AbsorberImpl)]
@@ -65,6 +69,7 @@ mod AbsorberComponent {
             }
             times[0]
         }
+
         fn get_final_time(self: @ComponentState<TContractState>) -> u64 {
             let times = self.Absorber_times.read();
             if times.len() == 0 {
@@ -72,12 +77,15 @@ mod AbsorberComponent {
             }
             times[times.len() - 1]
         }
+
         fn get_times(self: @ComponentState<TContractState>) -> Span<u64> {
             self.Absorber_times.read().array().expect('Can\'t get times').span()
         }
+
         fn get_absorptions(self: @ComponentState<TContractState>) -> Span<u64> {
             self.Absorber_absorptions.read().array().expect('Can\'t get absorptions').span()
         }
+
         fn get_absorption(self: @ComponentState<TContractState>, time: u64) -> u64 {
             let times = self.Absorber_times.read();
             if times.len() == 0 {
@@ -103,9 +111,11 @@ mod AbsorberComponent {
 
             absorption.try_into().expect('Absorber: Absorption overflow')
         }
+
         fn get_current_absorption(self: @ComponentState<TContractState>) -> u64 {
             self.get_absorption(get_block_timestamp())
         }
+
         fn get_final_absorption(self: @ComponentState<TContractState>) -> u64 {
             let absorptions = self.Absorber_absorptions.read();
             if absorptions.len() == 0 {
@@ -113,18 +123,23 @@ mod AbsorberComponent {
             }
             absorptions[absorptions.len() - 1]
         }
-        fn get_project_value(self: @ComponentState<TContractState>) -> u256 {
-            self.Absorber_project_value.read()
+
+        fn get_project_carbon(self: @ComponentState<TContractState>) -> u256 {
+            self.Absorber_project_carbon.read()
         }
+
         fn get_ton_equivalent(self: @ComponentState<TContractState>) -> u64 {
             self.Absorber_ton_equivalent.read()
         }
+
         fn is_setup(self: @ComponentState<TContractState>) -> bool {
-            self.Absorber_project_value.read()
+            self.Absorber_project_carbon.read()
                 * self.Absorber_times.read().len().into()
                 * self.Absorber_absorptions.read().len().into()
                 * self.Absorber_ton_equivalent.read().into() != 0
         }
+
+        // Constraints : times lapse between absorptions point should be equal to 1 year
         fn set_absorptions(
             ref self: ComponentState<TContractState>, times: Span<u64>, absorptions: Span<u64>
         ) {
@@ -132,16 +147,23 @@ mod AbsorberComponent {
             assert(times.len() == absorptions.len(), 'Times and absorptions mismatch');
             assert(times.len() > 0, 'Inputs cannot be empty');
 
+            let mut stored_vintage_cc: List<CarbonVintage> = self.Absorber_vintage_cc.read();
+
             // [Effect] Clean times and absorptions
             let mut stored_times: List<u64> = self.Absorber_times.read();
             stored_times.len = 0;
             let mut stored_absorptions: List<u64> = self.Absorber_absorptions.read();
             stored_absorptions.len = 0;
 
-            // [Effect] Store new times and absorptions
-            let mut index = 0;
+            // [Effect] Store new times and absorptions and carbon value in vintage
+            let mut index: u32 = 0;
             let _ = stored_times.append(*times[index]);
             let _ = stored_absorptions.append(*absorptions[index]);
+            // [Effect] 
+            let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
+            vintage.cc_supply = *absorptions[index];
+            let _ = stored_vintage_cc.set(index, vintage);
+
             loop {
                 index += 1;
                 if index == times.len() {
@@ -154,41 +176,26 @@ mod AbsorberComponent {
                 // [Effect] Store values
                 let _ = stored_times.append(*times[index]);
                 let _ = stored_absorptions.append(*absorptions[index]);
+                let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
+                let mut current_absorption = *absorptions[index] - *absorptions[index - 1];
+                vintage.cc_supply = current_absorption;
+                let _ = stored_vintage_cc.set(index, vintage);
             };
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
             self.emit(AbsorptionUpdate { time: current_time });
         }
-        fn set_project_value(ref self: ComponentState<TContractState>, project_value: u256) {
+
+        fn set_project_carbon(ref self: ComponentState<TContractState>, project_carbon: u256) {
             // [Event] Update storage
-            self.Absorber_project_value.write(project_value);
+            self.Absorber_project_carbon.write(project_carbon);
 
             // [Event] Emit event
-            self.emit(Event::ProjectValueUpdate(ProjectValueUpdate { value: project_value }));
-        }
-    }
-
-    #[embeddable_as(CarbonCreditsImpl)]
-    impl CarbonCredits<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
-    > of ICarbonCredits<ComponentState<TContractState>> {
-        fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<u256> {
-            let times = self.Absorber_times.read();
-            let mut cc_vintages: Array<u256> = Default::default();
-            let mut index = 0;
-            loop {
-                if index == times.len() {
-                    break ();
-                }
-                cc_vintages.append(index.into() + 1);
-                index += 1;
-            };
-            cc_vintages.span()
+            self.emit(Event::ProjectValueUpdate(ProjectValueUpdate { value: project_carbon }));
         }
 
-
-        fn compute_cc_distribution(
+        fn compute_carbon_vintage_distribution(
             self: @ComponentState<TContractState>, share: u256
         ) -> Span<u256> {
             let times = self.Absorber_times.read();
@@ -217,6 +224,56 @@ mod AbsorberComponent {
             };
             cc_distribution.span()
         }
+    }
+
+    #[embeddable_as(CarbonCreditsHandlerImpl)]
+    impl CarbonCreditsHandler<
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
+    > of ICarbonCreditsHandler<ComponentState<TContractState>> {
+        fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<CarbonVintage> {
+            self.Absorber_vintage_cc.read().array().expect('Can\'t get vintages').span()
+        }
+
+        fn get_years_vintage(self: @ComponentState<TContractState>) -> Span<u256> {
+            let vintages = self.Absorber_vintage_cc.read();
+            let mut years: Array<u256> = Default::default();
+            let mut index = 0;
+            loop {
+                if index == vintages.len() {
+                    break ();
+                }
+                let vintage = vintages[index].clone();
+                years.append(vintage.cc_vintage);
+                index += 1;
+            };
+            years.span()
+        }
+
+        fn get_specific_carbon_vintage(
+            self: @ComponentState<TContractState>, year: u64
+        ) -> CarbonVintage {
+            if year == 0 {
+                return Default::default();
+            }
+            let carbon_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
+            let mut found_vintage: CarbonVintage = Default::default();
+
+            let mut index = 0;
+            let mut tmp_vintage: CarbonVintage = Default::default();
+            loop {
+                if index == carbon_vintages.len() {
+                    break ();
+                }
+
+                tmp_vintage = carbon_vintages[index].clone();
+                if tmp_vintage.cc_vintage == year.into() {
+                    found_vintage = carbon_vintages[index].clone();
+                }
+                index += 1;
+            };
+
+            return found_vintage;
+        }
 
         fn get_cc_decimals(self: @ComponentState<TContractState>) -> u8 {
             CC_DECIMALS
@@ -227,6 +284,54 @@ mod AbsorberComponent {
     impl InternalImpl<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of InternalTrait<TContractState> {
+        fn initializer(
+            ref self: ComponentState<TContractState>, starting_year: u64, number_of_years: u64
+        ) {
+            // [Storage] Clean times and absorptions
+            let mut stored_times: List<u64> = self.Absorber_times.read();
+            stored_times.len = 0;
+            let mut stored_absorptions: List<u64> = self.Absorber_absorptions.read();
+            stored_absorptions.len = 0;
+
+            // [Storage] Clean vintages
+            let mut stored_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
+            stored_vintages.len = 0;
+
+            // [Storage] Store new starting year
+            assert(starting_year > 0, Errors::INVALID_STARTING_YEAR);
+            self.Absorber_starting_year.write(starting_year);
+
+            // [Storage] Store new vintages
+            let mut index = 0;
+            let _ = stored_vintages
+                .append(
+                    CarbonVintage {
+                        cc_vintage: starting_year.into(),
+                        cc_supply: 0,
+                        cc_status: CarbonVintageType::Projected,
+                        cc_rebase_status: false,
+                    }
+                );
+            loop {
+                index += 1;
+                if index == number_of_years {
+                    break;
+                }
+                // [Effect] Store values
+                let _ = stored_vintages
+                    .append(
+                        CarbonVintage {
+                            cc_vintage: (starting_year + index).into(),
+                            cc_supply: 0,
+                            cc_status: CarbonVintageType::Projected,
+                            cc_rebase_status: false,
+                        }
+                    );
+            };
+
+            self.Absorber_vintage_cc.write(stored_vintages);
+        }
+
         fn __list_u64_into_u256(
             self: @ComponentState<TContractState>, list: @List<u64>
         ) -> Span<u256> {

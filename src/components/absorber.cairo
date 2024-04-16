@@ -1,4 +1,4 @@
-mod carbon;
+mod carbon_handler;
 mod interface;
 
-use carbon::AbsorberComponent;
+use carbon_handler::AbsorberComponent;

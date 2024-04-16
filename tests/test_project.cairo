@@ -13,8 +13,8 @@ use alexandria_storage::list::{List, ListTrait};
 // Components
 
 use carbon_v3::components::absorber::interface::{
-    IAbsorber, IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCredits,
-    ICarbonCreditsDispatcher, ICarbonCreditsDispatcherTrait
+    IAbsorber, IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCreditsHandler,
+    ICarbonCreditsHandlerDispatcher, ICarbonCreditsHandlerDispatcherTrait
 };
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
 
@@ -43,14 +43,14 @@ fn deploy_project(owner: felt252) -> (ContractAddress, EventSpy) {
 fn setup_project(
     contract_address: ContractAddress,
     ton_equivalent: u64,
-    project_value: u256,
+    project_carbon: u256,
     times: Span<u64>,
     absorptions: Span<u64>
 ) {
     let project = IAbsorberDispatcher { contract_address };
 
     project.set_absorptions(times, absorptions);
-    project.set_project_value(project_value);
+    project.set_project_carbon(project_carbon);
     snf::store(
         contract_address,
         selector!("Absorber_ton_equivalent"),

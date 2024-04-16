@@ -24,12 +24,13 @@ mod MintComponent {
     use carbon_v3::components::minter::booking::{Booking, BookingStatus, BookingTrait};
     use carbon_v3::components::absorber::interface::{IAbsorberDispatcher, IAbsorberDispatcherTrait};
     use carbon_v3::components::absorber::interface::{
-        ICarbonCreditsDispatcher, ICarbonCreditsDispatcherTrait
+        ICarbonCreditsHandlerDispatcher, ICarbonCreditsHandlerDispatcherTrait
     };
     use carbon_v3::contracts::project::{
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
+    use carbon_v3::components::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
 
@@ -76,7 +77,7 @@ mod MintComponent {
     struct Buy {
         #[key]
         address: ContractAddress,
-        cc_vintage: Span<u256>,
+        cc_years_vintages: Span<u256>,
         cc_distributed: Span<u256>,
     }
 
@@ -247,9 +248,14 @@ mod MintComponent {
 
             // [Interaction] Comput the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
-            let carbon_credits = ICarbonCreditsDispatcher { contract_address: project_address };
-            let cc_distribution: Span<u256> = carbon_credits.compute_cc_distribution(share);
-            let cc_vintage: Span<u256> = carbon_credits.get_cc_vintages();
+            let absorber = IAbsorberDispatcher {
+                contract_address: project_address
+            };
+            let carbon_credits = ICarbonCreditsHandlerDispatcher {
+                contract_address: project_address
+            };
+            let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
+            let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
 
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
@@ -265,15 +271,18 @@ mod MintComponent {
             self.Mint_remaining_money_amount.write(remaining_money_amount - money_amount);
 
             // [Interaction] Mint
+            // Implement Span<u256> to return the list of cc_vintage (token_id & year)
             let project = IProjectDispatcher { contract_address: project_address };
-            project.batch_mint(caller_address, cc_vintage, cc_distribution);
+            project.batch_mint(caller_address, cc_years_vintages, cc_distribution);
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
             self
                 .emit(
                     Event::Buy(
-                        Buy { address: caller_address, cc_vintage, cc_distributed: cc_distribution }
+                        Buy {
+                            address: caller_address, cc_years_vintages: cc_years_vintages, cc_distributed: cc_distribution
+                        }
                     )
                 );
 

@@ -69,21 +69,5 @@ deploy() {
     echo $address
 }
 
-setup() {
-    contract=$(deploy)
-    sleep 5
-
-    if [[ $debug == "true" ]]; then
-        printf "invoke %s add_minter %s %s --keystore-password KEYSTORE_PASSWORD --watch\n" "$PROJECT" "$SLOT" "$contract" >> debug_minter.log
-    fi
-    output=$(starkli invoke $PROJECT add_minter u256:$SLOT $contract --keystore-password $KEYSTORE_PASSWORD --watch 2>&1)
-
-    if [[ $output == *"Error"* ]]; then
-        echo "Error: $output"
-        exit 1
-    fi
-
-    echo $contract
-}
 contract_address=$(deploy)
 echo $contract_address
