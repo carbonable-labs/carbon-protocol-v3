@@ -46,7 +46,6 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
 /// Sets up the project contract.
 fn setup_project(
     contract_address: ContractAddress,
-    ton_equivalent: u64,
     project_carbon: u256,
     times: Span<u64>,
     absorptions: Span<u64>
@@ -55,11 +54,6 @@ fn setup_project(
 
     project.set_absorptions(times, absorptions);
     project.set_project_carbon(project_carbon);
-    snf::store(
-        contract_address,
-        selector!("Absorber_ton_equivalent"),
-        array![ton_equivalent.into()].span(),
-    ); // Only way to set ton equivalent for the moment (TO CHANGE)
 }
 
 #[test]
@@ -74,7 +68,6 @@ fn test_is_setup() {
 
     setup_project(
         project_address,
-        1000000,
         121099000000,
         array![21, 674579600, 1706115600, 1737738000].span(),
         array![21, 29609535, 47991466, 88828605].span(),
