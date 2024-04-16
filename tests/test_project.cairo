@@ -26,12 +26,16 @@ use carbon_v3::contracts::project::{
 };
 
 /// Deploys a project contract.
-fn deploy_project(owner: felt252) -> (ContractAddress, EventSpy) {
+fn deploy_project() -> (ContractAddress, EventSpy) {
     let contract = snf::declare('Project');
-    let uri: ByteArray = "uri";
+    let uri = 'uri';
+    let starting_year: u64 = 2024;
+    let number_of_years: u64 = 20;
     let mut calldata: Array<felt252> = array![];
-    calldata.append_serde(uri.into());
-    calldata.append_serde(c::OWNER());
+    calldata.append(uri);
+    calldata.append(c::OWNER().into());
+    calldata.append(starting_year.into());
+    calldata.append(number_of_years.into());
     let contract_address = contract.deploy(@calldata).unwrap();
 
     let mut spy = snf::spy_events(SpyOn::One(contract_address));
@@ -60,12 +64,12 @@ fn setup_project(
 
 #[test]
 fn test_constructor_ok() {
-    let (_project_address, _spy) = deploy_project(c::OWNER().into());
+    let (_project_address, _spy) = deploy_project();
 }
 
 #[test]
 fn test_is_setup() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
 
     setup_project(
