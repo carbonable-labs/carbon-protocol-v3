@@ -25,7 +25,6 @@ mod AbsorberComponent {
 
     #[storage]
     struct Storage {
-        Absorber_ton_equivalent: u64,
         Absorber_starting_year: u64,
         Absorber_project_carbon: u256,
         Absorber_times: List<u64>,
@@ -129,14 +128,18 @@ mod AbsorberComponent {
         }
 
         fn get_ton_equivalent(self: @ComponentState<TContractState>) -> u64 {
-            self.Absorber_ton_equivalent.read()
+            // Use cc decimals to convert from grams to tons
+            let carbon_g = self.Absorber_project_carbon.read();
+            (carbon_g / CREDIT_CARBON_TON).try_into().expect('Absorber: Ton overflow')
         }
 
         fn is_setup(self: @ComponentState<TContractState>) -> bool {
             self.Absorber_project_carbon.read()
                 * self.Absorber_times.read().len().into()
                 * self.Absorber_absorptions.read().len().into()
-                * self.Absorber_ton_equivalent.read().into() != 0
+                * self.Absorber_vintage_cc.read().len().into()
+                * self.Absorber_starting_year.read().into()
+                * self.Absorber_project_carbon.read() != 0
         }
 
         // Constraints : times lapse between absorptions point should be equal to 1 year
