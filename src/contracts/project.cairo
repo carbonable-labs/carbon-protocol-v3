@@ -53,7 +53,8 @@ mod Project {
     #[abi(embed_v0)]
     impl AbsorberImpl = AbsorberComponent::AbsorberImpl<ContractState>;
     #[abi(embed_v0)]
-    impl CarbonCreditsHandlerImpl = AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
+    impl CarbonCreditsHandlerImpl =
+        AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 

@@ -248,9 +248,7 @@ mod MintComponent {
 
             // [Interaction] Comput the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
-            let absorber = IAbsorberDispatcher {
-                contract_address: project_address
-            };
+            let absorber = IAbsorberDispatcher { contract_address: project_address };
             let carbon_credits = ICarbonCreditsHandlerDispatcher {
                 contract_address: project_address
             };
@@ -281,7 +279,9 @@ mod MintComponent {
                 .emit(
                     Event::Buy(
                         Buy {
-                            address: caller_address, cc_years_vintages: cc_years_vintages, cc_distributed: cc_distribution
+                            address: caller_address,
+                            cc_years_vintages: cc_years_vintages,
+                            cc_distributed: cc_distribution
                         }
                     )
                 );
