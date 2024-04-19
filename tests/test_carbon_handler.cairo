@@ -104,293 +104,257 @@ fn setup_project(
 
 // set_project_carbon
 
-// #[test]
-// fn test_set_project_carbon() {
-//     let (project_address, mut spy) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     // [Assert] project_carbon set correctly
-//     project.set_project_carbon(PROJECT_CARBON.into());
-//     let fetched_value = project.get_project_carbon();
-//     assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
-//     spy
-//         .assert_emitted(
-//             @array![
-//                 (
-//                     project_address,
-//                     AbsorberComponent::Event::ProjectValueUpdate(
-//                         AbsorberComponent::ProjectValueUpdate { value: PROJECT_CARBON.into() }
-//                     )
-//                 )
-//             ]
-//         );
-//     // found events are removed from the spy after assertion, so the length should be 0
-//     assert(spy.events.len() == 0, 'number of events should be 0');
-// }
+#[test]
+fn test_set_project_carbon() {
+    let (project_address, mut spy) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Assert] project_carbon set correctly
+    project.set_project_carbon(PROJECT_CARBON.into());
+    let fetched_value = project.get_project_carbon();
+    assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    project_address,
+                    AbsorberComponent::Event::ProjectValueUpdate(
+                        AbsorberComponent::ProjectValueUpdate { value: PROJECT_CARBON.into() }
+                    )
+                )
+            ]
+        );
+    // found events are removed from the spy after assertion, so the length should be 0
+    assert(spy.events.len() == 0, 'number of events should be 0');
+}
 
-// #[test]
-// fn test_get_project_carbon_not_set() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     // [Assert] default project_carbon is 0
-//     let fetched_value = project.get_project_carbon();
-//     assert(fetched_value == 0, 'default project_carbon is not 0');
-// }
+#[test]
+fn test_get_project_carbon_not_set() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Assert] default project_carbon is 0
+    let fetched_value = project.get_project_carbon();
+    assert(fetched_value == 0, 'default project_carbon is not 0');
+}
 
-// #[test]
-// fn test_set_project_carbon_twice() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     // [Assert] project_carbon set correctly
-//     project.set_project_carbon(PROJECT_CARBON.into());
-//     let fetched_value = project.get_project_carbon();
-//     assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
-//     // [Assert] project_carbon updated correctly
-//     let new_value: u256 = 100;
-//     project.set_project_carbon(new_value.into());
-//     let fetched_value = project.get_project_carbon();
-//     assert(fetched_value == new_value, 'project_carbon did not change');
-// }
+#[test]
+fn test_set_project_carbon_twice() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Assert] project_carbon set correctly
+    project.set_project_carbon(PROJECT_CARBON.into());
+    let fetched_value = project.get_project_carbon();
+    assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
+    // [Assert] project_carbon updated correctly
+    let new_value: u256 = 100;
+    project.set_project_carbon(new_value.into());
+    let fetched_value = project.get_project_carbon();
+    assert(fetched_value == new_value, 'project_carbon did not change');
+}
 
 // // set_absorptions
 
-// #[test]
-// fn test_set_absorptions() {
-//     let (project_address, mut spy) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     let times: Span<u64> = array![
-//         1651363200,
-//         1659312000,
-//         1667260800,
-//         1675209600,
-//         1682899200,
-//         1690848000,
-//         1698796800,
-//         2598134400
-//     ]
-//         .span();
-//     let absorptions: Span<u64> = array![
-//         0, 1179750, 2359500, 3539250, 4719000, 6685250, 8651500, 1573000000
-//     ]
-//         .span();
-//     // [Assert] absorptions & times set correctly
-//     project.set_absorptions(times, absorptions);
-//     assert(project.get_absorptions() == absorptions, 'absorptions not set correctly');
-//     assert(project.get_times() == times, 'times not set correctly');
-//     let current_time = get_block_timestamp();
-//     spy
-//         .assert_emitted(
-//             @array![
-//                 (
-//                     project_address,
-//                     AbsorberComponent::Event::AbsorptionUpdate(
-//                         AbsorberComponent::AbsorptionUpdate { time: current_time }
-//                     )
-//                 )
-//             ]
-//         );
-//     // found events are removed from the spy after assertion, so the length should be 0
-//     assert(spy.events.len() == 0, 'number of events should be 0');
+#[test]
+fn test_set_absorptions() {
+    let (project_address, mut spy) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![
+        1651363200,
+        1659312000,
+        1667260800,
+        1675209600,
+        1682899200,
+        1690848000,
+        1698796800,
+        2598134400
+    ]
+        .span();
+    let absorptions: Span<u64> = array![
+        0, 1179750, 2359500, 3539250, 4719000, 6685250, 8651500, 1573000000
+    ]
+        .span();
+    // [Assert] absorptions & times set correctly
+    project.set_absorptions(times, absorptions);
+    assert(project.get_absorptions() == absorptions, 'absorptions not set correctly');
+    assert(project.get_times() == times, 'times not set correctly');
+    let current_time = get_block_timestamp();
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    project_address,
+                    AbsorberComponent::Event::AbsorptionUpdate(
+                        AbsorberComponent::AbsorptionUpdate { time: current_time }
+                    )
+                )
+            ]
+        );
+    // found events are removed from the spy after assertion, so the length should be 0
+    assert(spy.events.len() == 0, 'number of events should be 0');
 
-//     // [Assert] absorptions can be fetched correctly according to time
-//     // at t = 1651363200
-//     start_warp(CheatTarget::One(project_address), 1651363200);
-//     assert(project.get_current_absorption() == 0, 'current absorption not correct');
+    // [Assert] absorptions can be fetched correctly according to time
+    // at t = 1651363200
+    start_warp(CheatTarget::One(project_address), 1651363200);
+    assert(project.get_current_absorption() == 0, 'current absorption not correct');
 
-//     // at t = 1659312000
-//     start_warp(CheatTarget::One(project_address), 1659312000);
-//     assert(project.get_current_absorption() == 1179750, 'current absorption not correct');
-// }
+    // at t = 1659312000
+    start_warp(CheatTarget::One(project_address), 1659312000);
+    assert(project.get_current_absorption() == 1179750, 'current absorption not correct');
+}
 
-// #[test]
-// #[should_panic(expected: ('Times and absorptions mismatch',))]
-// fn test_set_absorptions_revert_length_mismatch() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     // [Assert] reverting when times and absorptions have different lengths
-//     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span(); // length 3
-//     let absorptions: Span<u64> = array![0, 1179750].span(); // length 2
-//     project.set_absorptions(times, absorptions);
-// }
+#[test]
+#[should_panic(expected: ('Times and absorptions mismatch',))]
+fn test_set_absorptions_revert_length_mismatch() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Assert] reverting when times and absorptions have different lengths
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span(); // length 3
+    let absorptions: Span<u64> = array![0, 1179750].span(); // length 2
+    project.set_absorptions(times, absorptions);
+}
 
-// #[test]
-// #[should_panic(expected: ('Inputs cannot be empty',))]
-// fn test_set_absorptions_revert_empty_inputs() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     // [Assert] reverting when times and absorptions are empty arrays
-//     let times: Span<u64> = array![].span();
-//     let absorptions: Span<u64> = array![].span();
-//     project.set_absorptions(times, absorptions);
-// }
+#[test]
+#[should_panic(expected: ('Inputs cannot be empty',))]
+fn test_set_absorptions_revert_empty_inputs() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Assert] reverting when times and absorptions are empty arrays
+    let times: Span<u64> = array![].span();
+    let absorptions: Span<u64> = array![].span();
+    project.set_absorptions(times, absorptions);
+}
 
-// #[test]
-// #[should_panic(expected: ('Times not sorted',))]
-// fn test_set_absorptions_revert_times_not_sorted() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     // [Assert] reverting when times array is not sorted
-//     let times: Span<u64> = array![1651363200, 1659312000, 1657260800].span(); // not sorted
-//     let absorptions: Span<u64> = array![0, 1179750, 2359500].span();
-//     project.set_absorptions(times, absorptions);
-// }
+#[test]
+#[should_panic(expected: ('Times not sorted',))]
+fn test_set_absorptions_revert_times_not_sorted() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Assert] reverting when times array is not sorted
+    let times: Span<u64> = array![1651363200, 1659312000, 1657260800].span(); // not sorted
+    let absorptions: Span<u64> = array![0, 1179750, 2359500].span();
+    project.set_absorptions(times, absorptions);
+}
 
-// #[test]
-// #[should_panic(expected: 'Absorptions not sorted',)]
-// fn test_set_absorptions_revert_absorptions_not_sorted() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     // [Assert] reverting when absorptions array is not sorted
-//     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
-//     let absorptions: Span<u64> = array![0, 2359500, 1179750].span(); // not sorted
-//     project.set_absorptions(times, absorptions);
-// }
+#[test]
+#[should_panic(expected: 'Absorptions not sorted',)]
+fn test_set_absorptions_revert_absorptions_not_sorted() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Assert] reverting when absorptions array is not sorted
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
+    let absorptions: Span<u64> = array![0, 2359500, 1179750].span(); // not sorted
+    project.set_absorptions(times, absorptions);
+}
 
 // // get_current_absorption
 
-// #[test]
-// fn test_get_current_absorption_not_set() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     // [Assert] absorption is 0 when not set at t = 0
-//     let absorption = project.get_current_absorption();
-//     assert(absorption == 0, 'default absorption should be 0');
-//     // [Assert] absorption is 0 when not set after t > 0
-//     start_warp(CheatTarget::One(project_address), 86000);
-//     let absorption = project.get_current_absorption();
-//     assert(absorption == 0, 'default absorption should be 0');
-// }
+#[test]
+fn test_get_current_absorption_not_set() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Assert] absorption is 0 when not set at t = 0
+    let absorption = project.get_current_absorption();
+    assert(absorption == 0, 'default absorption should be 0');
+    // [Assert] absorption is 0 when not set after t > 0
+    start_warp(CheatTarget::One(project_address), 86000);
+    let absorption = project.get_current_absorption();
+    assert(absorption == 0, 'default absorption should be 0');
+}
 
-// #[test]
-// fn test_current_absorption() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
-//         .span();
-//     let absorptions: Span<u64> = array![
-//         0, 1179750000000, 2359500000000, 3539250000000, 4719000000000
-//     ]
-//         .span();
-//     project.set_absorptions(times, absorptions);
-//     // [Assert] At start, absorption = absorptions[0]
-//     start_warp(CheatTarget::One(project_address), 0);
-//     let absorption = project.get_current_absorption();
-//     assert(absorption == *absorptions.at(0), 'Wrong absorption');
-//     // [Assert] After start, absorptions[0] < absorption < absorptions[1]
-//     start_warp(CheatTarget::One(project_address), *times.at(0) + 86000);
-//     let absorption = project.get_current_absorption();
-//     assert(absorption > *absorptions.at(0), 'Wrong absorption');
-//     assert(absorption < *absorptions.at(1), 'Wrong absorption');
-//     // [Assert] Before end, absorptions[-2] < absorption < absorptions[-1]
-//     start_warp(CheatTarget::One(project_address), *times.at(times.len() - 1) - 86000);
-//     let absorption = project.get_current_absorption();
-//     assert(absorption > *absorptions.at(absorptions.len() - 2), 'Wrong absorption');
-//     assert(absorption < *absorptions.at(absorptions.len() - 1), 'Wrong absorption');
-//     // [Assert] At end, absorption = absorptions[-1]
-//     start_warp(CheatTarget::One(project_address), *times.at(times.len() - 1));
-//     let absorption = project.get_current_absorption();
-//     assert(absorption == *absorptions.at(absorptions.len() - 1), 'Wrong absorption');
-//     // [Assert] After end, absorption = absorptions[-1]
-//     start_warp(CheatTarget::One(project_address), *times.at(times.len() - 1) + 86000);
-//     let absorption = project.get_current_absorption();
-//     assert(absorption == *absorptions.at(absorptions.len() - 1), 'Wrong absorption');
-// }
+#[test]
+fn test_current_absorption() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
+        .span();
+    let absorptions: Span<u64> = array![
+        0, 1179750000000, 2359500000000, 3539250000000, 4719000000000
+    ]
+        .span();
+    project.set_absorptions(times, absorptions);
+    // [Assert] At start, absorption = absorptions[0]
+    start_warp(CheatTarget::One(project_address), 0);
+    let absorption = project.get_current_absorption();
+    assert(absorption == *absorptions.at(0), 'Wrong absorption');
+    // [Assert] After start, absorptions[0] < absorption < absorptions[1]
+    start_warp(CheatTarget::One(project_address), *times.at(0) + 86000);
+    let absorption = project.get_current_absorption();
+    assert(absorption > *absorptions.at(0), 'Wrong absorption');
+    assert(absorption < *absorptions.at(1), 'Wrong absorption');
+    // [Assert] Before end, absorptions[-2] < absorption < absorptions[-1]
+    start_warp(CheatTarget::One(project_address), *times.at(times.len() - 1) - 86000);
+    let absorption = project.get_current_absorption();
+    assert(absorption > *absorptions.at(absorptions.len() - 2), 'Wrong absorption');
+    assert(absorption < *absorptions.at(absorptions.len() - 1), 'Wrong absorption');
+    // [Assert] At end, absorption = absorptions[-1]
+    start_warp(CheatTarget::One(project_address), *times.at(times.len() - 1));
+    let absorption = project.get_current_absorption();
+    assert(absorption == *absorptions.at(absorptions.len() - 1), 'Wrong absorption');
+    // [Assert] After end, absorption = absorptions[-1]
+    start_warp(CheatTarget::One(project_address), *times.at(times.len() - 1) + 86000);
+    let absorption = project.get_current_absorption();
+    assert(absorption == *absorptions.at(absorptions.len() - 1), 'Wrong absorption');
+}
 
 // compute_carbon_vintage_distribution
 
-// #[test]
-// fn test_compute_carbon_vintage_distribution() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     let times: Span<u64> = array![1651363200, 1659312000, 1667260800]
-//         .span();
+#[test]
+fn test_compute_carbon_vintage_distribution() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
 
-//     let absorptions: Span<u64> = array![
-//         0, 1179750000000, 2359500000000
-//     ]
-//         .span();
-//     setup_project(
-//         project_address,
-//         121099000000,
-//         times,
-//         absorptions
-//     );
+    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
+    setup_project(project_address, 121099000000, times, absorptions);
 
-//     let share = 100000; // 10%
-//     // [Assert] carbon_vintage_distribution computed correctly
-//     let distribution = project.compute_carbon_vintage_distribution(share);
-//     assert(distribution == array![0, 117975000000, 117975000000].span(), 'Wrong distribution');
-// }
+    let share = 100000; // 10%
+    // [Assert] carbon_vintage_distribution computed correctly
+    let distribution = project.compute_carbon_vintage_distribution(share);
+    assert(distribution == array![0, 117975000000, 117975000000].span(), 'Wrong distribution');
+}
 
-// #[test]
-// fn test_compute_carbon_vintage_distribution_zero_share() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     let times: Span<u64> = array![1651363200, 1659312000, 1667260800]
-//         .span();
+#[test]
+fn test_compute_carbon_vintage_distribution_zero_share() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
 
-//     let absorptions: Span<u64> = array![
-//         0, 1179750000000, 2359500000000
-//     ]
-//         .span();
-//     setup_project(
-//         project_address,
-//         121099000000,
-//         times,
-//         absorptions
-//     );
+    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
+    setup_project(project_address, 121099000000, times, absorptions);
 
-//     let share = 0;
-//     // [Assert] carbon_vintage_distribution computed correctly
-//     let distribution = project.compute_carbon_vintage_distribution(share);
-//     assert(distribution == array![0, 0, 0].span(), 'Wrong distribution');
-// }
+    let share = 0;
+    // [Assert] carbon_vintage_distribution computed correctly
+    let distribution = project.compute_carbon_vintage_distribution(share);
+    assert(distribution == array![0, 0, 0].span(), 'Wrong distribution');
+}
 
-// #[test]
-// fn test_compute_carbon_vintage_distribution_full_share() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     let times: Span<u64> = array![1651363200, 1659312000, 1667260800]
-//         .span();
+#[test]
+fn test_compute_carbon_vintage_distribution_full_share() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
 
-//     let absorptions: Span<u64> = array![
-//         0, 1179750000000, 2359500000000
-//     ]
-//         .span();
-//     setup_project(
-//         project_address,
-//         121099000000,
-//         times,
-//         absorptions
-//     );
+    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
+    setup_project(project_address, 121099000000, times, absorptions);
 
-//     let share = 1000000; // 100%
-//     // [Assert] carbon_vintage_distribution computed correctly
-//     let distribution = project.compute_carbon_vintage_distribution(share);
-//     assert(distribution == array![0, 1179750000000, 1179750000000].span(), 'Wrong distribution');
-// }
+    let share = 1000000; // 100%
+    // [Assert] carbon_vintage_distribution computed correctly
+    let distribution = project.compute_carbon_vintage_distribution(share);
+    assert(distribution == array![0, 1179750000000, 1179750000000].span(), 'Wrong distribution');
+}
 
-// #[test]
-// fn test_compute_carbon_vintage_distribution_share_greater_than_100() {
-//     let (project_address, _) = deploy_project(c::OWNER().into());
-//     let project = IAbsorberDispatcher { contract_address: project_address };
-//     let times: Span<u64> = array![1651363200, 1659312000, 1667260800]
-//         .span();
+#[test]
+fn test_compute_carbon_vintage_distribution_share_greater_than_100() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
 
-//     let absorptions: Span<u64> = array![
-//         0, 1179750000000, 2359500000000
-//     ]
-//         .span();
-//     setup_project(
-//         project_address,
-//         121099000000,
-//         times,
-//         absorptions
-//     );
+    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
+    setup_project(project_address, 121099000000, times, absorptions);
 
-//     let share = 1000001; // 100.001%
-//     // [Assert] carbon_vintage_distribution computed correctly
-//     // To be discussed
-// }
+    let share = 1000001; // 100.001%
+// [Assert] carbon_vintage_distribution computed correctly
+// To be discussed
+}
 
 // get_cc_vintages
 
