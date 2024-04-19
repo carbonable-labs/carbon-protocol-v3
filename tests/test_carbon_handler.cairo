@@ -151,7 +151,7 @@ fn test_set_project_carbon_twice() {
     assert(fetched_value == new_value, 'project_carbon did not change');
 }
 
-// // set_absorptions
+// set_absorptions
 
 #[test]
 fn test_set_absorptions() {
@@ -245,7 +245,7 @@ fn test_set_absorptions_revert_absorptions_not_sorted() {
     project.set_absorptions(times, absorptions);
 }
 
-// // get_current_absorption
+// get_current_absorption
 
 #[test]
 fn test_get_current_absorption_not_set() {
