@@ -342,20 +342,6 @@ fn test_compute_carbon_vintage_distribution_full_share() {
     assert(distribution == array![0, 1179750000000, 1179750000000].span(), 'Wrong distribution');
 }
 
-#[test]
-fn test_compute_carbon_vintage_distribution_share_greater_than_100() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
-
-    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
-    setup_project(project_address, 121099000000, times, absorptions);
-
-    let share = 1000001; // 100.001%
-// [Assert] carbon_vintage_distribution computed correctly
-// To be discussed
-}
-
 // get_cc_vintages
 
 #[test]
