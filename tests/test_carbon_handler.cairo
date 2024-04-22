@@ -28,10 +28,14 @@ use alexandria_storage::list::{List, ListTrait};
 
 // Components
 
-use carbon_v3::components::absorber::interface::{IAbsorberDispatcher, IAbsorberDispatcherTrait};
+use carbon_v3::components::absorber::interface::{
+    IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCreditsHandlerDispatcher,
+    ICarbonCreditsHandlerDispatcherTrait
+};
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::{
     Event, AbsorptionUpdate, ProjectValueUpdate
 };
+use carbon_v3::components::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
 
 // Contracts
@@ -79,6 +83,19 @@ fn deploy_project(owner: felt252) -> (ContractAddress, EventSpy) {
     let mut spy = snf::spy_events(SpyOn::One(contract_address));
 
     (contract_address, spy)
+}
+
+/// Sets up the project contract.
+fn setup_project(
+    contract_address: ContractAddress,
+    project_carbon: u256,
+    times: Span<u64>,
+    absorptions: Span<u64>
+) {
+    let project = IAbsorberDispatcher { contract_address };
+
+    project.set_absorptions(times, absorptions);
+    project.set_project_carbon(project_carbon);
 }
 
 //
@@ -278,3 +295,109 @@ fn test_current_absorption() {
     assert(absorption == *absorptions.at(absorptions.len() - 1), 'Wrong absorption');
 }
 
+// compute_carbon_vintage_distribution
+
+#[test]
+fn test_compute_carbon_vintage_distribution() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
+
+    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
+    setup_project(project_address, 121099000000, times, absorptions);
+
+    let share = 100000; // 10%
+    // [Assert] carbon_vintage_distribution computed correctly
+    let distribution = project.compute_carbon_vintage_distribution(share);
+    assert(distribution == array![0, 117975000000, 117975000000].span(), 'Wrong distribution');
+}
+
+#[test]
+fn test_compute_carbon_vintage_distribution_zero_share() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
+
+    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
+    setup_project(project_address, 121099000000, times, absorptions);
+
+    let share = 0;
+    // [Assert] carbon_vintage_distribution computed correctly
+    let distribution = project.compute_carbon_vintage_distribution(share);
+    assert(distribution == array![0, 0, 0].span(), 'Wrong distribution');
+}
+
+#[test]
+fn test_compute_carbon_vintage_distribution_full_share() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
+
+    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
+    setup_project(project_address, 121099000000, times, absorptions);
+
+    let share = 1000000; // 100%
+    // [Assert] carbon_vintage_distribution computed correctly
+    let distribution = project.compute_carbon_vintage_distribution(share);
+    assert(distribution == array![0, 1179750000000, 1179750000000].span(), 'Wrong distribution');
+}
+
+// get_cc_vintages
+
+#[test]
+fn test_get_cc_vintages() {
+    let (project_address, _) = deploy_project(c::OWNER().into());
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
+        .span();
+
+    let absorptions: Span<u64> = array![
+        0, 1179750000000, 2359500000000, 3739250000000, 5119000000000
+    ]
+        .span();
+    setup_project(project_address, 121099000000, times, absorptions);
+
+    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    // [Assert] cc_vintages set according to absorptions
+    let cc_vintages = cc_handler.get_cc_vintages();
+    let starting_year = 2024;
+    let mut index = 0;
+
+    let cc_vintage = cc_vintages.at(index);
+    let expected__cc_vintage = CarbonVintage {
+        cc_vintage: (starting_year + index).into(),
+        cc_supply: *absorptions.at(index),
+        cc_status: CarbonVintageType::Projected,
+        cc_rebase_status: false,
+    };
+    assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
+    index += 1;
+    loop {
+        if index == absorptions.len() {
+            break;
+        }
+        let cc_vintage = cc_vintages.at(index);
+        let expected__cc_vintage = CarbonVintage {
+            cc_vintage: (starting_year + index).into(),
+            cc_supply: *absorptions.at(index) - *absorptions.at(index - 1),
+            cc_status: CarbonVintageType::Projected,
+            cc_rebase_status: false,
+        };
+        assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
+        index += 1;
+    };
+    // [Assert] cc_vintages set to default values for non-set absorptions
+    loop {
+        if index == cc_vintages.len() {
+            break;
+        }
+        let cc_vintage = cc_vintages.at(index);
+        let expected__cc_vintage = CarbonVintage {
+            cc_vintage: (starting_year + index).into(),
+            cc_supply: 0,
+            cc_status: CarbonVintageType::Projected,
+            cc_rebase_status: false,
+        };
+        assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
+        index += 1;
+    }
+}
