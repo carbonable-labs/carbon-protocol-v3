@@ -240,13 +240,12 @@ mod MintComponent {
 
             // [Check] Allowed enough remaining_money
             let remaining_money_amount = self.Mint_remaining_money_amount.read();
-            println!("remaining_money_amount {}", remaining_money_amount);
+
             assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
 
             // [Interaction] Comput share of the amount of project
             let max_money_amount = self.Mint_max_money_amount.read();
             let share = money_amount * MULT_ACCURATE_SHARE / max_money_amount;
-            println!("share {}", share);
 
             // [Interaction] Comput the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
@@ -257,24 +256,12 @@ mod MintComponent {
             let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
             let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
 
-            println!("cc_distribution {}", cc_distribution.len());
-            println!("cc_years_vintages {}", cc_years_vintages.len());
-
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let minter_address = get_contract_address();
 
-
-            let allowance = erc20.allowance(caller_address, minter_address);
-            let caller_balance = erc20.balance_of(caller_address);
-            println!("caller_balance {}", caller_balance);
-            println!("money_amount {}", money_amount);
-            println!("allowance {}", allowance);
-
             let success = erc20.transfer(minter_address, money_amount);
-            println!("transfer success {}", success);
-
             // [Check] Transfer successful
             assert(success, 'Transfer failed');
 

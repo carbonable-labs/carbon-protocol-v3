@@ -41,9 +41,7 @@ use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::{
 use carbon_v3::components::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
 
-use carbon_v3::components::minter::interface::{
-    IMintDispatcher, IMintDispatcherTrait
-};
+use carbon_v3::components::minter::interface::{IMintDispatcher, IMintDispatcherTrait};
 
 // Contracts
 
@@ -110,7 +108,9 @@ fn deploy_erc20(owner: ContractAddress) -> (ContractAddress, EventSpy) {
 }
 
 /// Deploys a minter contract.
-fn deploy_minter(owner: ContractAddress, project_address: ContractAddress, payment_address: ContractAddress) -> (ContractAddress, EventSpy) {
+fn deploy_minter(
+    owner: ContractAddress, project_address: ContractAddress, payment_address: ContractAddress
+) -> (ContractAddress, EventSpy) {
     let contract = snf::declare('Minter');
     let public_sale: bool = true;
     let max_value: felt252 = 8000000000;
@@ -124,7 +124,7 @@ fn deploy_minter(owner: ContractAddress, project_address: ContractAddress, payme
     calldata.append(unit_price);
     calldata.append(0);
     calldata.append(owner.into());
-    
+
     let contract_address = contract.deploy(@calldata).unwrap();
 
     let mut spy = snf::spy_events(SpyOn::One(contract_address));
@@ -153,7 +153,8 @@ fn setup_project(
 
 #[test]
 fn test_set_project_carbon() {
-    let (project_address, mut spy) = deploy_project(c::OWNER());
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, mut spy) = deploy_project(owner_address);
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] project_carbon set correctly
     project.set_project_carbon(PROJECT_CARBON.into());
@@ -179,9 +180,10 @@ fn test_set_project_carbon() {
 
 #[test]
 fn test_is_public_sale_open() {
-    let (project_address, _) = deploy_project(c::OWNER());
-    let (erc20_address, _) = deploy_erc20(c::OWNER());
-    let (minter_address, _) = deploy_minter(c::OWNER(), project_address, erc20_address);
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, _) = deploy_project(owner_address);
+    let (erc20_address, _) = deploy_erc20(owner_address);
+    let (minter_address, _) = deploy_minter(owner_address, project_address, erc20_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
     // [Assert] project_carbon set correctly
@@ -244,12 +246,7 @@ fn test_is_public_buy() {
     ]
         .span();
 
-    setup_project(
-        project_address,
-        8000000000,
-        times,
-        absorptions,
-    );
+    setup_project(project_address, 8000000000, times, absorptions,);
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
     let project = IAbsorberDispatcher { contract_address: project_address };
@@ -268,7 +265,7 @@ fn test_is_public_buy() {
     /// [Approval] approve the minter to spend the money
     let amount_to_buy: u256 = 1000000000;
     // approve the minter to spend the money
-    
+
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     erc20.approve(minter_address, amount_to_buy);
 

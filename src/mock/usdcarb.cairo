@@ -12,7 +12,7 @@ mod USDCarb {
     use openzeppelin::token::erc20::interface::IERC20Metadata;
     use openzeppelin::access::ownable::OwnableComponent;
     use starknet::ContractAddress;
-    
+
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
@@ -24,7 +24,8 @@ mod USDCarb {
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     #[abi(embed_v0)]
-    impl OwnableCamelOnlyImpl = OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
+    impl OwnableCamelOnlyImpl =
+        OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
 
     impl ERC20InternalImpl = ERC20Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
@@ -64,7 +65,7 @@ mod USDCarb {
     #[abi(embed_v0)]
     impl ERC20MetadataImpl of IERC20Metadata<ContractState> {
         /// Returns the name of the token.
-        fn name(self: @ContractState) -> ByteArray{
+        fn name(self: @ContractState) -> ByteArray {
             self.erc20.ERC20_name.read()
         }
 

@@ -10,6 +10,6 @@ mod contracts {
     mod minter;
 }
 
-mod mock{
+mod mock {
     mod usdcarb;
 }

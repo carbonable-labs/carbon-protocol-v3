@@ -13,7 +13,7 @@ mod ERC1155Component {
     use openzeppelin::introspection::dual_src5::{DualCaseSRC5, DualCaseSRC5Trait};
     use openzeppelin::introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin::introspection::src5::SRC5Component;
-    
+
     use carbon_v3::components::erc1155::dual1155_receiver::{
         DualCaseERC1155Receiver, DualCaseERC1155ReceiverTrait
     };

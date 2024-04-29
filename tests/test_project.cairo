@@ -85,9 +85,7 @@ fn test_project_batch_mint() {
     let other_address: ContractAddress = contract_address_const::<'other'>();
     let (project_address, _) = deploy_project();
     let absorber = IAbsorberDispatcher { contract_address: project_address };
-    let carbon_credits = ICarbonCreditsHandlerDispatcher {
-        contract_address: project_address
-    };
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let times: Span<u64> = array![
         1674579600,
@@ -137,21 +135,15 @@ fn test_project_batch_mint() {
     ]
         .span();
 
-    setup_project(
-        project_address,
-        8000000000,
-        times,
-        absorptions,
-    );
+    setup_project(project_address, 8000000000, times, absorptions,);
 
     start_prank(CheatTarget::One(project_address), owner_address);
 
-    assert(absorber.is_setup(), 'Error during setup');   
+    assert(absorber.is_setup(), 'Error during setup');
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
-
 
     let balance: u256 = project_contract.balance(owner_address, 2027);
     assert(balance == 0, 'Error of balance');
@@ -160,5 +152,4 @@ fn test_project_batch_mint() {
     let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
     let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
     project_contract.batch_mint(owner_address, cc_years_vintages, cc_distribution);
-
 }

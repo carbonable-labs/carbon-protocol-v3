@@ -157,7 +157,6 @@ mod Project {
         fn only_owner(self: @ContractState) {
             self.ownable.assert_only_owner()
         }
-
     // fn set_list_uri(
     //     ref self: ContractState, mut token_ids: Span<u256>, mut uris: Span<felt252>
     // ) {
