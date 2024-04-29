@@ -10,13 +10,15 @@ trait IExternal<ContractState> {
     fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>);
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
+    fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn only_owner(self: @ContractState);
 }
 
 
 #[starknet::contract]
 mod Project {
     use carbon_v3::components::absorber::interface::ICarbonCreditsHandlerDispatcher;
-    use openzeppelin::token::erc1155::erc1155::ERC1155Component::InternalTrait;
+    use carbon_v3::components::erc1155::erc1155::ERC1155Component::InternalTrait;
     use core::traits::Into;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
 
@@ -27,7 +29,7 @@ mod Project {
     //SRC5
     use openzeppelin::introspection::src5::SRC5Component;
     // ERC1155
-    use openzeppelin::token::erc1155::ERC1155Component;
+    use carbon_v3::components::erc1155::ERC1155Component;
     // Absorber
     use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
 
@@ -57,7 +59,6 @@ mod Project {
         AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
-
 
     impl ERC1155InternalImpl = ERC1155Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
@@ -124,7 +125,7 @@ mod Project {
     #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
         fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
-            self.erc1155.mint_with_acceptance_check(to, token_id, value, array![].span());
+            self.erc1155.mint(to, token_id, value);
         }
 
         fn burn(ref self: ContractState, token_id: u256, value: u256) {
@@ -134,7 +135,7 @@ mod Project {
         fn batch_mint(
             ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
         ) {
-            self.erc1155.batch_mint_with_acceptance_check(to, token_ids, values, array![].span());
+            self.erc1155.batch_mint(to, token_ids, values);
         }
 
         fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>) {
@@ -147,6 +148,14 @@ mod Project {
 
         fn decimals(self: @ContractState) -> u8 {
             6
+        }
+
+        fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
+            self.erc1155.balance_of(account, token_id)
+        }
+
+        fn only_owner(self: @ContractState) {
+            self.ownable.assert_only_owner()
         }
     // fn set_list_uri(
     //     ref self: ContractState, mut token_ids: Span<u256>, mut uris: Span<felt252>

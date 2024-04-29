@@ -1,13 +1,16 @@
+use core::option::OptionTrait;
+use core::traits::Into;
+use core::array::SpanTrait;
 // Starknet deps
 
-use starknet::ContractAddress;
+use starknet::{ContractAddress, contract_address_const};
 
 // External deps
 
 use openzeppelin::tests::utils::constants as c;
 use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
-use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn};
+use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank};
 use alexandria_storage::list::{List, ListTrait};
 
 // Components
@@ -68,10 +71,85 @@ fn test_is_setup() {
 
     setup_project(
         project_address,
-        121099000000,
-        array![21, 674579600, 1706115600, 1737738000].span(),
-        array![21, 29609535, 47991466, 88828605].span(),
+        1573000000,
+        array![1706785200, 2306401200].span(),
+        array![0, 1573000000].span(),
     );
 
     assert(project.is_setup(), 'Error during setup');
+}
+
+#[test]
+fn test_project_batch_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let other_address: ContractAddress = contract_address_const::<'other'>();
+    let (project_address, _) = deploy_project();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
+    let times: Span<u64> = array![
+        1674579600,
+        1706115600,
+        1737738000,
+        1769274000,
+        1800810000,
+        1832346000,
+        1863968400,
+        1895504400,
+        1927040400,
+        1958576400,
+        1990198800,
+        2021734800,
+        2053270800,
+        2084806800,
+        2116429200,
+        2147965200,
+        2179501200,
+        2211037200,
+        2242659600,
+        2274195600
+    ]
+        .span();
+
+    let absorptions: Span<u64> = array![
+        0,
+        29609535,
+        47991466,
+        88828605,
+        118438140,
+        370922507,
+        623406874,
+        875891241,
+        1128375608,
+        1380859976,
+        2076175721,
+        2771491466,
+        3466807212,
+        4162122957,
+        4857438703,
+        5552754448,
+        6248070193,
+        6943385939,
+        7638701684,
+        8000000000
+    ]
+        .span();
+
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+
+    let decimal: u8 = project_contract.decimals();
+    assert(decimal == 6, 'Error of decimal');
+
+    let balance: u256 = project_contract.balance(owner_address, 2027);
+    assert(balance == 0, 'Error of balance');
+
+    let share: u256 = 125000;
+    let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
+    let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
+    project_contract.batch_mint(owner_address, cc_years_vintages, cc_distribution);
 }

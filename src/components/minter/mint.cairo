@@ -15,7 +15,7 @@ mod MintComponent {
     use starknet::{get_caller_address, get_contract_address, get_block_timestamp};
 
     // External imports
-    use openzeppelin::token::erc20::interface::{IERC20CamelDispatcher, IERC20CamelDispatcherTrait};
+    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
 
     // Internal imports
@@ -146,9 +146,9 @@ mod MintComponent {
         fn withdraw(ref self: ComponentState<TContractState>) {
             // [Compute] Balance to withdraw
             let token_address = self.Mint_payment_token_address.read();
-            let erc20 = IERC20CamelDispatcher { contract_address: token_address };
+            let erc20 = IERC20Dispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
-            let balance = erc20.balanceOf(contract_address);
+            let balance = erc20.balance_of(contract_address);
 
             // [Interaction] Transfer tokens
             let caller_address = get_caller_address();
@@ -162,7 +162,7 @@ mod MintComponent {
             recipient: ContractAddress,
             amount: u256
         ) {
-            let erc20 = IERC20CamelDispatcher { contract_address: token_address };
+            let erc20 = IERC20Dispatcher { contract_address: token_address };
             let success = erc20.transfer(recipient, amount);
             assert(success, 'Transfer failed');
         }
@@ -240,6 +240,7 @@ mod MintComponent {
 
             // [Check] Allowed enough remaining_money
             let remaining_money_amount = self.Mint_remaining_money_amount.read();
+
             assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
 
             // [Interaction] Comput share of the amount of project
@@ -257,11 +258,10 @@ mod MintComponent {
 
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
-            let erc20 = IERC20CamelDispatcher { contract_address: token_address };
-            let contract_address = get_contract_address();
+            let erc20 = IERC20Dispatcher { contract_address: token_address };
+            let minter_address = get_contract_address();
 
-            let success = erc20.transferFrom(caller_address, contract_address, money_amount);
-
+            let success = erc20.transfer(minter_address, money_amount);
             // [Check] Transfer successful
             assert(success, 'Transfer failed');
 
