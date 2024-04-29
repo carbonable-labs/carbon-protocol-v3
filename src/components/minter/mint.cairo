@@ -15,7 +15,7 @@ mod MintComponent {
     use starknet::{get_caller_address, get_contract_address, get_block_timestamp};
 
     // External imports
-    use openzeppelin::token::erc20::interface::{IERC20CamelDispatcher, IERC20CamelDispatcherTrait};
+    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
 
     // Internal imports
@@ -146,9 +146,9 @@ mod MintComponent {
         fn withdraw(ref self: ComponentState<TContractState>) {
             // [Compute] Balance to withdraw
             let token_address = self.Mint_payment_token_address.read();
-            let erc20 = IERC20CamelDispatcher { contract_address: token_address };
+            let erc20 = IERC20Dispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
-            let balance = erc20.balanceOf(contract_address);
+            let balance = erc20.balance_of(contract_address);
 
             // [Interaction] Transfer tokens
             let caller_address = get_caller_address();
@@ -162,7 +162,7 @@ mod MintComponent {
             recipient: ContractAddress,
             amount: u256
         ) {
-            let erc20 = IERC20CamelDispatcher { contract_address: token_address };
+            let erc20 = IERC20Dispatcher { contract_address: token_address };
             let success = erc20.transfer(recipient, amount);
             assert(success, 'Transfer failed');
         }
@@ -240,11 +240,13 @@ mod MintComponent {
 
             // [Check] Allowed enough remaining_money
             let remaining_money_amount = self.Mint_remaining_money_amount.read();
+            println!("remaining_money_amount {}", remaining_money_amount);
             assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
 
             // [Interaction] Comput share of the amount of project
             let max_money_amount = self.Mint_max_money_amount.read();
             let share = money_amount * MULT_ACCURATE_SHARE / max_money_amount;
+            println!("share {}", share);
 
             // [Interaction] Comput the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
@@ -255,12 +257,23 @@ mod MintComponent {
             let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
             let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
 
+            println!("cc_distribution {}", cc_distribution.len());
+            println!("cc_years_vintages {}", cc_years_vintages.len());
+
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
-            let erc20 = IERC20CamelDispatcher { contract_address: token_address };
-            let contract_address = get_contract_address();
+            let erc20 = IERC20Dispatcher { contract_address: token_address };
+            let minter_address = get_contract_address();
 
-            let success = erc20.transferFrom(caller_address, contract_address, money_amount);
+
+            let allowance = erc20.allowance(caller_address, minter_address);
+            let caller_balance = erc20.balance_of(caller_address);
+            println!("caller_balance {}", caller_balance);
+            println!("money_amount {}", money_amount);
+            println!("allowance {}", allowance);
+
+            let success = erc20.transfer(minter_address, money_amount);
+            println!("transfer success {}", success);
 
             // [Check] Transfer successful
             assert(success, 'Transfer failed');
