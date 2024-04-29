@@ -82,7 +82,6 @@ fn test_is_setup() {
 #[test]
 fn test_project_batch_mint() {
     let owner_address: ContractAddress = contract_address_const::<'owner'>();
-    let other_address: ContractAddress = contract_address_const::<'other'>();
     let (project_address, _) = deploy_project();
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
@@ -144,9 +143,6 @@ fn test_project_batch_mint() {
 
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
-
-    let balance: u256 = project_contract.balance(owner_address, 2027);
-    assert(balance == 0, 'Error of balance');
 
     let share: u256 = 125000;
     let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);

@@ -269,7 +269,6 @@ mod MintComponent {
             self.Mint_remaining_money_amount.write(remaining_money_amount - money_amount);
 
             // [Interaction] Mint
-            // Implement Span<u256> to return the list of cc_vintage (token_id & year)
             let project = IProjectDispatcher { contract_address: project_address };
             project.batch_mint(caller_address, cc_years_vintages, cc_distribution);
 

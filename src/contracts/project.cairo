@@ -10,8 +10,6 @@ trait IExternal<ContractState> {
     fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>);
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
-    fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
-    fn only_owner(self: @ContractState);
 }
 
 
@@ -135,10 +133,14 @@ mod Project {
         fn batch_mint(
             ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
         ) {
+            // TODO : Add access control as only the Minter in the list should be able to mint the tokens
+            // TODO : Check the avalibility of the ampount of vintage cc_supply for each values.it should be done in the absorber/carbon_handler
             self.erc1155.batch_mint(to, token_ids, values);
         }
 
         fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>) {
+            // TODO : Check that the caller is the owner of the value he wnt to burn
+            // TODO : Add access control as only the Burner in the list should be able to burn the values
             self.erc1155.batch_burn(get_caller_address(), token_ids, values);
         }
 
@@ -149,29 +151,5 @@ mod Project {
         fn decimals(self: @ContractState) -> u8 {
             6
         }
-
-        fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            self.erc1155.balance_of(account, token_id)
-        }
-
-        fn only_owner(self: @ContractState) {
-            self.ownable.assert_only_owner()
-        }
-    // fn set_list_uri(
-    //     ref self: ContractState, mut token_ids: Span<u256>, mut uris: Span<felt252>
-    // ) {
-    //     assert(token_ids.len() == uris.len(), Errors::UNEQUAL_ARRAYS_URI);
-    // 
-    //     loop {
-    //         if token_ids.len() == 0 {
-    //             break;
-    //         }
-    //         let id = *token_ids.pop_front().unwrap();
-    //         let uri = *uris.pop_front().unwrap();
-    // 
-    //         self.erc1155._set_uri(id, uri);
-    //     }
-    // }
-
     }
 }
