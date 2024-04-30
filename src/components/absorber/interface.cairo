@@ -30,6 +30,9 @@ trait IAbsorber<TContractState> {
     /// Returns the ton equivalent.
     fn get_ton_equivalent(self: @TContractState) -> u64;
 
+    ///  Returns the carbon credit balance of the given token id.
+    fn share_to_cc(self: @TContractState, share: u256, token_id: u256) -> u256;
+
     /// Returns true is the given project has been setup.
     fn is_setup(self: @TContractState) -> bool;
 
@@ -38,6 +41,9 @@ trait IAbsorber<TContractState> {
 
     /// Setup the project carbon for the given slot.
     fn set_project_carbon(ref self: TContractState, project_carbon: u256);
+
+    /// Adapt the cc_supply of a vintage, will impact holders balance.
+    fn rebase_vintage(ref self: TContractState, token_id: u256, new_cc_supply: u64);
 
     /// Compute number of Carbon Credit of each vintage for given value
     fn compute_carbon_vintage_distribution(self: @TContractState, share: u256) -> Span<u256>;
@@ -50,7 +56,9 @@ trait ICarbonCreditsHandler<TContractState> {
 
     fn get_years_vintage(self: @TContractState) -> Span<u256>;
 
-    fn get_specific_carbon_vintage(self: @TContractState, year: u64) -> CarbonVintage;
+    fn get_specific_carbon_vintage(self: @TContractState, year: u256) -> CarbonVintage;
+
+    fn get_vintage_supply(self: @TContractState, year: u256) -> u64;
 
     // Get number of decimal for total supply to have a carbon credit
     fn get_cc_decimals(self: @TContractState) -> u8;

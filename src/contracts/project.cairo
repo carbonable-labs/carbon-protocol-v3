@@ -11,6 +11,10 @@ trait IExternal<ContractState> {
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
     fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    /// Returns the carbon credit balance of the user for the given vintage.
+    fn balance_of_shares(
+        self: @ContractState, account: ContractAddress, token_id: u256
+    ) -> u256;
     fn only_owner(self: @ContractState);
 }
 
@@ -69,6 +73,7 @@ mod Project {
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
     const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
+    const MULT_ACCURATE_SHARE: u256 = 1_000_000;
 
     #[storage]
     struct Storage {
@@ -151,7 +156,14 @@ mod Project {
         }
 
         fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            self.erc1155.balance_of(account, token_id)
+            let share = self.erc1155.balance_of(account, token_id);
+            self.absorber.share_to_cc(share, token_id)
+        }
+
+        fn balance_of_shares(
+            self: @ContractState, account: ContractAddress, token_id: u256
+        ) -> u256 {
+            self.erc1155.ERC1155_balances.read((token_id, account))
         }
 
         fn only_owner(self: @ContractState) {
