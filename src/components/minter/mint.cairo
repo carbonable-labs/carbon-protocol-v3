@@ -249,12 +249,23 @@ mod MintComponent {
 
             // [Interaction] Comput the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
-            let absorber = IAbsorberDispatcher { contract_address: project_address };
             let carbon_credits = ICarbonCreditsHandlerDispatcher {
                 contract_address: project_address
             };
-            let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
             let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
+            let n = cc_years_vintages.len();
+            // Initially, share is the same for all the vintages
+
+            let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
+            let mut index = 0;
+            loop {
+                if index == n {
+                    break;
+                }
+                cc_shares.append(share);
+                index += 1;
+            };
+            let cc_shares = cc_shares.span();
 
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
@@ -271,7 +282,7 @@ mod MintComponent {
             // [Interaction] Mint
             // Implement Span<u256> to return the list of cc_vintage (token_id & year)
             let project = IProjectDispatcher { contract_address: project_address };
-            project.batch_mint(caller_address, cc_years_vintages, cc_distribution);
+            project.batch_mint(caller_address, cc_years_vintages, cc_shares);
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
@@ -281,7 +292,7 @@ mod MintComponent {
                         Buy {
                             address: caller_address,
                             cc_years_vintages: cc_years_vintages,
-                            cc_distributed: cc_distribution
+                            cc_distributed: cc_shares
                         }
                     )
                 );
@@ -295,8 +306,8 @@ mod MintComponent {
                 self.emit(Event::SoldOut(SoldOut { time: current_time }));
             };
 
-            // [Return] cc distribution
-            cc_distribution
+            // [Return] cc shares
+            cc_shares
         }
     }
 }
