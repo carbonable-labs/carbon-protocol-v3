@@ -3,11 +3,11 @@ use starknet::ContractAddress;
 #[starknet::interface]
 trait IExternal<ContractState> {
     fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256);
-    fn burn(ref self: ContractState, token_id: u256, value: u256);
+    fn burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
         ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
-    fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>);
+    fn batch_burn(ref self: ContractState, from: ContractAddress, token_ids: Span<u256>, values: Span<u256>);
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
 }
@@ -126,8 +126,8 @@ mod Project {
             self.erc1155.mint(to, token_id, value);
         }
 
-        fn burn(ref self: ContractState, token_id: u256, value: u256) {
-            self.erc1155.burn(get_caller_address(), token_id, value);
+        fn burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
+            self.erc1155.burn(from, token_id, value);
         }
 
         fn batch_mint(
@@ -138,10 +138,10 @@ mod Project {
             self.erc1155.batch_mint(to, token_ids, values);
         }
 
-        fn batch_burn(ref self: ContractState, token_ids: Span<u256>, values: Span<u256>) {
+        fn batch_burn(ref self: ContractState, from: ContractAddress, token_ids: Span<u256>, values: Span<u256>) {
             // TODO : Check that the caller is the owner of the value he wnt to burn
             // TODO : Add access control as only the Burner in the list should be able to burn the values
-            self.erc1155.batch_burn(get_caller_address(), token_ids, values);
+            self.erc1155.batch_burn(from, token_ids, values);
         }
 
         fn set_uri(ref self: ContractState, uri: ByteArray) {

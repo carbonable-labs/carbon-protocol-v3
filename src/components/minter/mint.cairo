@@ -30,7 +30,7 @@ mod MintComponent {
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
-    use carbon_v3::components::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
 

@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use carbon_v3::components::data::carbon_vintage::{CarbonVintage};
+use carbon_v3::data::carbon_vintage::{CarbonVintage};
 
 #[starknet::interface]
 trait IAbsorber<TContractState> {

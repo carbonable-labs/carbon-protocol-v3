@@ -12,9 +12,8 @@ mod AbsorberComponent {
     use alexandria_storage::list::{List, ListTrait};
 
     // Internal imports
-    use carbon_v3::components::absorber::interface::IAbsorber;
-    use carbon_v3::components::absorber::interface::ICarbonCreditsHandler;
-    use carbon_v3::components::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::components::absorber::interface::{IAbsorber, ICarbonCreditsHandler};
+    use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
 
@@ -50,6 +49,7 @@ mod AbsorberComponent {
         #[key]
         value: u256
     }
+
 
     mod Errors {
         const INVALID_ARRAY_LENGTH: felt252 = 'Absorber: invalid array length';
