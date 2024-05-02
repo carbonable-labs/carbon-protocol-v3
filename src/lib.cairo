@@ -7,6 +7,7 @@ mod components {
 
 mod data {
     mod carbon_vintage;
+    mod metadata;
 }
 
 mod contracts {
