@@ -11,8 +11,26 @@ trait IExternal<ContractState> {
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
     fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
-    /// Returns the carbon credit balance of the user for the given vintage.
+    fn balance_of_batch(
+        self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
+    ) -> Span<u256>;
     fn balance_of_shares(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn safe_transfer_from(
+        ref self: ContractState,
+        from: ContractAddress,
+        to: ContractAddress,
+        token_id: u256,
+        value: u256,
+        data: Span<felt252>
+    );
+    fn safe_batch_transfer_from(
+        ref self: ContractState,
+        from: ContractAddress,
+        to: ContractAddress,
+        token_ids: Span<u256>,
+        values: Span<u256>,
+        data: Span<felt252>
+    );
     fn only_owner(self: @ContractState);
 }
 
@@ -104,6 +122,7 @@ mod Project {
 
     mod Errors {
         const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';
+        const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: no equal array length';
     }
 
     // Constructor
@@ -158,11 +177,65 @@ mod Project {
             self.absorber.share_to_cc(share, token_id)
         }
 
+        fn balance_of_batch(
+            self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
+        ) -> Span<u256> {
+            assert(accounts.len() == token_ids.len(), Errors::INVALID_ARRAY_LENGTH);
+
+            let mut batch_balances = array![];
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                batch_balances.append(self.balance_of(*accounts.at(index), *token_ids.at(index)));
+                index += 1;
+            };
+
+            batch_balances.span()
+        }
+
         fn balance_of_shares(
             self: @ContractState, account: ContractAddress, token_id: u256
         ) -> u256 {
             self.erc1155.ERC1155_balances.read((token_id, account))
         }
+
+        fn safe_transfer_from(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_id: u256,
+            value: u256,
+            data: Span<felt252>
+        ) {
+            let cc_value = self.absorber.share_to_cc(value, token_id);
+            self.erc1155.safe_transfer_from(from, to, token_id, cc_value, data);
+        }
+
+        fn safe_batch_transfer_from(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_ids: Span<u256>,
+            values: Span<u256>,
+            data: Span<felt252>
+        ) {
+            let self_snap = @self;
+            let mut cc_values = array![];
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                let cc_value = self_snap.absorber.share_to_cc(*values.at(index), *token_ids.at(index));
+                cc_values.append(cc_value);
+                index += 1;
+            };
+
+            self.erc1155.safe_batch_transfer_from(from, to, token_ids, cc_values.span(), data);
+        }
+
 
         fn only_owner(self: @ContractState) {
             self.ownable.assert_only_owner()

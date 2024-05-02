@@ -99,8 +99,8 @@ fn setup_project(
     project.set_project_carbon(project_carbon);
 }
 
-/// Mint carbon credits without the minter contract. Testing purposes only.
-fn mint_carbon_credits(
+/// Mint shares without the minter contract. Testing purposes only.
+fn mint_utils(
     project_address: ContractAddress, owner_address: ContractAddress, share: u256
 ) {
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
@@ -484,7 +484,7 @@ fn test_rebase_half_supply() {
     let project = IProjectDispatcher { contract_address: project_address };
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let share = 500000; // 50%
-    mint_carbon_credits(project_address, owner_address, share);
+    mint_utils(project_address, owner_address, share);
 
     let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
 
