@@ -63,8 +63,32 @@ fn setup_project(
     project.set_project_carbon(project_carbon);
 }
 
-fn default_setup() -> (ContractAddress, EventSpy) {
-    let (project_address, spy) = deploy_project();
+#[test]
+fn test_constructor_ok() {
+    let (_project_address, _spy) = deploy_project();
+}
+
+#[test]
+fn test_is_setup() {
+    let (project_address, _) = deploy_project();
+    let project = IAbsorberDispatcher { contract_address: project_address };
+
+    setup_project(
+        project_address,
+        1573000000,
+        array![1706785200, 2306401200].span(),
+        array![0, 1573000000].span(),
+    );
+
+    assert(project.is_setup(), 'Error during setup');
+}
+
+#[test]
+fn test_project_batch_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, _) = deploy_project();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let times: Span<u64> = array![
         1674579600,
