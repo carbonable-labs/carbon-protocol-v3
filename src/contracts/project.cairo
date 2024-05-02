@@ -12,9 +12,7 @@ trait IExternal<ContractState> {
     fn decimals(self: @ContractState) -> u8;
     fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
     /// Returns the carbon credit balance of the user for the given vintage.
-    fn balance_of_shares(
-        self: @ContractState, account: ContractAddress, token_id: u256
-    ) -> u256;
+    fn balance_of_shares(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
     fn only_owner(self: @ContractState);
 }
 

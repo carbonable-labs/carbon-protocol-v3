@@ -101,9 +101,7 @@ fn setup_project(
 
 /// Mint carbon credits without the minter contract. Testing purposes only.
 fn mint_carbon_credits(
-    project_address: ContractAddress,
-    owner_address: ContractAddress,
-    share: u256
+    project_address: ContractAddress, owner_address: ContractAddress, share: u256
 ) {
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
@@ -119,7 +117,7 @@ fn mint_carbon_credits(
         index += 1;
     };
     let cc_shares = cc_shares.span();
-    
+
     let project = IProjectDispatcher { contract_address: project_address };
     project.batch_mint(owner_address, cc_years_vintages, cc_shares);
 }
@@ -499,11 +497,11 @@ fn test_rebase_half_supply() {
         let old_vintage_supply = cc_handler.get_vintage_supply(*cc_years_vintages.at(index));
         let old_cc_balance = project.balance(owner_address, *cc_years_vintages.at(index));
         // rebase
-        absorber.rebase_vintage(*cc_years_vintages.at(index), old_vintage_supply/2);
+        absorber.rebase_vintage(*cc_years_vintages.at(index), old_vintage_supply / 2);
         let new_vintage_supply = cc_handler.get_vintage_supply(*cc_years_vintages.at(index));
         let new_cc_balance = project.balance(owner_address, *cc_years_vintages.at(index));
-        assert(new_vintage_supply == old_vintage_supply/2, 'rebase not correct');
-        assert(new_cc_balance == old_cc_balance/2, 'rebase not correct');
+        assert(new_vintage_supply == old_vintage_supply / 2, 'rebase not correct');
+        assert(new_cc_balance == old_cc_balance / 2, 'rebase not correct');
         index += 1;
     };
 }

@@ -133,9 +133,7 @@ mod AbsorberComponent {
             (carbon_g / CREDIT_CARBON_TON).try_into().expect('Absorber: Ton overflow')
         }
 
-        fn share_to_cc(
-            self: @ComponentState<TContractState>, share: u256, token_id: u256
-        ) -> u256 {
+        fn share_to_cc(self: @ComponentState<TContractState>, share: u256, token_id: u256) -> u256 {
             let cc_supply = self.get_vintage_supply(token_id).into();
             share * cc_supply / MULT_ACCURATE_SHARE
         }
@@ -308,9 +306,7 @@ mod AbsorberComponent {
             return found_vintage;
         }
 
-        fn get_vintage_supply(
-            self: @ComponentState<TContractState>, year: u256
-        ) -> u64 {
+        fn get_vintage_supply(self: @ComponentState<TContractState>, year: u256) -> u64 {
             let carbon_vintage: CarbonVintage = self.get_specific_carbon_vintage(year);
             carbon_vintage.cc_supply
         }
