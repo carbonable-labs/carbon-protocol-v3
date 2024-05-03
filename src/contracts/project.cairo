@@ -12,6 +12,8 @@ trait IExternal<ContractState> {
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
+    fn balance(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn only_owner(self: @ContractState);
 }
 
 
@@ -158,5 +160,6 @@ mod Project {
         fn decimals(self: @ContractState) -> u8 {
             6
         }
+
     }
 }
