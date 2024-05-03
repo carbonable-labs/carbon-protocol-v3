@@ -158,6 +158,5 @@ mod Project {
         fn decimals(self: @ContractState) -> u8 {
             6
         }
-
     }
 }
