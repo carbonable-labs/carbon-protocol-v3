@@ -30,8 +30,11 @@ trait IAbsorber<TContractState> {
     /// Returns the ton equivalent.
     fn get_ton_equivalent(self: @TContractState) -> u64;
 
-    ///  Returns the carbon credit balance of the given token id.
+    ///  Convert a share of supply balance to a carbon credit balance.
     fn share_to_cc(self: @TContractState, share: u256, token_id: u256) -> u256;
+
+    // Convert a carbon credit balance to a share of supply balance.
+    fn cc_to_share(self: @TContractState, cc_value: u256, token_id: u256) -> u256;
 
     /// Returns true is the given project has been setup.
     fn is_setup(self: @TContractState) -> bool;

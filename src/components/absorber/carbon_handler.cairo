@@ -138,6 +138,13 @@ mod AbsorberComponent {
             share * cc_supply / MULT_ACCURATE_SHARE
         }
 
+        fn cc_to_share(
+            self: @ComponentState<TContractState>, cc_value: u256, token_id: u256
+        ) -> u256 {
+            let cc_supply = self.get_vintage_supply(token_id).into();
+            (cc_value * MULT_ACCURATE_SHARE / cc_supply)
+        }
+
         fn is_setup(self: @ComponentState<TContractState>) -> bool {
             self.Absorber_project_carbon.read()
                 * self.Absorber_times.read().len().into()

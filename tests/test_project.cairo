@@ -145,7 +145,7 @@ fn test_project_batch_mint() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let balance: u256 = project_contract.balance(owner_address, 2027);
+    let balance: u256 = project_contract.balance_of(owner_address, 2027);
     assert(balance == 0, 'Error of balance');
 
     let share: u256 = 125000;
