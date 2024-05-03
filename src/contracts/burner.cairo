@@ -52,15 +52,9 @@ mod Burner {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState,
-        carbonable_project_address: ContractAddress,
-        owner: ContractAddress
+        ref self: ContractState, carbonable_project_address: ContractAddress, owner: ContractAddress
     ) {
         self.ownable.initializer(owner);
-        self
-            .burner
-            .initializer(
-                carbonable_project_address
-            );
+        self.burner.initializer(carbonable_project_address);
     }
 }
