@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use carbon_v3::components::data::carbon_vintage::{CarbonVintage};
+use carbon_v3::data::carbon_vintage::{CarbonVintage};
 
 #[starknet::interface]
 trait IAbsorber<TContractState> {
@@ -54,4 +54,7 @@ trait ICarbonCreditsHandler<TContractState> {
 
     // Get number of decimal for total supply to have a carbon credit
     fn get_cc_decimals(self: @TContractState) -> u8;
+
+    // Update the vintage status
+    fn update_vintage_status(ref self: TContractState, year: u64, status: felt252);
 }

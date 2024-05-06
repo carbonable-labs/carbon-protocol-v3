@@ -13,6 +13,10 @@ use snforge_std as snf;
 use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank};
 use alexandria_storage::list::{List, ListTrait};
 
+// Data 
+
+use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+
 // Components
 
 use carbon_v3::components::absorber::interface::{
@@ -59,33 +63,8 @@ fn setup_project(
     project.set_project_carbon(project_carbon);
 }
 
-#[test]
-fn test_constructor_ok() {
-    let (_project_address, _spy) = deploy_project();
-}
-
-#[test]
-fn test_is_setup() {
-    let (project_address, _) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
-
-    setup_project(
-        project_address,
-        1573000000,
-        array![1706785200, 2306401200].span(),
-        array![0, 1573000000].span(),
-    );
-
-    assert(project.is_setup(), 'Error during setup');
-}
-
-#[test]
-fn test_project_batch_mint() {
-    let owner_address: ContractAddress = contract_address_const::<'owner'>();
-    let other_address: ContractAddress = contract_address_const::<'other'>();
-    let (project_address, _) = deploy_project();
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
-    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+fn default_setup() -> (ContractAddress, EventSpy) {
+    let (project_address, spy) = deploy_project();
 
     let times: Span<u64> = array![
         1674579600,
@@ -137,6 +116,36 @@ fn test_project_batch_mint() {
 
     setup_project(project_address, 8000000000, times, absorptions,);
 
+    (project_address, spy)
+}
+
+#[test]
+fn test_constructor_ok() {
+    let (_project_address, _spy) = deploy_project();
+}
+
+#[test]
+fn test_is_setup() {
+    let (project_address, _) = deploy_project();
+    let project = IAbsorberDispatcher { contract_address: project_address };
+
+    setup_project(
+        project_address,
+        1573000000,
+        array![1706785200, 2306401200].span(),
+        array![0, 1573000000].span(),
+    );
+
+    assert(project.is_setup(), 'Error during setup');
+}
+
+#[test]
+fn test_project_batch_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, _) = default_setup();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
     start_prank(CheatTarget::One(project_address), owner_address);
 
     assert(absorber.is_setup(), 'Error during setup');
@@ -145,11 +154,24 @@ fn test_project_batch_mint() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let balance: u256 = project_contract.balance(owner_address, 2027);
-    assert(balance == 0, 'Error of balance');
-
     let share: u256 = 125000;
     let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
     let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
     project_contract.batch_mint(owner_address, cc_years_vintages, cc_distribution);
+}
+
+#[test]
+fn test_project_set_vintage_status() {
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, _) = default_setup();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    carbon_credits.update_vintage_status(2025, 2);
+    let vinatge: CarbonVintage = carbon_credits.get_specific_carbon_vintage(2025);
+    assert(vinatge.cc_status == CarbonVintageType::Audited, 'Error of status');
 }

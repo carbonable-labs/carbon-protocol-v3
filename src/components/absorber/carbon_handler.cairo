@@ -12,9 +12,8 @@ mod AbsorberComponent {
     use alexandria_storage::list::{List, ListTrait};
 
     // Internal imports
-    use carbon_v3::components::absorber::interface::IAbsorber;
-    use carbon_v3::components::absorber::interface::ICarbonCreditsHandler;
-    use carbon_v3::components::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::components::absorber::interface::{IAbsorber, ICarbonCreditsHandler};
+    use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
 
@@ -50,6 +49,7 @@ mod AbsorberComponent {
         #[key]
         value: u256
     }
+
 
     mod Errors {
         const INVALID_ARRAY_LENGTH: felt252 = 'Absorber: invalid array length';
@@ -281,6 +281,36 @@ mod AbsorberComponent {
         fn get_cc_decimals(self: @ComponentState<TContractState>) -> u8 {
             CC_DECIMALS
         }
+
+        fn update_vintage_status(
+            ref self: ComponentState<TContractState>, year: u64, status: felt252
+        ) {
+            let mut carbon_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
+            let mut index = 0;
+
+            loop {
+                if index == carbon_vintages.len() {
+                    break ();
+                }
+
+                let mut tmp_vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
+                if tmp_vintage.cc_vintage == year.into() {
+                    let new_status: CarbonVintageType = match status {
+                        0 => CarbonVintageType::Projected,
+                        1 => CarbonVintageType::Confirmed,
+                        2 => CarbonVintageType::Audited,
+                        3 => CarbonVintageType::Retired,
+                        _ => CarbonVintageType::Projected,
+                    };
+
+                    tmp_vintage.cc_status = new_status;
+                    let _ = carbon_vintages.set(index, tmp_vintage);
+                }
+                index += 1;
+            };
+
+            self.Absorber_vintage_cc.write(carbon_vintages);
+        }
     }
 
     #[generate_trait]
@@ -363,6 +393,18 @@ mod AbsorberComponent {
                 index += 1;
             };
             array.span()
+        }
+
+        fn __felt252_into_CarbonVintageType(
+            self: @ComponentState<TContractState>, status: felt252
+        ) -> CarbonVintageType {
+            match status {
+                0 => CarbonVintageType::Projected,
+                1 => CarbonVintageType::Confirmed,
+                2 => CarbonVintageType::Audited,
+                3 => CarbonVintageType::Retired,
+                _ => CarbonVintageType::Projected,
+            }
         }
     }
 }

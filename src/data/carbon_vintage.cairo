@@ -33,3 +33,14 @@ enum CarbonVintageType {
     /// Retired: the Carbon Credit is retired in the certifier registry.
     Retired,
 }
+
+impl CarbonVintageTypeInto of Into<CarbonVintageType, felt252> {
+    fn into(self: CarbonVintageType) -> felt252 {
+        match self {
+            CarbonVintageType::Projected => 0,
+            CarbonVintageType::Confirmed => 1,
+            CarbonVintageType::Audited => 2,
+            CarbonVintageType::Retired => 3,
+        }
+    }
+}

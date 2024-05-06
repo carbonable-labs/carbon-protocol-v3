@@ -38,7 +38,7 @@ use carbon_v3::components::absorber::interface::{
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::{
     Event, AbsorptionUpdate, ProjectValueUpdate
 };
-use carbon_v3::components::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
 
 use carbon_v3::components::minter::interface::{IMintDispatcher, IMintDispatcherTrait};
