@@ -12,7 +12,7 @@ trait IMetadataDescriptor<TContractState> {
 }
 
 #[starknet::component]
-mod metadata_component {
+mod MetadataComponent {
     use starknet::ClassHash;
     use super::{IMetadataDescriptorLibraryDispatcher, IMetadataDescriptorDispatcherTrait};
 
@@ -33,8 +33,8 @@ mod metadata_component {
         MetadataUpgraded: MetadataUpgraded,
     }
 
-    #[embeddable_as(CarbonV3Metadata)]
-    impl MetadataImpl<
+    #[embeddable_as(CarbonV3MetadataImpl)]
+    impl CarbonV3Metadata<
         TContractState, +HasComponent<TContractState>
     > of super::IMetadataHandler<ComponentState<TContractState>> {
         fn uri(self: @ComponentState<TContractState>, token_id: u256) -> ByteArray {
@@ -53,56 +53,23 @@ mod metadata_component {
 }
 
 #[cfg(test)]
-mod unit_test {
+mod TestMetadataComponent {
     use starknet::ClassHash;
-    use super::metadata_component;
-    use super::{IMetadataHandlerDispatcherTrait, IMetadataHandlerLibraryDispatcher};
-
-
-    #[starknet::contract]
-    mod TestContract {
-        use starknet::ContractAddress;
-        use carbon_v3::components::metadata::{metadata_component, IMetadataHandler};
-
-        component!(path: super::metadata_component, storage: metadata_uri, event: MetadataEvent);
-
-        #[abi(embed_v0)]
-        impl MetadataComponent =
-            metadata_component::CarbonV3Metadata<ContractState>;
-
-        #[storage]
-        struct Storage {
-            #[substorage(v0)]
-            metadata_uri: metadata_component::Storage
-        }
-
-        #[event]
-        #[derive(Drop, starknet::Event)]
-        enum Event {
-            MetadataEvent: metadata_component::Event
-        }
-    }
-
-    #[starknet::contract]
-    mod TestMetadata {
-        use carbon_v3::components::metadata::{IMetadataDescriptor};
-        #[storage]
-        struct Storage {}
-
-        #[abi(embed_v0)]
-        impl MetadataProviderImpl of IMetadataDescriptor<ContractState> {
-            fn construct_uri(self: @ContractState, token_id: u256) -> ByteArray {
-                "bla bla bla"
-            }
-        }
-    }
+    use super::MetadataComponent;
+    use super::{IMetadataHandlerDispatcherTrait, IMetadataHandlerDispatcher};
+    use carbon_v3::mock::metadata::TestMetadata;
+    use snforge_std::{ declare, ContractClassTrait };
 
     #[test]
     fn test_metadata() {
-        let class_hash: ClassHash = TestContract::TEST_CLASS_HASH.try_into().unwrap();
-        let contract = IMetadataHandlerLibraryDispatcher { class_hash };
-        contract.set_uri(TestMetadata::TEST_CLASS_HASH.try_into().unwrap());
-        let uri = contract.uri(1);
+        let class = declare('TestContract');
+        let metadata_class = declare('TestMetadata');
+
+        let contract_address = class.deploy(@array![]).unwrap();
+        let dispatcher = IMetadataHandlerDispatcher { contract_address };
+
+        dispatcher.set_uri(metadata_class.class_hash);
+        let uri = dispatcher.uri(1);
         assert_eq!(uri, "bla bla bla");
     }
 }

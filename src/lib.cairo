@@ -3,11 +3,11 @@ mod components {
     mod minter;
     mod erc1155;
     mod burner;
+    mod metadata;
 }
 
 mod data {
     mod carbon_vintage;
-    mod metadata;
 }
 
 mod contracts {
@@ -18,4 +18,5 @@ mod contracts {
 
 mod mock {
     mod usdcarb;
+    mod metadata;
 }
