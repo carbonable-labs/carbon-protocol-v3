@@ -58,7 +58,7 @@ mod TestMetadataComponent {
     use super::MetadataComponent;
     use super::{IMetadataHandlerDispatcherTrait, IMetadataHandlerDispatcher};
     use carbon_v3::mock::metadata::TestMetadata;
-    use snforge_std::{ declare, ContractClassTrait };
+    use snforge_std::{declare, ContractClassTrait};
 
     #[test]
     fn test_metadata() {
@@ -73,4 +73,3 @@ mod TestMetadataComponent {
         assert_eq!(uri, "bla bla bla");
     }
 }
-
