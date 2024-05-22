@@ -6,8 +6,7 @@ mod TestContract {
     component!(path: MetadataComponent, storage: metadata_uri, event: MetadataEvent);
 
     #[abi(embed_v0)]
-    impl MetadataImpl =
-    MetadataComponent::CarbonV3MetadataImpl<ContractState>;
+    impl MetadataImpl = MetadataComponent::CarbonV3MetadataImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -25,7 +24,7 @@ mod TestContract {
 #[starknet::contract]
 mod TestMetadata {
     use carbon_v3::components::metadata::IMetadataDescriptor;
-    
+
     #[storage]
     struct Storage {}
 
