@@ -11,7 +11,7 @@ use pedersen::PedersenTrait;
 
 // Starknet deps
 
-use starknet::ContractAddress;
+use starknet::{ContractAddress, contract_address_const};
 use starknet::{deploy_syscall, get_block_timestamp};
 use starknet::testing::{set_caller_address, set_contract_address};
 
@@ -22,7 +22,7 @@ use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
 use snforge_std::{
     CheatTarget, ContractClassTrait, test_address, spy_events, EventSpy, SpyOn, EventAssertions,
-    start_warp
+    start_warp, start_prank, stop_prank
 };
 use alexandria_storage::list::{List, ListTrait};
 
@@ -48,6 +48,7 @@ use carbon_v3::contracts::project::{
 // Constants
 
 const PROJECT_CARBON: u256 = 42;
+const MULT_ACCURATE_SHARE: u256 = 1_000_000;
 
 // Signers
 
@@ -68,7 +69,7 @@ struct Contracts {
 //
 
 /// Deploys a project contract.
-fn deploy_project(owner: felt252) -> (ContractAddress, EventSpy) {
+fn deploy_project(owner: ContractAddress) -> (ContractAddress, EventSpy) {
     let contract = snf::declare('Project');
     let uri = 'uri';
     let starting_year: u64 = 2024;
@@ -98,6 +99,27 @@ fn setup_project(
     project.set_project_carbon(project_carbon);
 }
 
+/// Mint shares without the minter contract. Testing purposes only.
+fn mint_utils(project_address: ContractAddress, owner_address: ContractAddress, share: u256) {
+    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
+    let n = cc_years_vintages.len();
+
+    let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
+    let mut index = 0;
+    loop {
+        if index == n {
+            break;
+        }
+        cc_shares.append(share);
+        index += 1;
+    };
+    let cc_shares = cc_shares.span();
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.batch_mint(owner_address, cc_years_vintages, cc_shares);
+}
+
 //
 // Tests
 //
@@ -106,7 +128,7 @@ fn setup_project(
 
 #[test]
 fn test_set_project_carbon() {
-    let (project_address, mut spy) = deploy_project(c::OWNER().into());
+    let (project_address, mut spy) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] project_carbon set correctly
     project.set_project_carbon(PROJECT_CARBON.into());
@@ -129,7 +151,7 @@ fn test_set_project_carbon() {
 
 #[test]
 fn test_get_project_carbon_not_set() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] default project_carbon is 0
     let fetched_value = project.get_project_carbon();
@@ -138,7 +160,7 @@ fn test_get_project_carbon_not_set() {
 
 #[test]
 fn test_set_project_carbon_twice() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] project_carbon set correctly
     project.set_project_carbon(PROJECT_CARBON.into());
@@ -155,7 +177,7 @@ fn test_set_project_carbon_twice() {
 
 #[test]
 fn test_set_absorptions() {
-    let (project_address, mut spy) = deploy_project(c::OWNER().into());
+    let (project_address, mut spy) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     let times: Span<u64> = array![
         1651363200,
@@ -204,7 +226,7 @@ fn test_set_absorptions() {
 #[test]
 #[should_panic(expected: ('Times and absorptions mismatch',))]
 fn test_set_absorptions_revert_length_mismatch() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] reverting when times and absorptions have different lengths
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span(); // length 3
@@ -215,7 +237,7 @@ fn test_set_absorptions_revert_length_mismatch() {
 #[test]
 #[should_panic(expected: ('Inputs cannot be empty',))]
 fn test_set_absorptions_revert_empty_inputs() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] reverting when times and absorptions are empty arrays
     let times: Span<u64> = array![].span();
@@ -226,7 +248,7 @@ fn test_set_absorptions_revert_empty_inputs() {
 #[test]
 #[should_panic(expected: ('Times not sorted',))]
 fn test_set_absorptions_revert_times_not_sorted() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] reverting when times array is not sorted
     let times: Span<u64> = array![1651363200, 1659312000, 1657260800].span(); // not sorted
@@ -237,7 +259,7 @@ fn test_set_absorptions_revert_times_not_sorted() {
 #[test]
 #[should_panic(expected: 'Absorptions not sorted',)]
 fn test_set_absorptions_revert_absorptions_not_sorted() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] reverting when absorptions array is not sorted
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
@@ -249,7 +271,7 @@ fn test_set_absorptions_revert_absorptions_not_sorted() {
 
 #[test]
 fn test_get_current_absorption_not_set() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] absorption is 0 when not set at t = 0
     let absorption = project.get_current_absorption();
@@ -262,7 +284,7 @@ fn test_get_current_absorption_not_set() {
 
 #[test]
 fn test_current_absorption() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
         .span();
@@ -299,7 +321,7 @@ fn test_current_absorption() {
 
 #[test]
 fn test_compute_carbon_vintage_distribution() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
 
@@ -314,7 +336,7 @@ fn test_compute_carbon_vintage_distribution() {
 
 #[test]
 fn test_compute_carbon_vintage_distribution_zero_share() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
 
@@ -329,7 +351,7 @@ fn test_compute_carbon_vintage_distribution_zero_share() {
 
 #[test]
 fn test_compute_carbon_vintage_distribution_full_share() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let project = IAbsorberDispatcher { contract_address: project_address };
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
 
@@ -346,7 +368,7 @@ fn test_compute_carbon_vintage_distribution_full_share() {
 
 #[test]
 fn test_get_cc_vintages() {
-    let (project_address, _) = deploy_project(c::OWNER().into());
+    let (project_address, _) = deploy_project(c::OWNER());
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
         .span();
 
@@ -400,4 +422,85 @@ fn test_get_cc_vintages() {
         assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
         index += 1;
     }
+}
+
+
+#[test]
+fn test_rebase_half_supply() {
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, _) = deploy_project(owner_address);
+
+    let times: Span<u64> = array![
+        1674579600,
+        1706115600,
+        1737738000,
+        1769274000,
+        1800810000,
+        1832346000,
+        1863968400,
+        1895504400,
+        1927040400,
+        1958576400,
+        1990198800,
+        2021734800,
+        2053270800,
+        2084806800,
+        2116429200,
+        2147965200,
+        2179501200,
+        2211037200,
+        2242659600,
+        2274195600
+    ]
+        .span();
+
+    let absorptions: Span<u64> = array![
+        0,
+        29609535,
+        47991466,
+        88828605,
+        118438140,
+        370922507,
+        623406874,
+        875891241,
+        1128375608,
+        1380859976,
+        2076175721,
+        2771491466,
+        3466807212,
+        4162122957,
+        4857438703,
+        5552754448,
+        6248070193,
+        6943385939,
+        7638701684,
+        8000000000
+    ]
+        .span();
+
+    setup_project(project_address, 8000000000, times, absorptions,);
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let project = IProjectDispatcher { contract_address: project_address };
+    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let share = 500000; // 50%
+    mint_utils(project_address, owner_address, share);
+
+    let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
+
+    // Rebase every vintage with half the supply
+    let mut index = 0;
+    loop {
+        if index == cc_years_vintages.len() {
+            break;
+        }
+        let old_vintage_supply = cc_handler.get_vintage_supply(*cc_years_vintages.at(index));
+        let old_cc_balance = project.balance_of(owner_address, *cc_years_vintages.at(index));
+        // rebase
+        absorber.rebase_vintage(*cc_years_vintages.at(index), old_vintage_supply / 2);
+        let new_vintage_supply = cc_handler.get_vintage_supply(*cc_years_vintages.at(index));
+        let new_cc_balance = project.balance_of(owner_address, *cc_years_vintages.at(index));
+        assert(new_vintage_supply == old_vintage_supply / 2, 'rebase not correct');
+        assert(new_cc_balance == old_cc_balance / 2, 'rebase not correct');
+        index += 1;
+    };
 }
