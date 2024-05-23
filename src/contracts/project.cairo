@@ -12,13 +12,37 @@ trait IExternal<ContractState> {
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
+    fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn balance_of_batch(
+        self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
+    ) -> Span<u256>;
+    fn balance_of_shares(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn safe_transfer_from(
+        ref self: ContractState,
+        from: ContractAddress,
+        to: ContractAddress,
+        token_id: u256,
+        value: u256,
+        data: Span<felt252>
+    );
+    fn safe_batch_transfer_from(
+        ref self: ContractState,
+        from: ContractAddress,
+        to: ContractAddress,
+        token_ids: Span<u256>,
+        values: Span<u256>,
+        data: Span<felt252>
+    );
+    fn is_approved_for_all(
+        self: @ContractState, owner: ContractAddress, operator: ContractAddress
+    ) -> bool;
+    fn set_approval_for_all(ref self: ContractState, operator: ContractAddress, approved: bool);
 }
 
 
 #[starknet::contract]
 mod Project {
     use carbon_v3::components::absorber::interface::ICarbonCreditsHandlerDispatcher;
-    use carbon_v3::components::erc1155::erc1155::ERC1155Component::InternalTrait;
     use core::traits::Into;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
 
@@ -40,7 +64,6 @@ mod Project {
     component!(path: AbsorberComponent, storage: absorber, event: AbsorberEvent);
 
     // ERC1155
-    #[abi(embed_v0)]
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
     #[abi(embed_v0)]
     impl ERC1155MetadataURIImpl =
@@ -69,6 +92,7 @@ mod Project {
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
     const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
+    const MULT_ACCURATE_SHARE: u256 = 1_000_000;
 
     #[storage]
     struct Storage {
@@ -101,6 +125,7 @@ mod Project {
 
     mod Errors {
         const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';
+        const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: no equal array length';
     }
 
     // Constructor
@@ -157,6 +182,77 @@ mod Project {
 
         fn decimals(self: @ContractState) -> u8 {
             6
+        }
+
+        fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
+            self._balance_of(account, token_id) // Internal call to avoid ambiguous call
+        }
+
+        fn balance_of_batch(
+            self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
+        ) -> Span<u256> {
+            assert(accounts.len() == token_ids.len(), Errors::INVALID_ARRAY_LENGTH);
+
+            let mut batch_balances = array![];
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                batch_balances.append(self._balance_of(*accounts.at(index), *token_ids.at(index)));
+                index += 1;
+            };
+
+            batch_balances.span()
+        }
+
+        fn balance_of_shares(
+            self: @ContractState, account: ContractAddress, token_id: u256
+        ) -> u256 {
+            self.erc1155.ERC1155_balances.read((token_id, account))
+        }
+
+        fn safe_transfer_from(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_id: u256,
+            value: u256,
+            data: Span<felt252>
+        ) {
+            let share_value = self.absorber.cc_to_share(value, token_id);
+            self.erc1155.safe_transfer_from(from, to, token_id, share_value, data);
+        }
+
+        fn safe_batch_transfer_from(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_ids: Span<u256>,
+            values: Span<u256>,
+            data: Span<felt252>
+        ) {
+            self.erc1155.safe_batch_transfer_from(from, to, token_ids, values, data);
+        }
+
+        fn is_approved_for_all(
+            self: @ContractState, owner: ContractAddress, operator: ContractAddress
+        ) -> bool {
+            self.erc1155.is_approved_for_all(owner, operator)
+        }
+
+        fn set_approval_for_all(
+            ref self: ContractState, operator: ContractAddress, approved: bool
+        ) {
+            self.erc1155.set_approval_for_all(operator, approved);
+        }
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn _balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
+            let share = self.erc1155.balance_of(account, token_id);
+            self.absorber.share_to_cc(share, token_id)
         }
     }
 }
