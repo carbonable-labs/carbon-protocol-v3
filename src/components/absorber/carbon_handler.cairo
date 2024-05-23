@@ -239,6 +239,28 @@ mod AbsorberComponent {
             };
             cc_distribution.span()
         }
+
+        fn rebase_vintage(
+            ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u64
+        ) {
+            let mut stored_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
+            let mut index = 0;
+            loop {
+                if index == stored_vintages.len() {
+                    break;
+                }
+                let stored_vintage: CarbonVintage = stored_vintages[index].clone();
+                if stored_vintage.cc_vintage == token_id.into() {
+                    let mut vintage = stored_vintages[index].clone();
+                    vintage.cc_supply = new_cc_supply;
+                    vintage.cc_rebase_status = true;
+                    let _ = stored_vintages.set(index, vintage);
+                    break;
+                }
+                index += 1;
+            };
+            self.Absorber_vintage_cc.write(stored_vintages);
+        }
     }
 
     #[embeddable_as(CarbonCreditsHandlerImpl)]
