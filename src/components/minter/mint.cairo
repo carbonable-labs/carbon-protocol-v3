@@ -168,14 +168,14 @@ mod MintComponent {
         }
 
         fn public_buy(
-            ref self: ComponentState<TContractState>, value: u256, force: bool
+            ref self: ComponentState<TContractState>, money_amount: u256, force: bool
         ) -> Span<u256> {
             // [Check] Public sale is open
             let public_sale_open = self.Mint_public_sale_open.read();
             assert(public_sale_open, 'Sale is closed');
 
             // [Interaction] Buy
-            self._buy(value, force)
+            self._buy(money_amount, force)
         }
 
         fn set_min_money_amount_per_tx(
@@ -243,11 +243,11 @@ mod MintComponent {
 
             assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
 
-            // [Interaction] Comput share of the amount of project
+            // [Interaction] Compute share of the amount of project
             let max_money_amount = self.Mint_max_money_amount.read();
             let share = money_amount * MULT_ACCURATE_SHARE / max_money_amount;
 
-            // [Interaction] Comput the amount of cc for each vintage
+            // [Interaction] Compute the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
             let carbon_credits = ICarbonCreditsHandlerDispatcher {
                 contract_address: project_address
