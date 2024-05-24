@@ -388,8 +388,8 @@ fn test_get_cc_vintages() {
     let expected__cc_vintage = CarbonVintage {
         cc_vintage: (starting_year + index).into(),
         cc_supply: *absorptions.at(index),
+        cc_failed: 0,
         cc_status: CarbonVintageType::Projected,
-        cc_rebase_status: false,
     };
     assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
     index += 1;
@@ -401,8 +401,8 @@ fn test_get_cc_vintages() {
         let expected__cc_vintage = CarbonVintage {
             cc_vintage: (starting_year + index).into(),
             cc_supply: *absorptions.at(index) - *absorptions.at(index - 1),
+            cc_failed: 0,
             cc_status: CarbonVintageType::Projected,
-            cc_rebase_status: false,
         };
         assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
         index += 1;
@@ -416,8 +416,8 @@ fn test_get_cc_vintages() {
         let expected__cc_vintage = CarbonVintage {
             cc_vintage: (starting_year + index).into(),
             cc_supply: 0,
+            cc_failed: 0,
             cc_status: CarbonVintageType::Projected,
-            cc_rebase_status: false,
         };
         assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
         index += 1;
