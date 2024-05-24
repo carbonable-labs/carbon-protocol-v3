@@ -252,8 +252,10 @@ mod AbsorberComponent {
                 let stored_vintage: CarbonVintage = stored_vintages[index].clone();
                 if stored_vintage.cc_vintage == token_id.into() {
                     let mut vintage = stored_vintages[index].clone();
+                    let old_supply = vintage.cc_supply;
+                    let diff = new_cc_supply - old_supply;
                     vintage.cc_supply = new_cc_supply;
-                    vintage.cc_rebase_status = true;
+                    vintage.cc_failed = vintage.cc_failed + diff;
                     let _ = stored_vintages.set(index, vintage);
                     break;
                 }
@@ -317,6 +319,11 @@ mod AbsorberComponent {
             carbon_vintage.cc_supply
         }
 
+        fn get_failed_cc_for_vintage(self: @ComponentState<TContractState>, year: u256) -> u64 {
+            let carbon_vintage: CarbonVintage = self.get_specific_carbon_vintage(year);
+            carbon_vintage.cc_failed
+        }
+
         fn get_cc_decimals(self: @ComponentState<TContractState>) -> u8 {
             CC_DECIMALS
         }
@@ -338,7 +345,6 @@ mod AbsorberComponent {
                         0 => CarbonVintageType::Projected,
                         1 => CarbonVintageType::Confirmed,
                         2 => CarbonVintageType::Audited,
-                        3 => CarbonVintageType::Retired,
                         _ => CarbonVintageType::Projected,
                     };
 
@@ -380,8 +386,8 @@ mod AbsorberComponent {
                     CarbonVintage {
                         cc_vintage: starting_year.into(),
                         cc_supply: 0,
+                        cc_failed: 0,
                         cc_status: CarbonVintageType::Projected,
-                        cc_rebase_status: false,
                     }
                 );
             loop {
@@ -395,8 +401,8 @@ mod AbsorberComponent {
                         CarbonVintage {
                             cc_vintage: (starting_year + index).into(),
                             cc_supply: 0,
+                            cc_failed: 0,
                             cc_status: CarbonVintageType::Projected,
-                            cc_rebase_status: false,
                         }
                     );
             };
@@ -441,7 +447,6 @@ mod AbsorberComponent {
                 0 => CarbonVintageType::Projected,
                 1 => CarbonVintageType::Confirmed,
                 2 => CarbonVintageType::Audited,
-                3 => CarbonVintageType::Retired,
                 _ => CarbonVintageType::Projected,
             }
         }

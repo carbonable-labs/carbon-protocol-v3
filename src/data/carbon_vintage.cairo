@@ -5,10 +5,10 @@ struct CarbonVintage {
     cc_vintage: u256,
     /// The total supply of Carbon Credit for this vintage.
     cc_supply: u64,
+    /// The total amount of Carbon Credit that failed during audits.
+    cc_failed: u64,
     /// The status of the Carbon Credit of this Vintage. 
     cc_status: CarbonVintageType,
-    /// The status of the rebase of the Carbon Credit of this Vintage.
-    cc_rebase_status: bool,
 }
 
 impl DefaultCarbonVintage of Default<CarbonVintage> {
@@ -16,8 +16,8 @@ impl DefaultCarbonVintage of Default<CarbonVintage> {
         CarbonVintage {
             cc_vintage: 0,
             cc_supply: 0,
+            cc_failed: 0,
             cc_status: CarbonVintageType::Projected,
-            cc_rebase_status: false,
         }
     }
 }
@@ -30,8 +30,6 @@ enum CarbonVintageType {
     Confirmed,
     ///  Audited: the Carbon Credit is audited by a third Auditor.
     Audited,
-    /// Retired: the Carbon Credit is retired in the certifier registry.
-    Retired,
 }
 
 impl CarbonVintageTypeInto of Into<CarbonVintageType, felt252> {
@@ -40,7 +38,6 @@ impl CarbonVintageTypeInto of Into<CarbonVintageType, felt252> {
             CarbonVintageType::Projected => 0,
             CarbonVintageType::Confirmed => 1,
             CarbonVintageType::Audited => 2,
-            CarbonVintageType::Retired => 3,
         }
     }
 }
