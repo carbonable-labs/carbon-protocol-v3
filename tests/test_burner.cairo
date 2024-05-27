@@ -279,7 +279,6 @@ fn test_burner_retirement() {
 //     burner.retire_carbon_credits(2025, 5000000);
 // }
 
-
 #[test]
 #[should_panic(expected: ('Vintage status is not audited',))]
 fn test_burner_wrong_status() {
