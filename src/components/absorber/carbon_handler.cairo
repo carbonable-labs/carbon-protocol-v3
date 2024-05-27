@@ -253,9 +253,14 @@ mod AbsorberComponent {
                 if stored_vintage.cc_vintage == token_id.into() {
                     let mut vintage = stored_vintages[index].clone();
                     let old_supply = vintage.cc_supply;
-                    let diff = new_cc_supply - old_supply;
+                    if new_cc_supply < old_supply {
+                        let diff = old_supply - new_cc_supply;
+                        vintage.cc_supply = new_cc_supply;
+                        vintage.cc_failed = vintage.cc_failed + diff;
+                        let _ = stored_vintages.set(index, vintage);
+                        break;
+                    }
                     vintage.cc_supply = new_cc_supply;
-                    vintage.cc_failed = vintage.cc_failed + diff;
                     let _ = stored_vintages.set(index, vintage);
                     break;
                 }
