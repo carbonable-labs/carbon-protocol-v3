@@ -14,10 +14,7 @@ struct CarbonVintage {
 impl DefaultCarbonVintage of Default<CarbonVintage> {
     fn default() -> CarbonVintage {
         CarbonVintage {
-            cc_vintage: 0,
-            cc_supply: 0,
-            cc_failed: 0,
-            cc_status: CarbonVintageType::Projected,
+            cc_vintage: 0, cc_supply: 0, cc_failed: 0, cc_status: CarbonVintageType::Projected,
         }
     }
 }

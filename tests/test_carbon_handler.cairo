@@ -502,7 +502,7 @@ fn test_rebase_half_supply() {
         let failed_tokens = cc_handler.get_failed_cc_for_vintage(*cc_years_vintages.at(index));
         assert(new_vintage_supply == old_vintage_supply / 2, 'rebase not correct');
         assert(new_cc_balance == old_cc_balance / 2, 'balance error after rebase');
-        assert(failed_tokens == old_vintage_supply-new_vintage_supply, 'failed tokens not 0');
+        assert(failed_tokens == old_vintage_supply - new_vintage_supply, 'failed tokens not 0');
         index += 1;
     };
 }

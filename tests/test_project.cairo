@@ -211,7 +211,7 @@ fn test_project_balance_of() {
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    let share = 33*MULT_ACCURATE_SHARE/100;
+    let share = 33 * MULT_ACCURATE_SHARE / 100;
     mint_utils(project_address, owner_address, share);
 
     let supply_vintage_2025 = carbon_credits.get_specific_carbon_vintage(2025).cc_supply;
@@ -231,7 +231,7 @@ fn test_transfer_without_loss() {
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    let share = 33*MULT_ACCURATE_SHARE/100;
+    let share = 33 * MULT_ACCURATE_SHARE / 100;
     mint_utils(project_address, owner_address, share);
 
     let expected_balance = 3300000;
@@ -242,7 +242,8 @@ fn test_transfer_without_loss() {
     let receiver_balance = project_contract.balance_of(receiver_address, 2025);
     assert(receiver_balance == 0, 'Error of balance');
 
-    project_contract.safe_transfer_from(owner_address, receiver_address, 2025, 3300000.into(), array![].span());
+    project_contract
+        .safe_transfer_from(owner_address, receiver_address, 2025, 3300000.into(), array![].span());
 
     let balance = project_contract.balance_of(owner_address, 2025);
     assert(balance == 0, 'Error of balance');
@@ -257,19 +258,22 @@ fn test_transfer_rebase_transfer() {
     let (project_address, _) = default_setup();
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    let cc_handler =  ICarbonCreditsHandlerDispatcher { contract_address: project_address};
+    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     start_prank(CheatTarget::One(project_address), owner_address);
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    let share = 33*MULT_ACCURATE_SHARE/100;
+    let share = 33 * MULT_ACCURATE_SHARE / 100;
     mint_utils(project_address, owner_address, share);
 
     let initial_balance = project_contract.balance_of(owner_address, 2025);
     assert(initial_balance == 3300000.into(), 'Error of balance');
 
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
-    project_contract.safe_transfer_from(owner_address, receiver_address, 2025, initial_balance.into(), array![].span());
+    project_contract
+        .safe_transfer_from(
+            owner_address, receiver_address, 2025, initial_balance.into(), array![].span()
+        );
     let balance1 = project_contract.balance_of(owner_address, 2025);
     assert(balance1 == 0, 'Error of balance');
     let balance2 = project_contract.balance_of(receiver_address, 2025);
@@ -280,12 +284,15 @@ fn test_transfer_rebase_transfer() {
     let balance1 = project_contract.balance_of(owner_address, 2025);
     assert(balance1 == 0, 'Error of balance');
     let balance2 = project_contract.balance_of(receiver_address, 2025);
-    assert(balance2 == initial_balance/2, 'Error of balance');
+    assert(balance2 == initial_balance / 2, 'Error of balance');
     start_prank(CheatTarget::One(project_address), receiver_address);
-    project_contract.safe_transfer_from(receiver_address, owner_address, 2025, balance2.into(), array![].span());
+    project_contract
+        .safe_transfer_from(
+            receiver_address, owner_address, 2025, balance2.into(), array![].span()
+        );
 
     let balance1 = project_contract.balance_of(owner_address, 2025);
-    assert(balance1 == initial_balance/2, 'Error of balance');
+    assert(balance1 == initial_balance / 2, 'Error of balance');
 
     absorber.rebase_vintage(2025, old_vintage_supply);
     let balance1 = project_contract.balance_of(owner_address, 2025);
