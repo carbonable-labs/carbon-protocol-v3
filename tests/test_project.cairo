@@ -23,6 +23,7 @@ use carbon_v3::components::absorber::interface::{
     IAbsorber, IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCreditsHandler,
     ICarbonCreditsHandlerDispatcher, ICarbonCreditsHandlerDispatcherTrait
 };
+use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::MULT_ACCURATE_SHARE;
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
 
 // Contracts
@@ -92,7 +93,7 @@ fn default_setup() -> (ContractAddress, EventSpy) {
 
     let absorptions: Span<u64> = array![
         0,
-        29609535,
+        10000000,
         47991466,
         88828605,
         118438140,
@@ -117,6 +118,27 @@ fn default_setup() -> (ContractAddress, EventSpy) {
     setup_project(project_address, 8000000000, times, absorptions,);
 
     (project_address, spy)
+}
+
+/// Mint shares without the minter contract. Testing purposes only.
+fn mint_utils(project_address: ContractAddress, owner_address: ContractAddress, share: u256) {
+    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
+    let n = cc_years_vintages.len();
+
+    let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
+    let mut index = 0;
+    loop {
+        if index == n {
+            break;
+        }
+        cc_shares.append(share);
+        index += 1;
+    };
+    let cc_shares = cc_shares.span();
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.batch_mint(owner_address, cc_years_vintages, cc_shares);
 }
 
 #[test]
@@ -174,4 +196,98 @@ fn test_project_set_vintage_status() {
     carbon_credits.update_vintage_status(2025, 2);
     let vinatge: CarbonVintage = carbon_credits.get_specific_carbon_vintage(2025);
     assert(vinatge.cc_status == CarbonVintageType::Audited, 'Error of status');
+}
+
+/// Test balance_of
+#[test]
+fn test_project_balance_of() {
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, _) = default_setup();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let share = 33*MULT_ACCURATE_SHARE/100;
+    mint_utils(project_address, owner_address, share);
+
+    let supply_vintage_2025 = carbon_credits.get_specific_carbon_vintage(2025).cc_supply;
+    let expected_balance = 3300000;
+    let balance = project_contract.balance_of(owner_address, 2025);
+    assert(balance == expected_balance.into(), 'Error of balance');
+}
+
+#[test]
+fn test_transfer_without_loss() {
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, _) = default_setup();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let share = 33*MULT_ACCURATE_SHARE/100;
+    mint_utils(project_address, owner_address, share);
+
+    let expected_balance = 3300000;
+    let balance = project_contract.balance_of(owner_address, 2025);
+    assert(balance == expected_balance.into(), 'Error of balance');
+
+    let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
+    let receiver_balance = project_contract.balance_of(receiver_address, 2025);
+    assert(receiver_balance == 0, 'Error of balance');
+
+    project_contract.safe_transfer_from(owner_address, receiver_address, 2025, 3300000.into(), array![].span());
+
+    let balance = project_contract.balance_of(owner_address, 2025);
+    assert(balance == 0, 'Error of balance');
+
+    let receiver_balance = project_contract.balance_of(receiver_address, 2025);
+    assert(receiver_balance == 3300000.into(), 'Error of balance');
+}
+
+#[test]
+fn test_transfer_rebase_transfer() {
+    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let (project_address, _) = default_setup();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let cc_handler =  ICarbonCreditsHandlerDispatcher { contract_address: project_address};
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let share = 33*MULT_ACCURATE_SHARE/100;
+    mint_utils(project_address, owner_address, share);
+
+    let initial_balance = project_contract.balance_of(owner_address, 2025);
+    assert(initial_balance == 3300000.into(), 'Error of balance');
+
+    let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
+    project_contract.safe_transfer_from(owner_address, receiver_address, 2025, initial_balance.into(), array![].span());
+    let balance1 = project_contract.balance_of(owner_address, 2025);
+    assert(balance1 == 0, 'Error of balance');
+    let balance2 = project_contract.balance_of(receiver_address, 2025);
+    assert(balance2 == initial_balance, 'Error of balance');
+
+    let old_vintage_supply = cc_handler.get_vintage_supply(2025);
+    absorber.rebase_vintage(2025, old_vintage_supply / 2);
+    let balance1 = project_contract.balance_of(owner_address, 2025);
+    assert(balance1 == 0, 'Error of balance');
+    let balance2 = project_contract.balance_of(receiver_address, 2025);
+    assert(balance2 == initial_balance/2, 'Error of balance');
+    start_prank(CheatTarget::One(project_address), receiver_address);
+    project_contract.safe_transfer_from(receiver_address, owner_address, 2025, balance2.into(), array![].span());
+
+    let balance1 = project_contract.balance_of(owner_address, 2025);
+    assert(balance1 == initial_balance/2, 'Error of balance');
+
+    absorber.rebase_vintage(2025, old_vintage_supply);
+    let balance1 = project_contract.balance_of(owner_address, 2025);
+    assert(balance1 == initial_balance, 'Error of balance');
 }
