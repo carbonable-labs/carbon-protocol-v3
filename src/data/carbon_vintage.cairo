@@ -29,12 +29,12 @@ enum CarbonVintageType {
     Audited,
 }
 
-impl CarbonVintageTypeInto of Into<CarbonVintageType, felt252> {
-    fn into(self: CarbonVintageType) -> felt252 {
+impl CarbonVintageTypeInto of Into<CarbonVintageType, u8> {
+    fn into(self: CarbonVintageType) -> u8 {
         match self {
-            CarbonVintageType::Projected => 0,
-            CarbonVintageType::Confirmed => 1,
-            CarbonVintageType::Audited => 2,
+            CarbonVintageType::Projected => 1,
+            CarbonVintageType::Confirmed => 2,
+            CarbonVintageType::Audited => 3,
         }
     }
 }
