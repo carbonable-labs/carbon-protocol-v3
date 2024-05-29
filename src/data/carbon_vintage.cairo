@@ -2,19 +2,19 @@
 #[derive(Copy, Drop, Debug, starknet::Store, Serde, PartialEq)]
 struct CarbonVintage {
     /// The vintage of the Carbon Credit, which is also the token_id.
-    cc_vintage: u256,
+    vintage: u256,
     /// The total supply of Carbon Credit for this vintage.
-    cc_supply: u64,
+    supply: u64,
     /// The total amount of Carbon Credit that failed during audits.
-    cc_failed: u64,
+    failed: u64,
     /// The status of the Carbon Credit of this Vintage. 
-    cc_status: CarbonVintageType,
+    status: CarbonVintageType,
 }
 
 impl DefaultCarbonVintage of Default<CarbonVintage> {
     fn default() -> CarbonVintage {
         CarbonVintage {
-            cc_vintage: 0, cc_supply: 0, cc_failed: 0, cc_status: CarbonVintageType::Projected,
+            vintage: 0, supply: 0, failed: 0, status: CarbonVintageType::Projected,
         }
     }
 }
