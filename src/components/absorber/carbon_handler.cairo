@@ -18,7 +18,7 @@ mod AbsorberComponent {
     // Constants
 
     const YEAR_SECONDS: u64 = 31556925;
-    const MULT_ACCURATE_SHARE: u256 = 1_000_000;
+    const CC_DECIMALS_MULTIPLIER: u256 = 1_000_000_000_000;
     const CREDIT_CARBON_TON: u256 = 1_000_000;
     const CC_DECIMALS: u8 = 6;
 
@@ -134,15 +134,15 @@ mod AbsorberComponent {
         }
 
         fn share_to_cc(self: @ComponentState<TContractState>, share: u256, token_id: u256) -> u256 {
-            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
-            share * cc_supply / MULT_ACCURATE_SHARE
+            let cc_supply = self.get_vintage_supply(token_id).into();
+            share * cc_supply /100 / CC_DECIMALS_MULTIPLIER
         }
 
         fn cc_to_share(
             self: @ComponentState<TContractState>, cc_value: u256, token_id: u256
         ) -> u256 {
-            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
-            (cc_value * MULT_ACCURATE_SHARE / cc_supply)
+            let cc_supply = self.get_vintage_supply(token_id).into();
+            (cc_value *100 * CC_DECIMALS_MULTIPLIER / cc_supply)
         }
 
         fn is_setup(self: @ComponentState<TContractState>) -> bool {
@@ -233,8 +233,7 @@ mod AbsorberComponent {
                 } else {
                     current_absorption = *absorptions_u256[index] - *absorptions_u256[index - 1];
                 }
-
-                cc_distribution.append((current_absorption * share / MULT_ACCURATE_SHARE));
+                cc_distribution.append((current_absorption * share / CC_DECIMALS_MULTIPLIER / 100));
                 index += 1;
             };
             cc_distribution.span()

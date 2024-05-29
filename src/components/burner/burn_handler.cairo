@@ -32,7 +32,7 @@ mod BurnComponent {
 
     // Constants
 
-    const MULT_ACCURATE_SHARE: u256 = 1_000_000;
+    const CC_DECIMALS_MULTIPLIER: u256 = 1_000_000_000_000;
 
     #[storage]
     struct Storage {
@@ -99,7 +99,6 @@ mod BurnComponent {
             let erc1155 = IERC1155Dispatcher { contract_address: project_address };
             let caller_balance = erc1155.balance_of(caller_address, vintage);
             assert(caller_balance >= carbon_values, 'Not own enough carbon credits');
-
             // [Effect] Add pending retirement
             self._add_pending_retirement(caller_address, vintage, carbon_values);
 

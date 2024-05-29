@@ -34,7 +34,7 @@ mod MintComponent {
 
     // Constants
 
-    const MULT_ACCURATE_SHARE: u256 = 1_000_000;
+    const CC_DECIMALS_MULTIPLIER: u256 = 1_000_000_000_000;
 
     #[storage]
     struct Storage {
@@ -245,7 +245,7 @@ mod MintComponent {
 
             // [Interaction] Compute share of the amount of project
             let max_money_amount = self.Mint_max_money_amount.read();
-            let share = money_amount * MULT_ACCURATE_SHARE / max_money_amount;
+            let share = money_amount * CC_DECIMALS_MULTIPLIER / max_money_amount;
 
             // [Interaction] Compute the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
