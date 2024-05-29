@@ -176,7 +176,7 @@ mod AbsorberComponent {
             let _ = stored_absorptions.append(*absorptions[index]);
             // [Effect] 
             let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
-            vintage.cc_supply = *absorptions[index];
+            vintage.supply = *absorptions[index];
             let _ = stored_vintage_cc.set(index, vintage);
 
             loop {
@@ -193,7 +193,7 @@ mod AbsorberComponent {
                 let _ = stored_absorptions.append(*absorptions[index]);
                 let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
                 let mut current_absorption = *absorptions[index] - *absorptions[index - 1];
-                vintage.cc_supply = current_absorption;
+                vintage.supply = current_absorption;
                 let _ = stored_vintage_cc.set(index, vintage);
             };
 
@@ -250,17 +250,17 @@ mod AbsorberComponent {
                     break;
                 }
                 let stored_vintage: CarbonVintage = stored_vintages[index].clone();
-                if stored_vintage.cc_vintage == token_id.into() {
+                if stored_vintage.vintage == token_id.into() {
                     let mut vintage = stored_vintages[index].clone();
-                    let old_supply = vintage.cc_supply;
+                    let old_supply = vintage.supply;
                     if new_cc_supply < old_supply {
                         let diff = old_supply - new_cc_supply;
-                        vintage.cc_supply = new_cc_supply;
-                        vintage.cc_failed = vintage.cc_failed + diff;
+                        vintage.supply = new_cc_supply;
+                        vintage.failed = vintage.failed + diff;
                         let _ = stored_vintages.set(index, vintage);
                         break;
                     }
-                    vintage.cc_supply = new_cc_supply;
+                    vintage.supply = new_cc_supply;
                     let _ = stored_vintages.set(index, vintage);
                     break;
                 }
@@ -278,7 +278,7 @@ mod AbsorberComponent {
             self.Absorber_vintage_cc.read().array().expect('Can\'t get vintages').span()
         }
 
-        fn get_years_vintage(self: @ComponentState<TContractState>) -> Span<u256> {
+        fn get_vintage_years(self: @ComponentState<TContractState>) -> Span<u256> {
             let vintages = self.Absorber_vintage_cc.read();
             let mut years: Array<u256> = Default::default();
             let mut index = 0;
@@ -287,13 +287,13 @@ mod AbsorberComponent {
                     break ();
                 }
                 let vintage = vintages[index].clone();
-                years.append(vintage.cc_vintage);
+                years.append(vintage.vintage);
                 index += 1;
             };
             years.span()
         }
 
-        fn get_specific_carbon_vintage(
+        fn get_carbon_vintage(
             self: @ComponentState<TContractState>, year: u256
         ) -> CarbonVintage {
             if year == 0 {
@@ -310,7 +310,7 @@ mod AbsorberComponent {
                 }
 
                 tmp_vintage = carbon_vintages[index].clone();
-                if tmp_vintage.cc_vintage == year.into() {
+                if tmp_vintage.vintage == year.into() {
                     found_vintage = carbon_vintages[index].clone();
                 }
                 index += 1;
@@ -320,13 +320,13 @@ mod AbsorberComponent {
         }
 
         fn get_vintage_supply(self: @ComponentState<TContractState>, year: u256) -> u64 {
-            let carbon_vintage: CarbonVintage = self.get_specific_carbon_vintage(year);
-            carbon_vintage.cc_supply
+            let carbon_vintage: CarbonVintage = self.get_carbon_vintage(year);
+            carbon_vintage.supply
         }
 
         fn get_failed_cc_for_vintage(self: @ComponentState<TContractState>, year: u256) -> u64 {
-            let carbon_vintage: CarbonVintage = self.get_specific_carbon_vintage(year);
-            carbon_vintage.cc_failed
+            let carbon_vintage: CarbonVintage = self.get_carbon_vintage(year);
+            carbon_vintage.failed
         }
 
         fn get_cc_decimals(self: @ComponentState<TContractState>) -> u8 {
@@ -345,7 +345,7 @@ mod AbsorberComponent {
                 }
 
                 let mut tmp_vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
-                if tmp_vintage.cc_vintage == year.into() {
+                if tmp_vintage.vintage == year.into() {
                     let new_status: CarbonVintageType = match status {
                         0 => CarbonVintageType::Projected,
                         1 => CarbonVintageType::Confirmed,
@@ -353,7 +353,7 @@ mod AbsorberComponent {
                         _ => CarbonVintageType::Projected,
                     };
 
-                    tmp_vintage.cc_status = new_status;
+                    tmp_vintage.status = new_status;
                     let _ = carbon_vintages.set(index, tmp_vintage);
                 }
                 index += 1;
@@ -389,10 +389,10 @@ mod AbsorberComponent {
             let _ = stored_vintages
                 .append(
                     CarbonVintage {
-                        cc_vintage: starting_year.into(),
-                        cc_supply: 0,
-                        cc_failed: 0,
-                        cc_status: CarbonVintageType::Projected,
+                        vintage: starting_year.into(),
+                        supply: 0,
+                        failed: 0,
+                        status: CarbonVintageType::Projected,
                     }
                 );
             loop {
@@ -404,10 +404,10 @@ mod AbsorberComponent {
                 let _ = stored_vintages
                     .append(
                         CarbonVintage {
-                            cc_vintage: (starting_year + index).into(),
-                            cc_supply: 0,
-                            cc_failed: 0,
-                            cc_status: CarbonVintageType::Projected,
+                            vintage: (starting_year + index).into(),
+                            supply: 0,
+                            failed: 0,
+                            status: CarbonVintageType::Projected,
                         }
                     );
             };

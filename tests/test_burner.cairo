@@ -227,8 +227,8 @@ fn test_burner_retirement() {
 
     let share: u256 = 125000;
     let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
-    let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
-    project_contract.batch_mint(owner_address, cc_years_vintages, cc_distribution);
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    project_contract.batch_mint(owner_address, cc_vintage_years, cc_distribution);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -266,8 +266,8 @@ fn test_burner_retirement() {
 
 //     let share: u256 = 125000;
 //     let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
-//     let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
-//     project_contract.batch_mint(owner_address, cc_years_vintages, cc_distribution);
+//     let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+//     project_contract.batch_mint(owner_address, cc_vintage_years, cc_distribution);
 
 //     // [Effect] update Vintage status
 //     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -302,8 +302,8 @@ fn test_burner_wrong_status() {
 
     let share: u256 = 125000;
     let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
-    let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
-    project_contract.batch_mint(owner_address, cc_years_vintages, cc_distribution);
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    project_contract.batch_mint(owner_address, cc_vintage_years, cc_distribution);
 
     // [Effect] try to retire carbon credits
     let burner = IBurnHandlerDispatcher { contract_address: burner_address };

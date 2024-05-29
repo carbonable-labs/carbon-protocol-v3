@@ -57,9 +57,9 @@ trait ICarbonCreditsHandler<TContractState> {
     /// Returns the carbon credits vintage list.
     fn get_cc_vintages(self: @TContractState) -> Span<CarbonVintage>;
 
-    fn get_years_vintage(self: @TContractState) -> Span<u256>;
+    fn get_vintage_years(self: @TContractState) -> Span<u256>;
 
-    fn get_specific_carbon_vintage(self: @TContractState, year: u256) -> CarbonVintage;
+    fn get_carbon_vintage(self: @TContractState, year: u256) -> CarbonVintage;
 
     fn get_vintage_supply(self: @TContractState, year: u256) -> u64;
 

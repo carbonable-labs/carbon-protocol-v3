@@ -77,7 +77,7 @@ mod MintComponent {
     struct Buy {
         #[key]
         address: ContractAddress,
-        cc_years_vintages: Span<u256>,
+        cc_vintage_years: Span<u256>,
         cc_distributed: Span<u256>,
     }
 
@@ -252,8 +252,8 @@ mod MintComponent {
             let carbon_credits = ICarbonCreditsHandlerDispatcher {
                 contract_address: project_address
             };
-            let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
-            let n = cc_years_vintages.len();
+            let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+            let n = cc_vintage_years.len();
             // Initially, share is the same for all the vintages
             let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
             let mut index = 0;
@@ -280,7 +280,7 @@ mod MintComponent {
 
             // [Interaction] Mint
             let project = IProjectDispatcher { contract_address: project_address };
-            project.batch_mint(caller_address, cc_years_vintages, cc_shares);
+            project.batch_mint(caller_address, cc_vintage_years, cc_shares);
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
@@ -289,7 +289,7 @@ mod MintComponent {
                     Event::Buy(
                         Buy {
                             address: caller_address,
-                            cc_years_vintages: cc_years_vintages,
+                            cc_vintage_years: cc_vintage_years,
                             cc_distributed: cc_shares
                         }
                     )

@@ -123,8 +123,8 @@ fn default_setup() -> (ContractAddress, EventSpy) {
 /// Mint shares without the minter contract. Testing purposes only.
 fn mint_utils(project_address: ContractAddress, owner_address: ContractAddress, share: u256) {
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
-    let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
-    let n = cc_years_vintages.len();
+    let cc_vintage_years: Span<u256> = cc_handler.get_vintage_years();
+    let n = cc_vintage_years.len();
 
     let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
     let mut index = 0;
@@ -138,7 +138,7 @@ fn mint_utils(project_address: ContractAddress, owner_address: ContractAddress, 
     let cc_shares = cc_shares.span();
 
     let project = IProjectDispatcher { contract_address: project_address };
-    project.batch_mint(owner_address, cc_years_vintages, cc_shares);
+    project.batch_mint(owner_address, cc_vintage_years, cc_shares);
 }
 
 #[test]
@@ -178,8 +178,8 @@ fn test_project_batch_mint() {
 
     let share: u256 = 125000;
     let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
-    let cc_years_vintages: Span<u256> = carbon_credits.get_years_vintage();
-    project_contract.batch_mint(owner_address, cc_years_vintages, cc_distribution);
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    project_contract.batch_mint(owner_address, cc_vintage_years, cc_distribution);
 }
 
 #[test]
@@ -194,8 +194,8 @@ fn test_project_set_vintage_status() {
     assert(absorber.is_setup(), 'Error during setup');
 
     carbon_credits.update_vintage_status(2025, 2);
-    let vinatge: CarbonVintage = carbon_credits.get_specific_carbon_vintage(2025);
-    assert(vinatge.cc_status == CarbonVintageType::Audited, 'Error of status');
+    let vinatge: CarbonVintage = carbon_credits.get_carbon_vintage(2025);
+    assert(vinatge.status == CarbonVintageType::Audited, 'Error of status');
 }
 
 /// Test balance_of
@@ -214,7 +214,7 @@ fn test_project_balance_of() {
     let share = 33 * MULT_ACCURATE_SHARE / 100;
     mint_utils(project_address, owner_address, share);
 
-    let supply_vintage_2025 = carbon_credits.get_specific_carbon_vintage(2025).cc_supply;
+    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
     let expected_balance = 3300000;
     let balance = project_contract.balance_of(owner_address, 2025);
     assert(balance == expected_balance.into(), 'Error of balance');

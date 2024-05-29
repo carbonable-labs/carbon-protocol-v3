@@ -16,7 +16,7 @@ trait IExternal<ContractState> {
     fn balance_of_batch(
         self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
     ) -> Span<u256>;
-    fn balance_of_shares(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn shares_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
     fn safe_transfer_from(
         ref self: ContractState,
         from: ContractAddress,
@@ -206,7 +206,7 @@ mod Project {
             batch_balances.span()
         }
 
-        fn balance_of_shares(
+        fn shares_of(
             self: @ContractState, account: ContractAddress, token_id: u256
         ) -> u256 {
             self.erc1155.ERC1155_balances.read((token_id, account))

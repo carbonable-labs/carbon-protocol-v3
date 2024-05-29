@@ -90,9 +90,9 @@ mod BurnComponent {
                 contract_address: project_address
             };
             let stored_vintage: CarbonVintage = carbon_credits
-                .get_specific_carbon_vintage(vintage.try_into().expect('Invalid vintage year'));
+                .get_carbon_vintage(vintage.try_into().expect('Invalid vintage year'));
             assert(
-                stored_vintage.cc_status == CarbonVintageType::Audited,
+                stored_vintage.status == CarbonVintageType::Audited,
                 'Vintage status is not audited'
             );
 

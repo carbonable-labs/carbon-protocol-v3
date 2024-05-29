@@ -102,8 +102,8 @@ fn setup_project(
 /// Mint shares without the minter contract. Testing purposes only.
 fn mint_utils(project_address: ContractAddress, owner_address: ContractAddress, share: u256) {
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
-    let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
-    let n = cc_years_vintages.len();
+    let cc_vintage_years: Span<u256> = cc_handler.get_vintage_years();
+    let n = cc_vintage_years.len();
 
     let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
     let mut index = 0;
@@ -117,7 +117,7 @@ fn mint_utils(project_address: ContractAddress, owner_address: ContractAddress, 
     let cc_shares = cc_shares.span();
 
     let project = IProjectDispatcher { contract_address: project_address };
-    project.batch_mint(owner_address, cc_years_vintages, cc_shares);
+    project.batch_mint(owner_address, cc_vintage_years, cc_shares);
 }
 
 //
@@ -384,27 +384,27 @@ fn test_get_cc_vintages() {
     let starting_year = 2024;
     let mut index = 0;
 
-    let cc_vintage = cc_vintages.at(index);
+    let vintage = cc_vintages.at(index);
     let expected__cc_vintage = CarbonVintage {
-        cc_vintage: (starting_year + index).into(),
-        cc_supply: *absorptions.at(index),
-        cc_failed: 0,
-        cc_status: CarbonVintageType::Projected,
+        vintage: (starting_year + index).into(),
+        supply: *absorptions.at(index),
+        failed: 0,
+        status: CarbonVintageType::Projected,
     };
-    assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
+    assert(*vintage == expected__cc_vintage, 'vintage not set correctly');
     index += 1;
     loop {
         if index == absorptions.len() {
             break;
         }
-        let cc_vintage = cc_vintages.at(index);
+        let vintage = cc_vintages.at(index);
         let expected__cc_vintage = CarbonVintage {
-            cc_vintage: (starting_year + index).into(),
-            cc_supply: *absorptions.at(index) - *absorptions.at(index - 1),
-            cc_failed: 0,
-            cc_status: CarbonVintageType::Projected,
+            vintage: (starting_year + index).into(),
+            supply: *absorptions.at(index) - *absorptions.at(index - 1),
+            failed: 0,
+            status: CarbonVintageType::Projected,
         };
-        assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
+        assert(*vintage == expected__cc_vintage, 'vintage not set correctly');
         index += 1;
     };
     // [Assert] cc_vintages set to default values for non-set absorptions
@@ -412,14 +412,15 @@ fn test_get_cc_vintages() {
         if index == cc_vintages.len() {
             break;
         }
-        let cc_vintage = cc_vintages.at(index);
+        let vintage = cc_vintages.at(index);
         let expected__cc_vintage = CarbonVintage {
-            cc_vintage: (starting_year + index).into(),
-            cc_supply: 0,
-            cc_failed: 0,
-            cc_status: CarbonVintageType::Projected,
+            vintage: (starting_year + index).into(),
+            supply: 0,
+            failed: 0,
+            status: CarbonVintageType::Projected,
         };
-        assert(*cc_vintage == expected__cc_vintage, 'cc_vintage not set correctly');
+        
+        assert(*vintage == expected__cc_vintage, 'vintage not set correctly');
         index += 1;
     }
 }
@@ -485,21 +486,21 @@ fn test_rebase_half_supply() {
     let share = 500000; // 50%
     mint_utils(project_address, owner_address, share);
 
-    let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
+    let cc_vintage_years: Span<u256> = cc_handler.get_vintage_years();
 
     // Rebase every vintage with half the supply
     let mut index = 0;
     loop {
-        if index == cc_years_vintages.len() {
+        if index == cc_vintage_years.len() {
             break;
         }
-        let old_vintage_supply = cc_handler.get_vintage_supply(*cc_years_vintages.at(index));
-        let old_cc_balance = project.balance_of(owner_address, *cc_years_vintages.at(index));
+        let old_vintage_supply = cc_handler.get_vintage_supply(*cc_vintage_years.at(index));
+        let old_cc_balance = project.balance_of(owner_address, *cc_vintage_years.at(index));
         // rebase
-        absorber.rebase_vintage(*cc_years_vintages.at(index), old_vintage_supply / 2);
-        let new_vintage_supply = cc_handler.get_vintage_supply(*cc_years_vintages.at(index));
-        let new_cc_balance = project.balance_of(owner_address, *cc_years_vintages.at(index));
-        let failed_tokens = cc_handler.get_failed_cc_for_vintage(*cc_years_vintages.at(index));
+        absorber.rebase_vintage(*cc_vintage_years.at(index), old_vintage_supply / 2);
+        let new_vintage_supply = cc_handler.get_vintage_supply(*cc_vintage_years.at(index));
+        let new_cc_balance = project.balance_of(owner_address, *cc_vintage_years.at(index));
+        let failed_tokens = cc_handler.get_failed_cc_for_vintage(*cc_vintage_years.at(index));
         assert(new_vintage_supply == old_vintage_supply / 2, 'rebase not correct');
         assert(new_cc_balance == old_cc_balance / 2, 'balance error after rebase');
         assert(failed_tokens == old_vintage_supply - new_vintage_supply, 'failed tokens not 0');
