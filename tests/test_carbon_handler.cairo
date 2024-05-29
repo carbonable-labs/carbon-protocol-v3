@@ -33,7 +33,7 @@ use carbon_v3::components::absorber::interface::{
     ICarbonCreditsHandlerDispatcherTrait
 };
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::{
-    Event, AbsorptionUpdate, ProjectValueUpdate
+    Event, AbsorptionUpdate, ProjectValueUpdate, CC_DECIMALS_MULTIPLIER
 };
 use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
@@ -48,8 +48,6 @@ use carbon_v3::contracts::project::{
 // Constants
 
 const PROJECT_CARBON: u256 = 42;
-const MULT_ACCURATE_SHARE: u256 = 1_000_000;
-
 // Signers
 
 #[derive(Drop)]
@@ -328,7 +326,7 @@ fn test_compute_carbon_vintage_distribution() {
     let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
     setup_project(project_address, 121099000000, times, absorptions);
 
-    let share = 100000; // 10%
+    let share = 10*CC_DECIMALS_MULTIPLIER;  // 10%
     // [Assert] carbon_vintage_distribution computed correctly
     let distribution = project.compute_carbon_vintage_distribution(share);
     assert(distribution == array![0, 117975000000, 117975000000].span(), 'Wrong distribution');
@@ -358,7 +356,7 @@ fn test_compute_carbon_vintage_distribution_full_share() {
     let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
     setup_project(project_address, 121099000000, times, absorptions);
 
-    let share = 1000000; // 100%
+    let share = 100*CC_DECIMALS_MULTIPLIER;  // 100%
     // [Assert] carbon_vintage_distribution computed correctly
     let distribution = project.compute_carbon_vintage_distribution(share);
     assert(distribution == array![0, 1179750000000, 1179750000000].span(), 'Wrong distribution');
