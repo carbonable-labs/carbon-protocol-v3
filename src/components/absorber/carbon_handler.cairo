@@ -135,14 +135,14 @@ mod AbsorberComponent {
 
         fn share_to_cc(self: @ComponentState<TContractState>, share: u256, token_id: u256) -> u256 {
             let cc_supply = self.get_vintage_supply(token_id).into();
-            share * cc_supply /100 / CC_DECIMALS_MULTIPLIER
+            share * cc_supply / 100 / CC_DECIMALS_MULTIPLIER
         }
 
         fn cc_to_share(
             self: @ComponentState<TContractState>, cc_value: u256, token_id: u256
         ) -> u256 {
             let cc_supply = self.get_vintage_supply(token_id).into();
-            (cc_value *100 * CC_DECIMALS_MULTIPLIER / cc_supply)
+            (cc_value * 100 * CC_DECIMALS_MULTIPLIER / cc_supply)
         }
 
         fn is_setup(self: @ComponentState<TContractState>) -> bool {

@@ -20,3 +20,5 @@ mod mock {
     mod usdcarb;
     mod metadata;
 }
+
+mod tests_lib;
