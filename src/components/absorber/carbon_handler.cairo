@@ -134,14 +134,14 @@ mod AbsorberComponent {
         }
 
         fn share_to_cc(self: @ComponentState<TContractState>, share: u256, token_id: u256) -> u256 {
-            let cc_supply = self.get_vintage_supply(token_id).into();
+            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
             share * cc_supply / MULT_ACCURATE_SHARE
         }
 
         fn cc_to_share(
             self: @ComponentState<TContractState>, cc_value: u256, token_id: u256
         ) -> u256 {
-            let cc_supply = self.get_vintage_supply(token_id).into();
+            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
             (cc_value * MULT_ACCURATE_SHARE / cc_supply)
         }
 
@@ -319,22 +319,12 @@ mod AbsorberComponent {
             return found_vintage;
         }
 
-        fn get_vintage_supply(self: @ComponentState<TContractState>, year: u256) -> u64 {
-            let carbon_vintage: CarbonVintage = self.get_carbon_vintage(year);
-            carbon_vintage.supply
-        }
-
-        fn get_failed_cc_for_vintage(self: @ComponentState<TContractState>, year: u256) -> u64 {
-            let carbon_vintage: CarbonVintage = self.get_carbon_vintage(year);
-            carbon_vintage.failed
-        }
-
         fn get_cc_decimals(self: @ComponentState<TContractState>) -> u8 {
             CC_DECIMALS
         }
 
         fn update_vintage_status(
-            ref self: ComponentState<TContractState>, year: u64, status: felt252
+            ref self: ComponentState<TContractState>, year: u64, status: u8
         ) {
             let mut carbon_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
             let mut index = 0;

@@ -61,13 +61,9 @@ trait ICarbonCreditsHandler<TContractState> {
 
     fn get_carbon_vintage(self: @TContractState, year: u256) -> CarbonVintage;
 
-    fn get_vintage_supply(self: @TContractState, year: u256) -> u64;
-
-    fn get_failed_cc_for_vintage(self: @TContractState, year: u256) -> u64;
-
     // Get number of decimal for total supply to have a carbon credit
     fn get_cc_decimals(self: @TContractState) -> u8;
 
     // Update the vintage status
-    fn update_vintage_status(ref self: TContractState, year: u64, status: felt252);
+    fn update_vintage_status(ref self: TContractState, year: u64, status: u8);
 }
