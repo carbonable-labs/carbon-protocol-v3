@@ -279,7 +279,7 @@ fn test_transfer_rebase_transfer() {
     let balance2 = project_contract.balance_of(receiver_address, 2025);
     assert(balance2 == initial_balance, 'Error of balance');
 
-    let old_vintage_supply = cc_handler.get_vintage_supply(2025);
+    let old_vintage_supply = cc_handler.get_carbon_vintage(2025).supply;
     absorber.rebase_vintage(2025, old_vintage_supply / 2);
     let balance1 = project_contract.balance_of(owner_address, 2025);
     assert(balance1 == 0, 'Error of balance');
