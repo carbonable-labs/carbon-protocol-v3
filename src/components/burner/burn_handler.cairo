@@ -92,8 +92,7 @@ mod BurnComponent {
             let stored_vintage: CarbonVintage = carbon_credits
                 .get_carbon_vintage(vintage.try_into().expect('Invalid vintage year'));
             assert(
-                stored_vintage.status == CarbonVintageType::Audited,
-                'Vintage status is not audited'
+                stored_vintage.status == CarbonVintageType::Audited, 'Vintage status is not audited'
             );
 
             // [Check] caller owns the carbon credits for the vintage

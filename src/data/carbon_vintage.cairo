@@ -13,9 +13,7 @@ struct CarbonVintage {
 
 impl DefaultCarbonVintage of Default<CarbonVintage> {
     fn default() -> CarbonVintage {
-        CarbonVintage {
-            vintage: 0, supply: 0, failed: 0, status: CarbonVintageType::Unset,
-        }
+        CarbonVintage { vintage: 0, supply: 0, failed: 0, status: CarbonVintageType::Unset, }
     }
 }
 
@@ -35,12 +33,12 @@ impl CarbonVintageTypeInto of Into<CarbonVintageType, u8> {
     fn into(self: CarbonVintageType) -> u8 {
         let mut res: u8 = 0;
         match self {
-            CarbonVintageType::Unset => {res = 0},
-            CarbonVintageType::Projected => {res = 1},
-            CarbonVintageType::Confirmed => {res = 2},
-            CarbonVintageType::Audited => {res = 3},
+            CarbonVintageType::Unset => { res = 0 },
+            CarbonVintageType::Projected => { res = 1 },
+            CarbonVintageType::Confirmed => { res = 2 },
+            CarbonVintageType::Audited => { res = 3 },
             // Panic if the value is not in the enum
-            _ => {assert(false, 'Invalid CarbonVintageType');},
+            _ => { assert(false, 'Invalid CarbonVintageType'); },
         };
         res
     }

@@ -206,9 +206,7 @@ mod Project {
             batch_balances.span()
         }
 
-        fn shares_of(
-            self: @ContractState, account: ContractAddress, token_id: u256
-        ) -> u256 {
+        fn shares_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
             self.erc1155.ERC1155_balances.read((token_id, account))
         }
 

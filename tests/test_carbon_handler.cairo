@@ -419,7 +419,7 @@ fn test_get_cc_vintages() {
             failed: 0,
             status: CarbonVintageType::Projected,
         };
-        
+
         assert(*vintage == expected__cc_vintage, 'vintage not set correctly');
         index += 1;
     }
