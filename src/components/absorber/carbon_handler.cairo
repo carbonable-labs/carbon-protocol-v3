@@ -294,9 +294,9 @@ mod AbsorberComponent {
         }
 
         fn get_carbon_vintage(
-            self: @ComponentState<TContractState>, year: u256
+            self: @ComponentState<TContractState>, token_id: u256
         ) -> CarbonVintage {
-            if year == 0 {
+            if token_id == 0 {
                 return Default::default();
             }
             let carbon_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
@@ -310,7 +310,7 @@ mod AbsorberComponent {
                 }
 
                 tmp_vintage = carbon_vintages[index].clone();
-                if tmp_vintage.vintage == year.into() {
+                if tmp_vintage.vintage == token_id.into() {
                     found_vintage = carbon_vintages[index].clone();
                 }
                 index += 1;
@@ -324,7 +324,7 @@ mod AbsorberComponent {
         }
 
         fn update_vintage_status(
-            ref self: ComponentState<TContractState>, year: u64, status: u8
+            ref self: ComponentState<TContractState>, token_id: u64, status: u8
         ) {
             let mut carbon_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
             let mut index = 0;
@@ -335,7 +335,7 @@ mod AbsorberComponent {
                 }
 
                 let mut tmp_vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
-                if tmp_vintage.vintage == year.into() {
+                if tmp_vintage.vintage == token_id.into() {
                     let new_status: CarbonVintageType = match status {
                         0 => CarbonVintageType::Projected,
                         1 => CarbonVintageType::Confirmed,
