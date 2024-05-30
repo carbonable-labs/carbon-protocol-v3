@@ -153,7 +153,7 @@ fn setup_project(
 
 #[test]
 fn test_set_project_carbon() {
-    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, mut spy) = deploy_project(owner_address);
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] project_carbon set correctly
@@ -180,7 +180,7 @@ fn test_set_project_carbon() {
 
 #[test]
 fn test_is_public_sale_open() {
-    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = deploy_project(owner_address);
     let (erc20_address, _) = deploy_erc20(owner_address);
     let (minter_address, _) = deploy_minter(owner_address, project_address, erc20_address);
@@ -193,7 +193,7 @@ fn test_is_public_sale_open() {
 
 #[test]
 fn test_is_public_buy() {
-    let owner_address: ContractAddress = contract_address_const::<'owner'>();
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = deploy_project(owner_address);
     let (erc20_address, _) = deploy_erc20(owner_address);
     let (minter_address, _) = deploy_minter(owner_address, project_address, erc20_address);
