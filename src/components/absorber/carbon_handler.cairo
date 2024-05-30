@@ -436,13 +436,15 @@ mod AbsorberComponent {
         }
 
         fn __felt252_into_CarbonVintageType(
-            self: @ComponentState<TContractState>, status: felt252
+            self: @ComponentState<TContractState>, status: u8
         ) -> CarbonVintageType {
+            assert(status < 4, 'Invalid status');
             match status {
-                0 => CarbonVintageType::Projected,
-                1 => CarbonVintageType::Confirmed,
-                2 => CarbonVintageType::Audited,
-                _ => CarbonVintageType::Projected,
+                0 => CarbonVintageType::Unset,
+                1 => CarbonVintageType::Projected,
+                2 => CarbonVintageType::Confirmed,
+                3 => CarbonVintageType::Audited,
+                _ => CarbonVintageType::Unset,
             }
         }
     }
