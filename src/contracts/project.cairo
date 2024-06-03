@@ -92,7 +92,7 @@ mod Project {
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
     const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
-    const CC_DECIMALS_MULTIPLIER: u256 = 1_000_000_000_000;
+    const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
 
     #[storage]
     struct Storage {

@@ -8,6 +8,7 @@ mod MintComponent {
     use array::{Array, ArrayTrait};
     use hash::HashStateTrait;
     use poseidon::PoseidonTrait;
+    use debug::PrintTrait;
 
     // Starknet imports
 
@@ -34,7 +35,7 @@ mod MintComponent {
 
     // Constants
 
-    const CC_DECIMALS_MULTIPLIER: u256 = 1_000_000_000_000;
+    const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
 
     #[storage]
     struct Storage {
@@ -173,7 +174,6 @@ mod MintComponent {
             // [Check] Public sale is open
             let public_sale_open = self.Mint_public_sale_open.read();
             assert(public_sale_open, 'Sale is closed');
-
             // [Interaction] Buy
             self._buy(money_amount, force)
         }
@@ -242,7 +242,6 @@ mod MintComponent {
             let remaining_money_amount = self.Mint_remaining_money_amount.read();
 
             assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
-
             // [Interaction] Compute share of the amount of project
             let max_money_amount = self.Mint_max_money_amount.read();
             let share = money_amount * CC_DECIMALS_MULTIPLIER / max_money_amount;

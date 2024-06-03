@@ -54,7 +54,7 @@ use carbon_v3::mock::usdcarb::USDCarb;
 
 // Utils for testing purposes
 
-use carbon_v3::tests_lib::{default_setup_and_deploy, mint_utils, deploy_burner};
+use carbon_v3::tests_lib::{default_setup_and_deploy, buy_utils, deploy_burner, deploy_erc20, deploy_minter};
 
 // Constants
 const PROJECT_CARBON: u256 = 42;
@@ -82,7 +82,7 @@ struct Contracts {
 fn test_burner_init() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let (burner_address, _) = deploy_burner(owner_address, project_address);
+    let (burner_address, _) = deploy_burner(project_address);
 
     let burner = IBurnHandlerDispatcher { contract_address: burner_address };
 
@@ -101,11 +101,16 @@ fn test_burner_init() {
 fn test_burner_retirement() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let (burner_address, _) = deploy_burner(owner_address, project_address);
+    let (burner_address, _) = deploy_burner(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
 
     // [Prank] use owner address as caller
     start_prank(CheatTarget::One(project_address), owner_address);
     start_prank(CheatTarget::One(burner_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
 
     // [Effect] setup a batch of carbon credits
     let absorber = IAbsorberDispatcher { contract_address: project_address };
@@ -118,7 +123,7 @@ fn test_burner_retirement() {
     assert(decimal == 6, 'Error of decimal');
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER; // 10%
-    mint_utils(project_address, owner_address, share);
+    buy_utils(minter_address, erc20_address, share);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -138,11 +143,15 @@ fn test_burner_retirement() {
 fn test_burner_not_enough_CC() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let (burner_address, _) = deploy_burner(owner_address, project_address);
+    let (burner_address, _) = deploy_burner(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     // [Prank] use owner address as caller
     start_prank(CheatTarget::One(project_address), owner_address);
     start_prank(CheatTarget::One(burner_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
 
     // [Effect] setup a batch of carbon credits
     let absorber = IAbsorberDispatcher { contract_address: project_address };
@@ -155,7 +164,7 @@ fn test_burner_not_enough_CC() {
     assert(decimal == 6, 'Error of decimal');
 
     let share = 33 * CC_DECIMALS_MULTIPLIER;
-    mint_utils(project_address, owner_address, share);
+    buy_utils(minter_address, erc20_address, share);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -171,11 +180,15 @@ fn test_burner_not_enough_CC() {
 fn test_burner_wrong_status() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let (burner_address, _) = deploy_burner(owner_address, project_address);
+    let (burner_address, _) = deploy_burner(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     // [Prank] use owner address as caller
     start_prank(CheatTarget::One(project_address), owner_address);
     start_prank(CheatTarget::One(burner_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
 
     // [Effect] setup a batch of carbon credits
     let absorber = IAbsorberDispatcher { contract_address: project_address };
@@ -187,7 +200,7 @@ fn test_burner_wrong_status() {
     assert(decimal == 6, 'Error of decimal');
 
     let share = 33 * CC_DECIMALS_MULTIPLIER;
-    mint_utils(project_address, owner_address, share);
+    buy_utils(minter_address, erc20_address, share);
 
     // [Effect] try to retire carbon credits
     let burner = IBurnHandlerDispatcher { contract_address: burner_address };

@@ -37,7 +37,7 @@ use carbon_v3::contracts::project::{
 /// 
 use carbon_v3::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, mint_utils
+    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_erc20, deploy_minter
 };
 
 #[test]
@@ -93,8 +93,8 @@ fn test_project_set_vintage_status() {
     assert(absorber.is_setup(), 'Error during setup');
 
     carbon_credits.update_vintage_status(2025, 3);
-    let vinatge: CarbonVintage = carbon_credits.get_carbon_vintage(2025);
-    assert(vinatge.status == CarbonVintageType::Audited, 'Error of status');
+    let vintage: CarbonVintage = carbon_credits.get_carbon_vintage(2025);
+    assert(vintage.status == CarbonVintageType::Audited, 'Error of status');
 }
 
 /// Test balance_of
@@ -105,17 +105,22 @@ fn test_project_balance_of() {
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
 
     assert(absorber.is_setup(), 'Error during setup');
 
     let share = 33 * CC_DECIMALS_MULTIPLIER;
-    mint_utils(project_address, owner_address, share);
+    buy_utils(minter_address, erc20_address, share);
 
     let supply_vintage_2025 = carbon_credits.get_specific_carbon_vintage(2025).cc_supply;
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER / 100;
     let balance = project_contract.balance_of(owner_address, 2025);
+
     assert(equals_with_error(balance, expected_balance, 100), 'Error of balance');
 }
 
@@ -126,17 +131,22 @@ fn test_transfer_without_loss() {
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
 
     assert(absorber.is_setup(), 'Error during setup');
 
     let share = 33 * CC_DECIMALS_MULTIPLIER;
-    mint_utils(project_address, owner_address, share);
+    buy_utils(minter_address, erc20_address, share);
 
     let supply_vintage_2025 = carbon_credits.get_specific_carbon_vintage(2025).cc_supply;
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER / 100;
     let balance = project_contract.balance_of(owner_address, 2025);
+
     assert(equals_with_error(balance, expected_balance, 100), 'Error balance owner 1');
 
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
@@ -163,7 +173,11 @@ fn test_transfer_rebase_transfer(first_percentage_rebase: u256, second_percentag
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
     start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
     assert(absorber.is_setup(), 'Error during setup');
 
     // Format fuzzing parameters, percentages with 6 digits after the comma, max 299.999999%
@@ -181,7 +195,7 @@ fn test_transfer_rebase_transfer(first_percentage_rebase: u256, second_percentag
         / second_percentage_rebase;
     let share = 33 * CC_DECIMALS_MULTIPLIER;
 
-    mint_utils(project_address, owner_address, share);
+    buy_utils(minter_address, erc20_address, share);
     let initial_balance = project_contract.balance_of(owner_address, 2025);
 
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
@@ -189,7 +203,8 @@ fn test_transfer_rebase_transfer(first_percentage_rebase: u256, second_percentag
         .safe_transfer_from(
             owner_address, receiver_address, 2025, initial_balance.into(), array![].span()
         );
-    let initial_vintage_supply = cc_handler.get_vintage_supply(2025);
+
+    let initial_vintage_supply = cc_handler.get_carbon_vintage(2025).supply;
     let new_vintage_supply_1 = initial_vintage_supply
         * first_percentage_rebase.try_into().unwrap()
         / 100_000;

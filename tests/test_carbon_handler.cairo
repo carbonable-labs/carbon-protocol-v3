@@ -19,6 +19,7 @@ use starknet::testing::{set_caller_address, set_contract_address};
 
 use openzeppelin::tests::utils::constants as c;
 use openzeppelin::utils::serde::SerializedAppend;
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::{
     CheatTarget, ContractClassTrait, test_address, spy_events, EventSpy, SpyOn, EventAssertions,
@@ -49,7 +50,7 @@ use carbon_v3::contracts::project::{
 
 use carbon_v3::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, mint_utils, deploy_burner
+    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_burner, deploy_minter, deploy_erc20
 };
 
 // Constants
@@ -378,17 +379,20 @@ fn test_get_cc_vintages() {
 #[test]
 fn test_rebase_half_supply() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = deploy_project();
+    let (project_address, _) = default_setup_and_deploy();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorption();
-
-    setup_project(project_address, 8000000000, times, absorptions,);
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let project = IProjectDispatcher { contract_address: project_address };
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
-    let share = 500000; // 50%
-    mint_utils(project_address, owner_address, share);
+
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(project_address), owner_address);
+    let share = 50*CC_DECIMALS_MULTIPLIER; // 50%
+
+    buy_utils(minter_address, erc20_address, share);
 
     let cc_vintage_years: Span<u256> = cc_handler.get_vintage_years();
 

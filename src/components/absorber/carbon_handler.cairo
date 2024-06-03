@@ -18,7 +18,7 @@ mod AbsorberComponent {
     // Constants
 
     const YEAR_SECONDS: u64 = 31556925;
-    const CC_DECIMALS_MULTIPLIER: u256 = 1_000_000_000_000;
+    const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
     const CREDIT_CARBON_TON: u256 = 1_000_000;
     const CC_DECIMALS: u8 = 6;
 
@@ -134,15 +134,15 @@ mod AbsorberComponent {
         }
 
         fn share_to_cc(self: @ComponentState<TContractState>, share: u256, token_id: u256) -> u256 {
-            let cc_supply = self.get_vintage_supply(token_id).into();
-            share * cc_supply / 100 / CC_DECIMALS_MULTIPLIER
+            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
+            share * cc_supply / CC_DECIMALS_MULTIPLIER
         }
 
         fn cc_to_share(
             self: @ComponentState<TContractState>, cc_value: u256, token_id: u256
         ) -> u256 {
-            let cc_supply = self.get_vintage_supply(token_id).into();
-            (cc_value * 100 * CC_DECIMALS_MULTIPLIER / cc_supply)
+            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
+            (cc_value * CC_DECIMALS_MULTIPLIER / cc_supply)
         }
 
         fn is_setup(self: @ComponentState<TContractState>) -> bool {
@@ -325,6 +325,7 @@ mod AbsorberComponent {
         fn update_vintage_status(
             ref self: ComponentState<TContractState>, token_id: u64, status: u8
         ) {
+            let new_status: CarbonVintageType = self.__felt252_into_CarbonVintageType(status);
             let mut carbon_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
             let mut index = 0;
 
@@ -335,14 +336,6 @@ mod AbsorberComponent {
 
                 let mut tmp_vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
                 if tmp_vintage.vintage == token_id.into() {
-                    let new_status: CarbonVintageType = match status {
-                        0 => CarbonVintageType::Unset,
-                        1 => CarbonVintageType::Projected,
-                        2 => CarbonVintageType::Confirmed,
-                        3 => CarbonVintageType::Audited,
-                        _ => CarbonVintageType::Unset,
-                    };
-
                     tmp_vintage.status = new_status;
                     let _ = carbon_vintages.set(index, tmp_vintage);
                 }
