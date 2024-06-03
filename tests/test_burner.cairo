@@ -122,7 +122,7 @@ fn test_burner_retirement() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER; // 10%
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER /100; // 10%
     buy_utils(minter_address, erc20_address, share);
 
     // [Effect] update Vintage status
@@ -163,7 +163,7 @@ fn test_burner_not_enough_CC() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER;
+    let share = 33 * CC_DECIMALS_MULTIPLIER /100;
     buy_utils(minter_address, erc20_address, share);
 
     // [Effect] update Vintage status
@@ -199,7 +199,7 @@ fn test_burner_wrong_status() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER;
+    let share = 33 * CC_DECIMALS_MULTIPLIER /100; // 33%
     buy_utils(minter_address, erc20_address, share);
 
     // [Effect] try to retire carbon credits

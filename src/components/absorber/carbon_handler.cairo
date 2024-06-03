@@ -210,35 +210,6 @@ mod AbsorberComponent {
             self.emit(Event::ProjectValueUpdate(ProjectValueUpdate { value: project_carbon }));
         }
 
-        fn compute_carbon_vintage_distribution(
-            self: @ComponentState<TContractState>, share: u256
-        ) -> Span<u256> {
-            let times = self.Absorber_times.read();
-            let absorptions = self.Absorber_absorptions.read();
-            let absorptions_u256 = self
-                .__span_u64_into_u256(absorptions.array().expect('Can\'t get absorptions').span());
-
-            // [Check] list time and absorptions are equal size
-            assert(times.len() == absorptions.len(), Errors::INVALID_ARRAY_LENGTH);
-
-            let mut cc_distribution: Array<u256> = Default::default();
-            let mut index = 0;
-            loop {
-                if index == times.len() {
-                    break ();
-                }
-                let mut current_absorption: u256 = 0;
-                if index == 0 {
-                    current_absorption = *absorptions_u256[index];
-                } else {
-                    current_absorption = *absorptions_u256[index] - *absorptions_u256[index - 1];
-                }
-                cc_distribution.append((current_absorption * share / CC_DECIMALS_MULTIPLIER / 100));
-                index += 1;
-            };
-            cc_distribution.span()
-        }
-
         fn rebase_vintage(
             ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u64
         ) {
