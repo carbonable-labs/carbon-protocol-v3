@@ -49,10 +49,15 @@ use carbon_v3::contracts::project::{
     Project, IExternalDispatcher as IProjectDispatcher,
     IExternalDispatcherTrait as IProjectDispatcherTrait
 };
-
 use carbon_v3::contracts::minter::Minter;
-
 use carbon_v3::mock::usdcarb::USDCarb;
+
+// Utils for testing purposes
+
+use carbon_v3::tests_lib::{
+    get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project, default_setup_and_deploy, deploy_burner,
+    deploy_erc20, deploy_minter
+};
 
 // Constants
 
@@ -73,79 +78,6 @@ struct Contracts {
 }
 
 //
-// Setup
-//
-
-/// Deploys a project contract.
-fn deploy_project(owner: ContractAddress) -> (ContractAddress, EventSpy) {
-    let contract = snf::declare('Project');
-    let uri = 'uri';
-    let starting_year: u64 = 2024;
-    let number_of_years: u64 = 20;
-    let mut calldata: Array<felt252> = array![];
-    calldata.append(uri);
-    calldata.append(owner.into());
-    calldata.append(starting_year.into());
-    calldata.append(number_of_years.into());
-    let contract_address = contract.deploy(@calldata).unwrap();
-
-    let mut spy = snf::spy_events(SpyOn::One(contract_address));
-
-    (contract_address, spy)
-}
-
-/// Deploy erc20 contract.
-fn deploy_erc20(owner: ContractAddress) -> (ContractAddress, EventSpy) {
-    let contract = snf::declare('USDCarb');
-    let mut calldata: Array<felt252> = array![];
-    calldata.append(owner.into());
-    calldata.append(owner.into());
-    let contract_address = contract.deploy(@calldata).unwrap();
-
-    let mut spy = snf::spy_events(SpyOn::One(contract_address));
-
-    (contract_address, spy)
-}
-
-/// Deploys a minter contract.
-fn deploy_minter(
-    owner: ContractAddress, project_address: ContractAddress, payment_address: ContractAddress
-) -> (ContractAddress, EventSpy) {
-    let contract = snf::declare('Minter');
-    let public_sale: bool = true;
-    let max_value: felt252 = 8000000000;
-    let unit_price: felt252 = 11;
-    let mut calldata: Array<felt252> = array![];
-    calldata.append(project_address.into());
-    calldata.append(payment_address.into());
-    calldata.append(public_sale.into());
-    calldata.append(max_value);
-    calldata.append(0);
-    calldata.append(unit_price);
-    calldata.append(0);
-    calldata.append(owner.into());
-
-    let contract_address = contract.deploy(@calldata).unwrap();
-
-    let mut spy = snf::spy_events(SpyOn::One(contract_address));
-
-    (contract_address, spy)
-}
-
-/// Sets up the project contract.
-fn setup_project(
-    contract_address: ContractAddress,
-    project_carbon: u256,
-    times: Span<u64>,
-    absorptions: Span<u64>
-) {
-    let project = IAbsorberDispatcher { contract_address };
-
-    project.set_absorptions(times, absorptions);
-    project.set_project_carbon(project_carbon);
-}
-
-//
 // Tests
 //
 
@@ -153,8 +85,7 @@ fn setup_project(
 
 #[test]
 fn test_set_project_carbon() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, mut spy) = deploy_project(owner_address);
+    let (project_address, mut spy) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
     // [Assert] project_carbon set correctly
     project.set_project_carbon(PROJECT_CARBON.into());
@@ -180,10 +111,9 @@ fn test_set_project_carbon() {
 
 #[test]
 fn test_is_public_sale_open() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = deploy_project(owner_address);
-    let (erc20_address, _) = deploy_erc20(owner_address);
-    let (minter_address, _) = deploy_minter(owner_address, project_address, erc20_address);
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
     // [Assert] project_carbon set correctly
@@ -194,59 +124,16 @@ fn test_is_public_sale_open() {
 #[test]
 fn test_is_public_buy() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = deploy_project(owner_address);
-    let (erc20_address, _) = deploy_erc20(owner_address);
-    let (minter_address, _) = deploy_minter(owner_address, project_address, erc20_address);
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    let times: Span<u64> = array![
-        1674579600,
-        1706115600,
-        1737738000,
-        1769274000,
-        1800810000,
-        1832346000,
-        1863968400,
-        1895504400,
-        1927040400,
-        1958576400,
-        1990198800,
-        2021734800,
-        2053270800,
-        2084806800,
-        2116429200,
-        2147965200,
-        2179501200,
-        2211037200,
-        2242659600,
-        2274195600
-    ]
-        .span();
-
-    let absorptions: Span<u64> = array![
-        0,
-        29609535,
-        47991466,
-        88828605,
-        118438140,
-        370922507,
-        623406874,
-        875891241,
-        1128375608,
-        1380859976,
-        2076175721,
-        2771491466,
-        3466807212,
-        4162122957,
-        4857438703,
-        5552754448,
-        6248070193,
-        6943385939,
-        7638701684,
-        8000000000
-    ]
-        .span();
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
 
     setup_project(project_address, 8000000000, times, absorptions,);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
     let project = IAbsorberDispatcher { contract_address: project_address };
@@ -270,7 +157,6 @@ fn test_is_public_buy() {
     erc20.approve(minter_address, amount_to_buy);
 
     let tokenized_cc: Span<u256> = minter.public_buy(amount_to_buy, false);
-
     assert(tokenized_cc.len() == 20, 'cc should have 20 element');
 }
 

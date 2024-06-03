@@ -31,6 +31,7 @@ use carbon_v3::contracts::project::{
     Project, IExternalDispatcher as IProjectDispatcher,
     IExternalDispatcherTrait as IProjectDispatcherTrait
 };
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 
 ///
@@ -105,6 +106,12 @@ fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
     diff <= error
 }
 
+// testing with shares is easier to determine the expected values instead of amount in dollars
+fn share_to_buy_amount(minter_address: ContractAddress, share: u256) -> u256 {
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let max_money_amount = minter.get_max_money_amount();
+    share * max_money_amount / CC_DECIMALS_MULTIPLIER/100
+}
 
 ///
 /// Deploy and setup functions
@@ -147,11 +154,10 @@ fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
     (project_address, spy)
 }
 
-/// Deploys a minter contract.
-fn deploy_burner(
-    owner: ContractAddress, project_address: ContractAddress
-) -> (ContractAddress, EventSpy) {
+/// Deploys the burner contract.
+fn deploy_burner(project_address: ContractAddress) -> (ContractAddress, EventSpy) {
     let contract = snf::declare('Burner');
+    let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
     calldata.append(project_address.into());
     calldata.append(owner.into());
@@ -163,8 +169,50 @@ fn deploy_burner(
     (contract_address, spy)
 }
 
-fn fuzzing_setup(cc_supply: u64) -> (ContractAddress, EventSpy) {
+/// Deploys a minter contract.
+fn deploy_minter(
+    project_address: ContractAddress, payment_address: ContractAddress
+) -> (ContractAddress, EventSpy) {
+    let contract = snf::declare('Minter');
+    let owner: ContractAddress = contract_address_const::<'OWNER'>();
+    let public_sale: bool = true;
+    let max_value: felt252 = 8000000000;
+    let unit_price: felt252 = 11;
+    let mut calldata: Array<felt252> = array![];
+    calldata.append(project_address.into());
+    calldata.append(payment_address.into());
+    calldata.append(public_sale.into());
+    calldata.append(max_value);
+    calldata.append(0);
+    calldata.append(unit_price);
+    calldata.append(0);
+    calldata.append(owner.into());
+
+    let contract_address = contract.deploy(@calldata).unwrap();
+
+    let mut spy = snf::spy_events(SpyOn::One(contract_address));
+
+    (contract_address, spy)
+}
+
+/// Deploy erc20 contract.
+fn deploy_erc20() -> (ContractAddress, EventSpy) {
+    let contract = snf::declare('USDCarb');
+    let owner: ContractAddress = contract_address_const::<'OWNER'>();
+    let mut calldata: Array<felt252> = array![];
+    calldata.append(owner.into());
+    calldata.append(owner.into());
+    let contract_address = contract.deploy(@calldata).unwrap();
+
+    let mut spy = snf::spy_events(SpyOn::One(contract_address));
+
+    (contract_address, spy)
+}
+
+fn fuzzing_setup(cc_supply: u64) -> (ContractAddress, ContractAddress, ContractAddress, EventSpy) {
     let (project_address, spy) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let times: Span<u64> = get_mock_times();
     // Tests are done on a single vintage, thus the absorptions are the same
@@ -192,28 +240,17 @@ fn fuzzing_setup(cc_supply: u64) -> (ContractAddress, EventSpy) {
     ]
         .span();
     setup_project(project_address, 8000000000, times, absorptions,);
-    (project_address, spy)
+    (project_address, minter_address, erc20_address, spy)
 }
 
-/// Mint shares without the minter contract. Testing purposes only.
-fn mint_utils(project_address: ContractAddress, owner_address: ContractAddress, share: u256) {
-    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
-    let cc_years_vintages: Span<u256> = cc_handler.get_years_vintage();
-    let n = cc_years_vintages.len();
+/// Mint
+fn buy_utils(minter_address: ContractAddress, erc20_address: ContractAddress, share: u256) {
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let amount_to_buy = share_to_buy_amount(minter_address, share);
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    erc20.approve(minter_address, amount_to_buy);
 
-    let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
-    let mut index = 0;
-    loop {
-        if index == n {
-            break;
-        }
-        cc_shares.append(share);
-        index += 1;
-    };
-    let cc_shares = cc_shares.span();
-
-    let project = IProjectDispatcher { contract_address: project_address };
-    project.batch_mint(owner_address, cc_years_vintages, cc_shares);
+    minter.public_buy(amount_to_buy, false);
 }
 
 ///
@@ -241,14 +278,16 @@ fn perform_fuzzed_transfer(
 
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
-    let (project_address, _) = fuzzing_setup(supply);
+    let (project_address, minter_address, erc20_address, _) = fuzzing_setup(supply);
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    mint_utils(project_address, owner_address, share);
+    buy_utils(minter_address, erc20_address, share);
 
     let initial_balance = project_contract.balance_of(owner_address, 2025);
     let amount = percentage_of_balance_to_send * initial_balance / 10_000;

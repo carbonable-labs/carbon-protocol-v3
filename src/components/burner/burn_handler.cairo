@@ -32,7 +32,7 @@ mod BurnComponent {
 
     // Constants
 
-    const CC_DECIMALS_MULTIPLIER: u256 = 1_000_000_000_000;
+    const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
 
     #[storage]
     struct Storage {
