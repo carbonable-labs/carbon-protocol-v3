@@ -54,7 +54,9 @@ use carbon_v3::mock::usdcarb::USDCarb;
 
 // Utils for testing purposes
 
-use carbon_v3::tests_lib::{default_setup_and_deploy, buy_utils, deploy_burner, deploy_erc20, deploy_minter};
+use carbon_v3::tests_lib::{
+    default_setup_and_deploy, buy_utils, deploy_burner, deploy_erc20, deploy_minter
+};
 
 // Constants
 const PROJECT_CARBON: u256 = 42;
@@ -105,7 +107,6 @@ fn test_burner_retirement() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-
     // [Prank] use owner address as caller
     start_prank(CheatTarget::One(project_address), owner_address);
     start_prank(CheatTarget::One(burner_address), owner_address);
@@ -122,7 +123,7 @@ fn test_burner_retirement() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER /100; // 10%
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
     buy_utils(minter_address, erc20_address, share);
 
     // [Effect] update Vintage status
@@ -163,7 +164,7 @@ fn test_burner_not_enough_CC() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER /100;
+    let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
     buy_utils(minter_address, erc20_address, share);
 
     // [Effect] update Vintage status
@@ -199,7 +200,7 @@ fn test_burner_wrong_status() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER /100; // 33%
+    let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33%
     buy_utils(minter_address, erc20_address, share);
 
     // [Effect] try to retire carbon credits

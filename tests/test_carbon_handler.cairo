@@ -50,7 +50,8 @@ use carbon_v3::contracts::project::{
 
 use carbon_v3::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_burner, deploy_minter, deploy_erc20
+    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_burner,
+    deploy_minter, deploy_erc20
 };
 
 // Constants
@@ -343,7 +344,7 @@ fn test_rebase_half_supply() {
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
     start_prank(CheatTarget::One(project_address), owner_address);
-    let share = 50*CC_DECIMALS_MULTIPLIER /100; // 50%
+    let share = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%
 
     buy_utils(minter_address, erc20_address, share);
 
