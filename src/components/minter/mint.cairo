@@ -257,7 +257,7 @@ mod MintComponent {
             let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
             let mut index = 0;
             loop {
-                if index == n {
+                if index >= n {
                     break;
                 }
                 cc_shares.append(share);

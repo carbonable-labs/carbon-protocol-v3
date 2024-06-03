@@ -60,6 +60,7 @@ fn test_is_setup() {
     assert(project.is_setup(), 'Error during setup');
 }
 
+// Mint without the minting contract, should fail after access control is implemented
 #[test]
 fn test_project_batch_mint() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
@@ -75,10 +76,30 @@ fn test_project_batch_mint() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let share: u256 = 125000;
-    let cc_distribution: Span<u256> = absorber.compute_carbon_vintage_distribution(share);
+    let share: u256 = 10*CC_DECIMALS_MULTIPLIER/100;    // 10% of the total supply
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    let n = cc_vintage_years.len();
+    let mut cc_distribution: Array<u256> = ArrayTrait::<u256>::new();
+    let mut index = 0;
+    loop {
+        if index >= n {
+            break;
+        };
+
+        cc_distribution.append(share);
+        index += 1;
+    };
+    let cc_distribution = cc_distribution.span();
+
+
     let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
     project_contract.batch_mint(owner_address, cc_vintage_years, cc_distribution);
+
+    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
+    let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
+    let balance = project_contract.balance_of(owner_address, 2025);
+
+    assert(equals_with_error(balance, expected_balance, 100), 'Error of balance');
 }
 
 #[test]
@@ -114,11 +135,11 @@ fn test_project_balance_of() {
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER;
+    let share = 33 * CC_DECIMALS_MULTIPLIER/100;    // 33% of the total supply
     buy_utils(minter_address, erc20_address, share);
 
-    let supply_vintage_2025 = carbon_credits.get_specific_carbon_vintage(2025).cc_supply;
-    let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER / 100;
+    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
+    let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(owner_address, 2025);
 
     assert(equals_with_error(balance, expected_balance, 100), 'Error of balance');
@@ -140,11 +161,11 @@ fn test_transfer_without_loss() {
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER;
+    let share = 33 * CC_DECIMALS_MULTIPLIER/100;    // 33% of the total supply
     buy_utils(minter_address, erc20_address, share);
 
-    let supply_vintage_2025 = carbon_credits.get_specific_carbon_vintage(2025).cc_supply;
-    let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER / 100;
+    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
+    let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(owner_address, 2025);
 
     assert(equals_with_error(balance, expected_balance, 100), 'Error balance owner 1');
@@ -193,7 +214,7 @@ fn test_transfer_rebase_transfer(first_percentage_rebase: u256, second_percentag
         / first_percentage_rebase;
     let undo_second_percentage_rebase = (DECIMALS_FACTORS * DECIMALS_FACTORS)
         / second_percentage_rebase;
-    let share = 33 * CC_DECIMALS_MULTIPLIER;
+    let share = 33 * CC_DECIMALS_MULTIPLIER/100;    // 33% of the total supply
 
     buy_utils(minter_address, erc20_address, share);
     let initial_balance = project_contract.balance_of(owner_address, 2025);

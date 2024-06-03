@@ -267,53 +267,6 @@ fn test_current_absorption() {
     assert(absorption == *absorptions.at(absorptions.len() - 1), 'Wrong absorption');
 }
 
-// compute_carbon_vintage_distribution
-
-#[test]
-fn test_compute_carbon_vintage_distribution() {
-    let (project_address, _) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
-
-    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
-    setup_project(project_address, 121099000000, times, absorptions);
-
-    let share = 10 * CC_DECIMALS_MULTIPLIER; // 10%
-    // [Assert] carbon_vintage_distribution computed correctly
-    let distribution = project.compute_carbon_vintage_distribution(share);
-    assert(distribution == array![0, 117975000000, 117975000000].span(), 'Wrong distribution');
-}
-
-#[test]
-fn test_compute_carbon_vintage_distribution_zero_share() {
-    let (project_address, _) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
-
-    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
-    setup_project(project_address, 121099000000, times, absorptions);
-
-    let share = 0;
-    // [Assert] carbon_vintage_distribution computed correctly
-    let distribution = project.compute_carbon_vintage_distribution(share);
-    assert(distribution == array![0, 0, 0].span(), 'Wrong distribution');
-}
-
-#[test]
-fn test_compute_carbon_vintage_distribution_full_share() {
-    let (project_address, _) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
-
-    let absorptions: Span<u64> = array![0, 1179750000000, 2359500000000].span();
-    setup_project(project_address, 121099000000, times, absorptions);
-
-    let share = 100 * CC_DECIMALS_MULTIPLIER; // 100%
-    // [Assert] carbon_vintage_distribution computed correctly
-    let distribution = project.compute_carbon_vintage_distribution(share);
-    assert(distribution == array![0, 1179750000000, 1179750000000].span(), 'Wrong distribution');
-}
-
 // get_cc_vintages
 
 #[test]
@@ -390,7 +343,7 @@ fn test_rebase_half_supply() {
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
     start_prank(CheatTarget::One(project_address), owner_address);
-    let share = 50*CC_DECIMALS_MULTIPLIER; // 50%
+    let share = 50*CC_DECIMALS_MULTIPLIER /100; // 50%
 
     buy_utils(minter_address, erc20_address, share);
 

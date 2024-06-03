@@ -110,7 +110,7 @@ fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
 fn share_to_buy_amount(minter_address: ContractAddress, share: u256) -> u256 {
     let minter = IMintDispatcher { contract_address: minter_address };
     let max_money_amount = minter.get_max_money_amount();
-    share * max_money_amount / CC_DECIMALS_MULTIPLIER/100
+    share * max_money_amount / CC_DECIMALS_MULTIPLIER
 }
 
 ///
@@ -243,13 +243,15 @@ fn fuzzing_setup(cc_supply: u64) -> (ContractAddress, ContractAddress, ContractA
     (project_address, minter_address, erc20_address, spy)
 }
 
-/// Mint
+/// Utility function to buy a share of the total supply.
+/// The share is calculated as a percentage of the total supply. We use share instead of amount
+/// to make it easier to determine the expected values, but in practice the amount is used.
 fn buy_utils(minter_address: ContractAddress, erc20_address: ContractAddress, share: u256) {
     let minter = IMintDispatcher { contract_address: minter_address };
     let amount_to_buy = share_to_buy_amount(minter_address, share);
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    
     erc20.approve(minter_address, amount_to_buy);
-
     minter.public_buy(amount_to_buy, false);
 }
 
@@ -271,6 +273,7 @@ fn perform_fuzzed_transfer(
     let last_digits_share = raw_last_digits_share % 100;
     let share_modulo = raw_share % CC_DECIMALS_MULTIPLIER;
     let share = share_modulo * 100 + last_digits_share;
+    let share = share /100;
 
     if share == 0 {
         return;

@@ -47,9 +47,6 @@ trait IAbsorber<TContractState> {
 
     /// Adapt the cc_supply of a vintage, will impact holders balance.
     fn rebase_vintage(ref self: TContractState, token_id: u256, new_cc_supply: u64);
-
-    /// Compute number of Carbon Credit of each vintage for given value
-    fn compute_carbon_vintage_distribution(self: @TContractState, share: u256) -> Span<u256>;
 }
 
 #[starknet::interface]
