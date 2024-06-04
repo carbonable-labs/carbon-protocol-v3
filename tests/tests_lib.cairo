@@ -247,7 +247,7 @@ fn buy_utils(minter_address: ContractAddress, erc20_address: ContractAddress, sh
     let minter = IMintDispatcher { contract_address: minter_address };
     let amount_to_buy = share_to_buy_amount(minter_address, share);
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
-    
+
     erc20.approve(minter_address, amount_to_buy);
     minter.public_buy(amount_to_buy, false);
 }
@@ -270,7 +270,7 @@ fn perform_fuzzed_transfer(
     let last_digits_share = raw_last_digits_share % 100;
     let share_modulo = raw_share % CC_DECIMALS_MULTIPLIER;
     let share = share_modulo * 100 + last_digits_share;
-    let share = share /100;
+    let share = share / 100;
 
     if share == 0 {
         return;

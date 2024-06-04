@@ -34,7 +34,8 @@ use carbon_v3::contracts::project::{
 /// 
 use super::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_erc20, deploy_minter
+    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_erc20,
+    deploy_minter
 };
 
 #[test]
@@ -73,7 +74,7 @@ fn test_project_batch_mint() {
     let decimal: u8 = project_contract.decimals();
     assert(decimal == 6, 'Error of decimal');
 
-    let share: u256 = 10*CC_DECIMALS_MULTIPLIER/100;    // 10% of the total supply
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
     let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
     let n = cc_vintage_years.len();
     let mut cc_distribution: Array<u256> = ArrayTrait::<u256>::new();
@@ -87,7 +88,6 @@ fn test_project_batch_mint() {
         index += 1;
     };
     let cc_distribution = cc_distribution.span();
-
 
     let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
     project_contract.batch_mint(owner_address, cc_vintage_years, cc_distribution);
@@ -132,7 +132,7 @@ fn test_project_balance_of() {
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER/100;    // 33% of the total supply
+    let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
     buy_utils(minter_address, erc20_address, share);
 
     let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
@@ -158,7 +158,7 @@ fn test_transfer_without_loss() {
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER/100;    // 33% of the total supply
+    let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
     buy_utils(minter_address, erc20_address, share);
 
     let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
@@ -212,7 +212,7 @@ fn test_consecutive_transfers_and_rebases(
         / first_percentage_rebase;
     let undo_second_percentage_rebase = (DECIMALS_FACTORS * DECIMALS_FACTORS)
         / second_percentage_rebase;
-    let share = 33 * CC_DECIMALS_MULTIPLIER/100;    // 33% of the total supply
+    let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
 
     buy_utils(minter_address, erc20_address, share);
     let initial_balance = project_contract.balance_of(owner_address, 2025);

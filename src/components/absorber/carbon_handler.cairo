@@ -175,8 +175,9 @@ mod AbsorberComponent {
             let _ = stored_times.append(*times[index]);
             let _ = stored_absorptions.append(*absorptions[index]);
             // [Effect] 
-            // let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read((starting_year + index).into());
-            let mut vintage:CarbonVintage = Default::default();
+            let mut vintage: CarbonVintage = self
+                .Absorber_vintage_cc
+                .read((starting_year + index).into());
             vintage.supply = *absorptions[index];
             self.Absorber_vintage_cc.write((starting_year + index).into(), vintage);
 
@@ -192,13 +193,14 @@ mod AbsorberComponent {
                 // [Effect] Store values
                 let _ = stored_times.append(*times[index]);
                 let _ = stored_absorptions.append(*absorptions[index]);
-                // let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read((starting_year + index).into());
-                let mut vintage:CarbonVintage = Default::default();
+                let mut vintage: CarbonVintage = self
+                    .Absorber_vintage_cc
+                    .read((starting_year + index).into());
                 let mut current_absorption = *absorptions[index] - *absorptions[index - 1];
                 vintage.supply = current_absorption;
                 self.Absorber_vintage_cc.write((starting_year + index).into(), vintage);
             };
-            self.Absorber_number_of_vintages.write((index-1).into());
+            self.Absorber_number_of_vintages.write((index - 1).into());
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
