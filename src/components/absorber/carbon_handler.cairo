@@ -28,7 +28,8 @@ mod AbsorberComponent {
         Absorber_project_carbon: u256,
         Absorber_times: List<u64>,
         Absorber_absorptions: List<u64>,
-        Absorber_vintage_cc: List<CarbonVintage>,
+        Absorber_vintage_cc: LegacyMap<u256, CarbonVintage>,
+        Absorber_number_of_vintages: u64
     }
 
     #[event]
@@ -149,7 +150,7 @@ mod AbsorberComponent {
             self.Absorber_project_carbon.read()
                 * self.Absorber_times.read().len().into()
                 * self.Absorber_absorptions.read().len().into()
-                * self.Absorber_vintage_cc.read().len().into()
+                * self.Absorber_number_of_vintages.read().into()
                 * self.Absorber_starting_year.read().into()
                 * self.Absorber_project_carbon.read() != 0
         }
@@ -162,8 +163,6 @@ mod AbsorberComponent {
             assert(times.len() == absorptions.len(), 'Times and absorptions mismatch');
             assert(times.len() > 0, 'Inputs cannot be empty');
 
-            let mut stored_vintage_cc: List<CarbonVintage> = self.Absorber_vintage_cc.read();
-
             // [Effect] Clean times and absorptions
             let mut stored_times: List<u64> = self.Absorber_times.read();
             stored_times.len = 0;
@@ -171,13 +170,15 @@ mod AbsorberComponent {
             stored_absorptions.len = 0;
 
             // [Effect] Store new times and absorptions and carbon value in vintage
+            let starting_year: u32 = self.Absorber_starting_year.read().try_into().unwrap();
             let mut index: u32 = 0;
             let _ = stored_times.append(*times[index]);
             let _ = stored_absorptions.append(*absorptions[index]);
             // [Effect] 
-            let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
+            // let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read((starting_year + index).into());
+            let mut vintage:CarbonVintage = Default::default();
             vintage.supply = *absorptions[index];
-            let _ = stored_vintage_cc.set(index, vintage);
+            self.Absorber_vintage_cc.write((starting_year + index).into(), vintage);
 
             loop {
                 index += 1;
@@ -191,11 +192,13 @@ mod AbsorberComponent {
                 // [Effect] Store values
                 let _ = stored_times.append(*times[index]);
                 let _ = stored_absorptions.append(*absorptions[index]);
-                let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
+                // let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read((starting_year + index).into());
+                let mut vintage:CarbonVintage = Default::default();
                 let mut current_absorption = *absorptions[index] - *absorptions[index - 1];
                 vintage.supply = current_absorption;
-                let _ = stored_vintage_cc.set(index, vintage);
+                self.Absorber_vintage_cc.write((starting_year + index).into(), vintage);
             };
+            self.Absorber_number_of_vintages.write((index-1).into());
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
@@ -213,30 +216,16 @@ mod AbsorberComponent {
         fn rebase_vintage(
             ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u64
         ) {
-            let mut stored_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
-            let mut index = 0;
-            loop {
-                if index == stored_vintages.len() {
-                    break;
-                }
-                let stored_vintage: CarbonVintage = stored_vintages[index].clone();
-                if stored_vintage.vintage == token_id.into() {
-                    let mut vintage = stored_vintages[index].clone();
-                    let old_supply = vintage.supply;
-                    if new_cc_supply < old_supply {
-                        let diff = old_supply - new_cc_supply;
-                        vintage.supply = new_cc_supply;
-                        vintage.failed = vintage.failed + diff;
-                        let _ = stored_vintages.set(index, vintage);
-                        break;
-                    }
-                    vintage.supply = new_cc_supply;
-                    let _ = stored_vintages.set(index, vintage);
-                    break;
-                }
-                index += 1;
-            };
-            self.Absorber_vintage_cc.write(stored_vintages);
+            let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read(token_id);
+            let old_supply = vintage.supply;
+
+            if new_cc_supply < old_supply {
+                let diff = old_supply - new_cc_supply;
+                vintage.supply = new_cc_supply;
+                vintage.failed = vintage.failed + diff;
+            }
+            vintage.supply = new_cc_supply;
+            self.Absorber_vintage_cc.write(token_id, vintage);
         }
     }
 
@@ -245,48 +234,40 @@ mod AbsorberComponent {
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of ICarbonCreditsHandler<ComponentState<TContractState>> {
         fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<CarbonVintage> {
-            self.Absorber_vintage_cc.read().array().expect('Can\'t get vintages').span()
+            let mut vintages = ArrayTrait::<CarbonVintage>::new();
+            let mut index = self.Absorber_starting_year.read();
+            let n = self.Absorber_number_of_vintages.read() + index;
+            loop {
+                if index >= n {
+                    break ();
+                }
+                let vintage = self.Absorber_vintage_cc.read(index.into());
+                vintages.append(vintage);
+                index += 1;
+            };
+            vintages.span()
         }
 
         fn get_vintage_years(self: @ComponentState<TContractState>) -> Span<u256> {
-            let vintages = self.Absorber_vintage_cc.read();
-            let mut years: Array<u256> = Default::default();
-            let mut index = 0;
+            let mut years = ArrayTrait::<u256>::new();
+            let mut index = self.Absorber_starting_year.read();
+            let n = self.Absorber_number_of_vintages.read() + index;
             loop {
-                if index == vintages.len() {
+                if index >= n {
                     break ();
                 }
-                let vintage = vintages[index].clone();
+                let vintage = self.Absorber_vintage_cc.read(index.into());
                 years.append(vintage.vintage);
                 index += 1;
             };
+
             years.span()
         }
 
         fn get_carbon_vintage(
             self: @ComponentState<TContractState>, token_id: u256
         ) -> CarbonVintage {
-            if token_id == 0 {
-                return Default::default();
-            }
-            let carbon_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
-            let mut found_vintage: CarbonVintage = Default::default();
-
-            let mut index = 0;
-            let mut tmp_vintage: CarbonVintage = Default::default();
-            loop {
-                if index == carbon_vintages.len() {
-                    break ();
-                }
-
-                tmp_vintage = carbon_vintages[index].clone();
-                if tmp_vintage.vintage == token_id.into() {
-                    found_vintage = carbon_vintages[index].clone();
-                }
-                index += 1;
-            };
-
-            return found_vintage;
+            self.Absorber_vintage_cc.read(token_id)
         }
 
         fn get_cc_decimals(self: @ComponentState<TContractState>) -> u8 {
@@ -296,24 +277,10 @@ mod AbsorberComponent {
         fn update_vintage_status(
             ref self: ComponentState<TContractState>, token_id: u64, status: u8
         ) {
-            let new_status: CarbonVintageType = self.__u8_into_CarbonVintageType(status);
-            let mut carbon_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
-            let mut index = 0;
-
-            loop {
-                if index == carbon_vintages.len() {
-                    break ();
-                }
-
-                let mut tmp_vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
-                if tmp_vintage.vintage == token_id.into() {
-                    tmp_vintage.status = new_status;
-                    let _ = carbon_vintages.set(index, tmp_vintage);
-                }
-                index += 1;
-            };
-
-            self.Absorber_vintage_cc.write(carbon_vintages);
+            let new_status: CarbonVintageType = self.__felt252_into_CarbonVintageType(status);
+            let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read(token_id.into());
+            vintage.status = new_status;
+            self.Absorber_vintage_cc.write(token_id.into(), vintage);
         }
     }
 
@@ -331,42 +298,37 @@ mod AbsorberComponent {
             stored_absorptions.len = 0;
 
             // [Storage] Clean vintages
-            let mut stored_vintages: List<CarbonVintage> = self.Absorber_vintage_cc.read();
-            stored_vintages.len = 0;
+            let mut index = self.Absorber_starting_year.read();
+            let n = self.Absorber_number_of_vintages.read() + index;
+            loop {
+                if index >= n {
+                    break ();
+                }
+                self.Absorber_vintage_cc.write(index.into(), Default::default());
+                index += 1;
+            };
 
             // [Storage] Store new starting year
             assert(starting_year > 0, Errors::INVALID_STARTING_YEAR);
             self.Absorber_starting_year.write(starting_year);
 
             // [Storage] Store new vintages
-            let mut index = 0;
-            let _ = stored_vintages
-                .append(
-                    CarbonVintage {
-                        vintage: starting_year.into(),
-                        supply: 0,
-                        failed: 0,
-                        status: CarbonVintageType::Projected,
-                    }
-                );
+            let mut index = starting_year;
+            let n = number_of_years;
             loop {
-                index += 1;
-                if index == number_of_years {
-                    break;
+                if index >= n {
+                    break ();
                 }
+                let vintage: CarbonVintage = CarbonVintage {
+                    vintage: (starting_year + index).into(),
+                    supply: 0,
+                    failed: 0,
+                    status: CarbonVintageType::Projected,
+                };
                 // [Effect] Store values
-                let _ = stored_vintages
-                    .append(
-                        CarbonVintage {
-                            vintage: (starting_year + index).into(),
-                            supply: 0,
-                            failed: 0,
-                            status: CarbonVintageType::Projected,
-                        }
-                    );
+                self.Absorber_vintage_cc.write(index.into(), vintage);
+                index += 1;
             };
-
-            self.Absorber_vintage_cc.write(stored_vintages);
         }
 
         fn __list_u64_into_u256(
