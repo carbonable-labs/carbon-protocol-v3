@@ -337,10 +337,11 @@ mod AbsorberComponent {
                 let mut tmp_vintage: CarbonVintage = self.Absorber_vintage_cc.read()[index];
                 if tmp_vintage.vintage == token_id.into() {
                     let new_status: CarbonVintageType = match status {
-                        0 => CarbonVintageType::Projected,
-                        1 => CarbonVintageType::Confirmed,
-                        2 => CarbonVintageType::Audited,
-                        _ => CarbonVintageType::Projected,
+                        0 => CarbonVintageType::Unset,
+                        1 => CarbonVintageType::Projected,
+                        2 => CarbonVintageType::Confirmed,
+                        3 => CarbonVintageType::Audited,
+                        _ => CarbonVintageType::Unset,
                     };
 
                     tmp_vintage.status = new_status;
@@ -435,7 +436,7 @@ mod AbsorberComponent {
             array.span()
         }
 
-        fn __felt252_into_CarbonVintageType(
+        fn __u8_into_CarbonVintageType(
             self: @ComponentState<TContractState>, status: u8
         ) -> CarbonVintageType {
             assert(status < 4, 'Invalid status');

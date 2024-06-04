@@ -193,7 +193,7 @@ fn test_project_set_vintage_status() {
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    carbon_credits.update_vintage_status(2025, 2);
+    carbon_credits.update_vintage_status(2025, 3);
     let vinatge: CarbonVintage = carbon_credits.get_carbon_vintage(2025);
     assert(vinatge.status == CarbonVintageType::Audited, 'Error of status');
 }
