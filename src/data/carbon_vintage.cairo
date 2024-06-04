@@ -1,5 +1,5 @@
 /// Struct for orders.
-#[derive(Copy, Drop, Debug, starknet::Store, Serde, PartialEq)]
+#[derive(Copy, Drop, Debug, starknet::Store, Serde, PartialEq, Default)]
 struct CarbonVintage {
     /// The vintage of the Carbon Credit, which is also the token_id.
     vintage: u256,
@@ -11,14 +11,9 @@ struct CarbonVintage {
     status: CarbonVintageType,
 }
 
-impl DefaultCarbonVintage of Default<CarbonVintage> {
-    fn default() -> CarbonVintage {
-        CarbonVintage { vintage: 0, supply: 0, failed: 0, status: CarbonVintageType::Unset, }
-    }
-}
-
-#[derive(Copy, Drop, Debug, starknet::Store, Serde, PartialEq)]
+#[derive(Copy, Drop, Debug, starknet::Store, Serde, PartialEq, Default)]
 enum CarbonVintageType {
+    #[default]
     /// Unset: the Carbon Credit is not yet created nor projected.
     Unset,
     ///  Projected: the Carbon Credit is not yet created and was projected during certification of the project.
