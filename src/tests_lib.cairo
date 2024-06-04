@@ -298,18 +298,16 @@ fn perform_fuzzed_transfer(
         .safe_transfer_from(owner_address, receiver_address, 2025, amount.into(), array![].span());
 
     let balance_owner = project_contract.balance_of(owner_address, 2025);
-    assert(
-        equals_with_error(balance_owner, initial_balance - amount, 100), 'Error balance owner 1'
-    );
+    assert(equals_with_error(balance_owner, initial_balance - amount, 10), 'Error balance owner 1');
     let balance_receiver = project_contract.balance_of(receiver_address, 2025);
-    assert(equals_with_error(balance_receiver, amount, 100), 'Error balance receiver 1');
+    assert(equals_with_error(balance_receiver, amount, 10), 'Error balance receiver 1');
 
     start_prank(CheatTarget::One(project_address), receiver_address);
     project_contract
         .safe_transfer_from(receiver_address, owner_address, 2025, amount.into(), array![].span());
 
     let balance_owner = project_contract.balance_of(owner_address, 2025);
-    assert(equals_with_error(balance_owner, initial_balance, 100), 'Error balance owner 2');
+    assert(equals_with_error(balance_owner, initial_balance, 10), 'Error balance owner 2');
     let balance_receiver = project_contract.balance_of(receiver_address, 2025);
-    assert(equals_with_error(balance_receiver, 0, 100), 'Error balance receiver 2');
+    assert(equals_with_error(balance_receiver, 0, 10), 'Error balance receiver 2');
 }
