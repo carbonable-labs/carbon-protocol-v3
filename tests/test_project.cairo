@@ -99,7 +99,7 @@ fn test_project_batch_mint() {
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(owner_address, 2025);
 
-    assert(equals_with_error(balance, expected_balance, 100), 'Error of balance');
+    assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
 }
 
 #[test]
@@ -142,7 +142,7 @@ fn test_project_balance_of() {
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(owner_address, 2025);
 
-    assert(equals_with_error(balance, expected_balance, 100), 'Error of balance');
+    assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
 }
 
 #[test]
@@ -168,27 +168,28 @@ fn test_transfer_without_loss() {
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(owner_address, 2025);
 
-    assert(equals_with_error(balance, expected_balance, 100), 'Error balance owner 1');
+    assert(equals_with_error(balance, expected_balance, 10), 'Error balance owner 1');
 
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let receiver_balance = project_contract.balance_of(receiver_address, 2025);
-    assert(equals_with_error(receiver_balance, 0, 100), 'Error of receiver balance 1');
+    assert(equals_with_error(receiver_balance, 0, 10), 'Error of receiver balance 1');
 
     project_contract
         .safe_transfer_from(owner_address, receiver_address, 2025, balance.into(), array![].span());
 
     let balance = project_contract.balance_of(owner_address, 2025);
-    assert(equals_with_error(balance, 0, 100), 'Error balance owner 2');
+    assert(equals_with_error(balance, 0, 10), 'Error balance owner 2');
 
     let receiver_balance = project_contract.balance_of(receiver_address, 2025);
     assert(
-        equals_with_error(receiver_balance, expected_balance, 100), 'Error of receiver balance 2'
+        equals_with_error(receiver_balance, expected_balance, 10), 'Error of receiver balance 2'
     );
 }
 
 #[test]
-fn test_transfer_rebase_transfer(first_percentage_rebase: u256, second_percentage_rebase: u256) {
-    // fn test_transfer_rebase_transfer() {
+fn test_consecutive_transfers_and_rebases(
+    first_percentage_rebase: u256, second_percentage_rebase: u256
+) {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let absorber = IAbsorberDispatcher { contract_address: project_address };
@@ -256,9 +257,9 @@ fn test_transfer_rebase_transfer(first_percentage_rebase: u256, second_percentag
     absorber.rebase_vintage(2025, new_vintage_supply_4);
 
     let balance_owner = project_contract.balance_of(owner_address, 2025);
-    assert(equals_with_error(balance_owner, initial_balance, 100), 'Error final balance owner');
+    assert(equals_with_error(balance_owner, initial_balance, 10), 'Error final balance owner');
     let balance_receiver = project_contract.balance_of(receiver_address, 2025);
-    assert(equals_with_error(balance_receiver, 0, 100), 'Error final balance receiver');
+    assert(equals_with_error(balance_receiver, 0, 10), 'Error final balance receiver');
 }
 
 #[test]
