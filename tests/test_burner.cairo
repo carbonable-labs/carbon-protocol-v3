@@ -54,7 +54,7 @@ use carbon_v3::mock::usdcarb::USDCarb;
 
 // Utils for testing purposes
 
-use carbon_v3::tests_lib::{
+use super::tests_lib::{
     default_setup_and_deploy, buy_utils, deploy_burner, deploy_erc20, deploy_minter
 };
 

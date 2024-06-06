@@ -21,4 +21,3 @@ mod mock {
     mod metadata;
 }
 
-mod tests_lib;
