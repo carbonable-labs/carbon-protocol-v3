@@ -279,7 +279,7 @@ mod AbsorberComponent {
         fn update_vintage_status(
             ref self: ComponentState<TContractState>, token_id: u64, status: u8
         ) {
-            let new_status: CarbonVintageType = self.__felt252_into_CarbonVintageType(status);
+            let new_status: CarbonVintageType = self.__u8_into_CarbonVintageType(status);
             let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read(token_id.into());
             vintage.status = new_status;
             self.Absorber_vintage_cc.write(token_id.into(), vintage);
