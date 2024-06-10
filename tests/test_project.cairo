@@ -1,6 +1,3 @@
-use core::option::OptionTrait;
-use core::traits::Into;
-use core::array::SpanTrait;
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
