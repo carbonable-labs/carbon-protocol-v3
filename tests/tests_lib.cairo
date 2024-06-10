@@ -171,20 +171,10 @@ fn deploy_minter(
     let public_sale: bool = true;
     let max_value: felt252 = 8000000000;
     let unit_price: felt252 = 11;
-    let mut calldata: Array<felt252> = array![];
-    calldata.append(project_address.into());
-    calldata.append(payment_address.into());
-    calldata.append(public_sale.into());
-    calldata.append(max_value);
-    calldata.append(0);
-    calldata.append(unit_price);
-    calldata.append(0);
-    calldata.append(owner.into());
+    let mut calldata: Array<felt252> = array![project_address.into(), payment_address.into(), public_sale.into(), max_value, 0, unit_price, 0, owner.into()];
 
     let contract_address = contract.deploy(@calldata).unwrap();
-
     let mut spy = snf::spy_events(SpyOn::One(contract_address));
-
     (contract_address, spy)
 }
 
