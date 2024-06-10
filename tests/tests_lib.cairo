@@ -119,7 +119,12 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
     let uri = 'uri';
     let starting_year: u64 = 2024;
     let number_of_years: u64 = 20;
-    let mut calldata: Array<felt252> = array![uri, contract_address_const::<'OWNER'>().into(), starting_year.into(), number_of_years.into()];
+    let mut calldata: Array<felt252> = array![
+        uri,
+        contract_address_const::<'OWNER'>().into(),
+        starting_year.into(),
+        number_of_years.into()
+    ];
     let contract_address = contract.deploy(@calldata).unwrap();
 
     let mut spy = snf::spy_events(SpyOn::One(contract_address));
@@ -171,7 +176,16 @@ fn deploy_minter(
     let public_sale: bool = true;
     let max_value: felt252 = 8000000000;
     let unit_price: felt252 = 11;
-    let mut calldata: Array<felt252> = array![project_address.into(), payment_address.into(), public_sale.into(), max_value, 0, unit_price, 0, owner.into()];
+    let mut calldata: Array<felt252> = array![
+        project_address.into(),
+        payment_address.into(),
+        public_sale.into(),
+        max_value,
+        0,
+        unit_price,
+        0,
+        owner.into()
+    ];
 
     let contract_address = contract.deploy(@calldata).unwrap();
     let mut spy = snf::spy_events(SpyOn::One(contract_address));
