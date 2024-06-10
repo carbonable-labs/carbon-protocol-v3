@@ -1,6 +1,3 @@
-use core::option::OptionTrait;
-use core::traits::Into;
-use core::array::SpanTrait;
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
@@ -122,11 +119,7 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
     let uri = 'uri';
     let starting_year: u64 = 2024;
     let number_of_years: u64 = 20;
-    let mut calldata: Array<felt252> = array![];
-    calldata.append(uri);
-    calldata.append(contract_address_const::<'OWNER'>().into());
-    calldata.append(starting_year.into());
-    calldata.append(number_of_years.into());
+    let mut calldata: Array<felt252> = array![uri, contract_address_const::<'OWNER'>().into(), starting_year.into(), number_of_years.into()];
     let contract_address = contract.deploy(@calldata).unwrap();
 
     let mut spy = snf::spy_events(SpyOn::One(contract_address));
