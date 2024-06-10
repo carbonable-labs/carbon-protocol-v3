@@ -200,7 +200,7 @@ mod AbsorberComponent {
                 vintage.supply = current_absorption;
                 self.Absorber_vintage_cc.write((starting_year + index).into(), vintage);
             };
-            self.Absorber_number_of_vintages.write((index - 1).into());
+            self.Absorber_number_of_vintages.write(index.into());
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
@@ -253,9 +253,9 @@ mod AbsorberComponent {
         fn get_vintage_years(self: @ComponentState<TContractState>) -> Span<u256> {
             let mut years = ArrayTrait::<u256>::new();
             let mut index = self.Absorber_starting_year.read();
-            let n = self.Absorber_number_of_vintages.read() + index;
+            let n = self.Absorber_number_of_vintages.read() + index - 1;
             loop {
-                if index >= n {
+                if index > n {
                     break ();
                 }
                 let vintage = self.Absorber_vintage_cc.read(index.into());
@@ -316,13 +316,13 @@ mod AbsorberComponent {
 
             // [Storage] Store new vintages
             let mut index = starting_year;
-            let n = number_of_years;
+            let n = index + number_of_years;
             loop {
-                if index >= n {
+                if index == n {
                     break ();
                 }
                 let vintage: CarbonVintage = CarbonVintage {
-                    vintage: (starting_year + index).into(),
+                    vintage: index.into(),
                     supply: 0,
                     failed: 0,
                     status: CarbonVintageType::Projected,
