@@ -15,7 +15,13 @@ struct CarbonVintage {
 
 impl CarbonVintageDisplay of Display<CarbonVintage> {
     fn fmt(self: @CarbonVintage, ref f: Formatter) -> Result<(), Error> {
-        let str: ByteArray = format!("CarbonVintage(vintage: {}, supply: {}, failed: {}, status: {})", self.vintage, self.supply, self.failed, self.status);
+        let str: ByteArray = format!(
+            "CarbonVintage(vintage: {}, supply: {}, failed: {}, status: {})",
+            self.vintage,
+            self.supply,
+            self.failed,
+            self.status
+        );
         f.buffer.append(@str);
         Result::Ok(())
     }
@@ -65,7 +71,7 @@ impl CarbonVintageTypeDisplay of Display<CarbonVintageType> {
 #[cfg(test)]
 mod Test {
     use starknet::testing::set_caller_address;
-    use super::{CarbonVintage, CarbonVintageType };
+    use super::{CarbonVintage, CarbonVintageType};
 
     // CarbonVintage tests
 
@@ -84,9 +90,13 @@ mod Test {
         let res = format!("{}", carbon_vintage);
         assert_eq!(res, "CarbonVintage(vintage: 0, supply: 0, failed: 0, status: Unset)");
 
-        let carbon_vintage: CarbonVintage = CarbonVintage { vintage: 2024, supply: 1000000000, failed: 10000, status: CarbonVintageType::Audited };
+        let carbon_vintage: CarbonVintage = CarbonVintage {
+            vintage: 2024, supply: 1000000000, failed: 10000, status: CarbonVintageType::Audited
+        };
         let res = format!("{}", carbon_vintage);
-        assert_eq!(res, "CarbonVintage(vintage: 2024, supply: 1000000000, failed: 10000, status: Audited)");
+        assert_eq!(
+            res, "CarbonVintage(vintage: 2024, supply: 1000000000, failed: 10000, status: Audited)"
+        );
         println!("{}", carbon_vintage);
     }
 
