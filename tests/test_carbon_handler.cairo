@@ -232,7 +232,8 @@ fn test_set_absorptions_revert_absorptions_not_sorted() {
 fn test_set_absorptions_exact_one_year_interval() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    let times: Span<u64> = array![1609459200, 1640995200, 1672531200].span(); // exactly one year apart
+    let times: Span<u64> = array![1609459200, 1640995200, 1672531200]
+        .span(); // exactly one year apart
     let absorptions: Span<u64> = array![0, 1179750, 2359500].span();
     project.set_absorptions(times, absorptions);
     assert(project.get_absorptions() == absorptions, 'absorptions not set correctly');
@@ -244,7 +245,10 @@ fn test_set_absorptions_edge_case_timestamps() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
     let times: Span<u64> = array![0, 1, 2, 3, 4, 5, 6, 7].span(); // very small timestamps
-    let absorptions: Span<u64> = array![0, 1179750, 2359500, 3539250, 4719000, 5898750, 7078500, 8258250].span();
+    let absorptions: Span<u64> = array![
+        0, 1179750, 2359500, 3539250, 4719000, 5898750, 7078500, 8258250
+    ]
+        .span();
     project.set_absorptions(times, absorptions);
     assert(project.get_absorptions() == absorptions, 'absorptions error');
     assert(project.get_times() == times, 'times error');
@@ -276,7 +280,8 @@ fn test_set_absorptions_change_length() {
 fn test_get_absorption_interpolation() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200].span();
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
+        .span();
     let absorptions: Span<u64> = array![0, 1179750, 2359500, 3539250, 4719000].span();
     project.set_absorptions(times, absorptions);
     // Test midpoints between times for linear interpolation
@@ -285,7 +290,10 @@ fn test_get_absorption_interpolation() {
         let mid_time = (*times.at(i) + *times.at(i + 1)) / 2;
         let expected_absorption = (*absorptions.at(i) + *absorptions.at(i + 1)) / 2;
         let absorption = project.get_absorption(mid_time);
-        assert(absorption > *absorptions.at(i) && absorption < *absorptions.at(i + 1), 'Interpolation error');
+        assert(
+            absorption > *absorptions.at(i) && absorption < *absorptions.at(i + 1),
+            'Interpolation error'
+        );
         assert(absorption == expected_absorption, 'Absorption value not expected');
         i += 1;
 
@@ -299,7 +307,8 @@ fn test_get_absorption_interpolation() {
 fn test_get_current_absorption_extrapolation() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200].span();
+    let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
+        .span();
     let absorptions: Span<u64> = array![0, 1179750, 2359500, 3539250, 4719000].span();
     project.set_absorptions(times, absorptions);
     // Test time before first absorption
@@ -425,7 +434,7 @@ fn test_share_to_cc_zero_share() {
 fn test_share_to_cc_revert_exceeds_supply() {
     let (project_address, _) = default_setup_and_deploy();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    let share: u256 = 2*CC_DECIMALS_MULTIPLIER;    // share is greater than 100%
+    let share: u256 = 2 * CC_DECIMALS_MULTIPLIER; // share is greater than 100%
     project.share_to_cc(share, 2025);
 }
 
@@ -438,8 +447,7 @@ fn test_share_to_cc_equal_to_multiplier() {
     let cc_supply = cc_handler.get_carbon_vintage(2025).supply;
     let result = project.share_to_cc(share, 2025);
     assert(result == cc_supply.into(), 'Result should equal cc_supply');
-    assert(result >0, 'Result should be greater than 0');
-
+    assert(result > 0, 'Result should be greater than 0');
 }
 
 #[test]
@@ -451,7 +459,7 @@ fn test_share_to_cc_half_supply() {
     let cc_supply = cc_handler.get_carbon_vintage(2025).supply;
     let result = project.share_to_cc(share, 2025);
     assert(result == cc_supply.into() / 2, 'Result error');
-    assert(result >0, 'Result should be greater than 0');
+    assert(result > 0, 'Result should be greater than 0');
 }
 
 #[test]
@@ -493,7 +501,7 @@ fn test_cc_to_share_equal_to_supply() {
     let cc_value: u256 = cc_supply;
     let result = project.cc_to_share(cc_value, 2025);
     assert(result == CC_DECIMALS_MULTIPLIER.into(), 'Result error');
-    assert(result >0, 'Result should be greater than 0');
+    assert(result > 0, 'Result should be greater than 0');
 }
 
 #[test]
@@ -505,7 +513,7 @@ fn test_cc_to_share_half_supply() {
     let cc_value: u256 = cc_supply / 2;
     let result = project.cc_to_share(cc_value, 2025);
     assert(result == 50 * CC_DECIMALS_MULTIPLIER / 100, 'Result error');
-    assert(result >0, 'Result should be greater than 0');
+    assert(result > 0, 'Result should be greater than 0');
 }
 
 #[test]
@@ -540,7 +548,7 @@ fn test_cc_to_share_revert_exceeds_supply() {
     let project = IAbsorberDispatcher { contract_address: project_address };
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let cc_supply = cc_handler.get_carbon_vintage(2025).supply.into();
-    let cc_value: u256 = 2*cc_supply;
+    let cc_value: u256 = 2 * cc_supply;
     project.cc_to_share(cc_value, 2025);
 }
 
@@ -595,7 +603,7 @@ fn test_get_cc_vintages() {
             break;
         }
         let vintage = cc_vintages.at(index);
-        let expected__cc_vintage: CarbonVintage =  CarbonVintage {
+        let expected__cc_vintage: CarbonVintage = CarbonVintage {
             vintage: (starting_year.into() + index.into()),
             supply: 0,
             failed: 0,
@@ -647,7 +655,8 @@ fn test_get_carbon_vintage() {
 
     let mut index = 0;
 
-    let cc_vintage = cc_handler.get_carbon_vintage((project.get_starting_year() + index.into()).into());
+    let cc_vintage = cc_handler
+        .get_carbon_vintage((project.get_starting_year() + index.into()).into());
     let expected_cc_vintage = CarbonVintage {
         vintage: (project.get_starting_year() + index.into()).into(),
         supply: *absorptions.at(index),
@@ -721,7 +730,7 @@ fn test_update_vintage_status_valid() {
 }
 
 #[test]
-#[should_panic(expected : 'Invalid status')]
+#[should_panic(expected: 'Invalid status')]
 fn test_update_vintage_status_invalid() {
     let (project_address, _) = default_setup_and_deploy();
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
