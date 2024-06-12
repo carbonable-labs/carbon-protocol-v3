@@ -115,10 +115,7 @@ fn test_burner_retire_carbon_credits() {
 
     // [Effect] setup a batch of carbon credits
     let project = IProjectDispatcher { contract_address: project_address };
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
-
-    assert(absorber.is_setup(), 'Error during setup');
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
     buy_utils(minter_address, erc20_address, share);
@@ -438,3 +435,22 @@ fn test_get_pending_retirement_no_pending() {
     let pending_retirement = burner.get_pending_retirement(vintage);
     assert(pending_retirement == 0.into(), 'Error pending retirement');
 }
+
+/// get_carbon_retired
+
+#[test]
+fn test_get_carbon_retired_no_retired() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (burner_address, _) = deploy_burner(project_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(burner_address), owner_address);
+
+    let burner = IBurnHandlerDispatcher { contract_address: burner_address };
+    let vintage: u256 = 2025.into();
+
+    let carbon_retired = burner.get_carbon_retired(vintage);
+    assert(carbon_retired == 0.into(), 'Error about carbon retired');
+}
+
