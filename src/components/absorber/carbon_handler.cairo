@@ -20,7 +20,7 @@ mod AbsorberComponent {
     const YEAR_SECONDS: u64 = 31556925;
     const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
     const CREDIT_CARBON_TON: u256 = 1_000_000;
-    const CC_DECIMALS: u8 = 6;
+    const CC_DECIMALS: u8 = 8; // from grams to convert to tons, with 2 decimals
 
     #[storage]
     struct Storage {
@@ -62,6 +62,10 @@ mod AbsorberComponent {
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of IAbsorber<ComponentState<TContractState>> {
         // Absorption
+        fn get_starting_year(self: @ComponentState<TContractState>) -> u64 {
+            self.Absorber_starting_year.read()
+        }
+
         fn get_start_time(self: @ComponentState<TContractState>) -> u64 {
             let times = self.Absorber_times.read();
             if times.len() == 0 {
@@ -134,16 +138,22 @@ mod AbsorberComponent {
             (carbon_g / CREDIT_CARBON_TON).try_into().expect('Absorber: Ton overflow')
         }
 
+        // Share is a percentage, 100% = CC_DECIMALS_MULTIPLIER
         fn share_to_cc(self: @ComponentState<TContractState>, share: u256, token_id: u256) -> u256 {
-            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
-            share * cc_supply / CC_DECIMALS_MULTIPLIER
+            let cc_supply: u256 = self.get_carbon_vintage(token_id).supply.into();
+            let result = share * cc_supply / CC_DECIMALS_MULTIPLIER;
+            assert(result <= cc_supply, 'CC value exceeds vintage supply');
+            result
         }
 
         fn cc_to_share(
             self: @ComponentState<TContractState>, cc_value: u256, token_id: u256
         ) -> u256 {
             let cc_supply = self.get_carbon_vintage(token_id).supply.into();
-            (cc_value * CC_DECIMALS_MULTIPLIER / cc_supply)
+            assert(cc_supply > 0, 'CC supply of vintage is 0');
+            let share = cc_value * CC_DECIMALS_MULTIPLIER / cc_supply;
+            assert(share <= CC_DECIMALS_MULTIPLIER, 'Share value exceeds 100%');
+            share
         }
 
         fn is_setup(self: @ComponentState<TContractState>) -> bool {
@@ -179,6 +189,7 @@ mod AbsorberComponent {
                 .Absorber_vintage_cc
                 .read((starting_year + index).into());
             vintage.supply = *absorptions[index];
+            vintage.status = CarbonVintageType::Projected;
             self.Absorber_vintage_cc.write((starting_year + index).into(), vintage);
 
             loop {
@@ -198,6 +209,7 @@ mod AbsorberComponent {
                     .read((starting_year + index).into());
                 let mut current_absorption = *absorptions[index] - *absorptions[index - 1];
                 vintage.supply = current_absorption;
+                vintage.status = CarbonVintageType::Projected;
                 self.Absorber_vintage_cc.write((starting_year + index).into(), vintage);
             };
             self.Absorber_number_of_vintages.write(index.into());
