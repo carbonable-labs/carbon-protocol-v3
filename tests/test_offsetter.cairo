@@ -41,7 +41,9 @@ use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::{
 use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
 use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
-use carbon_v3::components::offsetter::interface::{IOffsetHandlerDispatcher, IOffsetHandlerDispatcherTrait};
+use carbon_v3::components::offsetter::interface::{
+    IOffsetHandlerDispatcher, IOffsetHandlerDispatcherTrait
+};
 
 // Contracts
 
