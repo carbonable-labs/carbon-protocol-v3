@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 use carbon_v3::data::carbon_vintage::{CarbonVintage};
 
 #[starknet::interface]
-trait IBurnHandler<TContractState> {
+trait IOffsetHandler<TContractState> {
     /// Retire carbon credits from one vintage of carbon credits.
     fn retire_carbon_credits(ref self: TContractState, vintage: u256, cc_value: u256);
 

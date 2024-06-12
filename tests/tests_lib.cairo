@@ -152,9 +152,9 @@ fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
     (project_address, spy)
 }
 
-/// Deploys the burner contract.
-fn deploy_burner(project_address: ContractAddress) -> (ContractAddress, EventSpy) {
-    let contract = snf::declare('Burner');
+/// Deploys the offsetter contract.
+fn deploy_offsetter(project_address: ContractAddress) -> (ContractAddress, EventSpy) {
+    let contract = snf::declare('Offsetter');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
     calldata.append(project_address.into());
