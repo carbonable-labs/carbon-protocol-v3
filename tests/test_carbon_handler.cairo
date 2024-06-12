@@ -50,7 +50,7 @@ use carbon_v3::contracts::project::{
 
 use super::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_burner,
+    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_offsetter,
     deploy_minter, deploy_erc20
 };
 
