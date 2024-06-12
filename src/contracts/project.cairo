@@ -154,7 +154,8 @@ mod Project {
         }
 
         fn burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
-            self.erc1155.burn(from, token_id, value);
+            let share_value = self.absorber.cc_to_share(value, token_id);
+            self.erc1155.burn(from, token_id, share_value);
         }
 
         fn batch_mint(
