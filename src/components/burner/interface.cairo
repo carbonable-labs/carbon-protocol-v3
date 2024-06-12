@@ -4,7 +4,7 @@ use carbon_v3::data::carbon_vintage::{CarbonVintage};
 #[starknet::interface]
 trait IBurnHandler<TContractState> {
     /// Retire carbon credits from one vintage of carbon credits.
-    fn retire_carbon_credits(ref self: TContractState, vintage: u256, carbon_values: u256);
+    fn retire_carbon_credits(ref self: TContractState, vintage: u256, cc_value: u256);
 
     /// Retire carbon credits from the list of carbon credits.
     /// Behaviour is : 

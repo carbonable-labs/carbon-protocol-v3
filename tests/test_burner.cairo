@@ -114,13 +114,15 @@ fn test_burner_retire_carbon_credits() {
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
     // [Effect] setup a batch of carbon credits
+    let project = IProjectDispatcher { contract_address: project_address };
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
-
+    
     assert(absorber.is_setup(), 'Error during setup');
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
     buy_utils(minter_address, erc20_address, share);
+    let initial_balance = project.balance_of(owner_address, 2025);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -131,6 +133,9 @@ fn test_burner_retire_carbon_credits() {
 
     let carbon_retired = burner.get_carbon_retired(2025);
     assert(carbon_retired == 100000, 'Carbon retired is wrong');
+
+    let final_balance = project.balance_of(owner_address, 2025);
+    assert(final_balance == initial_balance - 100000, 'Balance is wrong');
 }
 
 #[test]
@@ -149,9 +154,6 @@ fn test_burner_wrong_status() {
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
     // [Effect] setup a batch of carbon credits
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
-    assert(absorber.is_setup(), 'Error during setup');
-
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33%
     buy_utils(minter_address, erc20_address, share);
 
@@ -216,17 +218,20 @@ fn test_retire_carbon_credits_exact_balance() {
 
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
     buy_utils(minter_address, erc20_address, share);
+    let balance_owner = project_contract.balance_of(owner_address, 2025);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
 
     // [Effect] try to retire carbon credits
     let burner = IBurnHandlerDispatcher { contract_address: burner_address };
-    let balance_owner = project_contract.balance_of(owner_address, 2025);
     burner.retire_carbon_credits(2025, balance_owner);
 
     let carbon_retired = burner.get_carbon_retired(2025);
     assert(carbon_retired == balance_owner, 'Carbon retired is wrong');
+
+    let balance_owner_after = project_contract.balance_of(owner_address, 2025);
+    assert(balance_owner_after == 0, 'Balance is wrong');
 }
 
 #[test]
@@ -244,24 +249,178 @@ fn test_retire_carbon_credits_multiple_retirements() {
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
     // [Effect] setup a batch of carbon credits
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
-
-    assert(absorber.is_setup(), 'Error during setup');
+    let project = IProjectDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
     buy_utils(minter_address, erc20_address, share);
+    let balance_initial = project.balance_of(owner_address, 2025);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+
 
     // [Effect] retire carbon credits multiple times
     let burner = IBurnHandlerDispatcher { contract_address: burner_address };
     burner.retire_carbon_credits(2025, 50000);
     burner.retire_carbon_credits(2025, 50000);
 
+    // [Assert] check retired carbon credits
     let carbon_retired = burner.get_carbon_retired(2025);
     assert(carbon_retired == 100000, 'Error retired carbon credits');
+
+    let balance_final = project.balance_of(owner_address, 2025);
+    assert(balance_final == balance_initial - 100000, 'Error balance');
+}
+
+/// retire_list_carbon_credits
+
+#[test]
+fn test_retire_list_carbon_credits_valid_inputs() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (burner_address, _) = deploy_burner(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(burner_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    // [Effect] setup a batch of carbon credits
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let project = IProjectDispatcher { contract_address: project_address };
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(minter_address, erc20_address, share);
+    let balance_initial_2025 = project.balance_of(owner_address, 2025);
+    let balance_initial_2026 = project.balance_of(owner_address, 2026);
+
+
+    // [Effect] update Vintage status
+    carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    carbon_credits.update_vintage_status(2026, CarbonVintageType::Audited.into());
+
+    // [Effect] retire list of carbon credits
+    let vintages: Span<u256> = array![2025.into(), 2026.into()].span();
+    let carbon_values: Span<u256> = array![50000.into(), 50000.into()].span();
+    let burner = IBurnHandlerDispatcher { contract_address: burner_address };
+    burner.retire_list_carbon_credits(vintages, carbon_values);
+
+    // [Assert] check retired carbon credits
+    let carbon_retired_2025 = burner.get_carbon_retired(2025.into());
+    let carbon_retired_2026 = burner.get_carbon_retired(2026.into());
+    assert(carbon_retired_2025 == 50000, 'Carbon retired value error');
+    assert(carbon_retired_2026 == 50000, 'Carbon retired value error');
+
+    let balance_final_2025 = project.balance_of(owner_address, 2025);
+    let balance_final_2026 = project.balance_of(owner_address, 2026);
+    assert(balance_final_2025 == balance_initial_2025 - 50000, 'Balance error');
+    assert(balance_final_2026 == balance_initial_2026 - 50000, 'Balance error');
+}
+
+#[test]
+#[should_panic(expected: ('Inputs cannot be empty',))]
+fn test_retire_list_carbon_credits_empty_inputs() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (burner_address, _) = deploy_burner(project_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(burner_address), owner_address);
+
+    // [Effect] try to retire with empty inputs
+    let burner = IBurnHandlerDispatcher { contract_address: burner_address };
+    burner.retire_list_carbon_credits(array![].span(), array![].span());
+}
+
+#[test]
+#[should_panic(expected: 'Vintages and Values mismatch')]
+fn test_retire_list_carbon_credits_mismatched_lengths() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (burner_address, _) = deploy_burner(project_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(burner_address), owner_address);
+
+    // [Effect] try to retire with mismatched lengths
+    let vintages: Span<u256> = array![2025, 2026].span();
+    let carbon_values: Span<u256> = array![100000].span();
+    let burner = IBurnHandlerDispatcher { contract_address: burner_address };
+    burner.retire_list_carbon_credits(vintages, carbon_values);
+}
+
+#[test]
+#[should_panic(expected: ('Vintage status is not audited',))]
+fn test_retire_list_carbon_credits_partial_valid_inputs() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (burner_address, _) = deploy_burner(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(burner_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    // [Effect] setup a batch of carbon credits
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(minter_address, erc20_address, share);
+
+    // [Effect] update Vintage status
+    carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    // Do not update 2026 to keep it invalid
+
+    // [Effect] retire list of carbon credits
+    let vintages: Span<u256> = array![2025.into(), 2026.into()].span();
+    let carbon_values: Span<u256> = array![50000.into(), 50000.into()].span();
+    let burner = IBurnHandlerDispatcher { contract_address: burner_address };
+    burner.retire_list_carbon_credits(vintages, carbon_values);
+}
+
+#[test]
+fn test_retire_list_carbon_credits_multiple_same_vintage() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (burner_address, _) = deploy_burner(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(burner_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    // [Effect] setup a batch of carbon credits
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let project = IProjectDispatcher { contract_address: project_address };
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(minter_address, erc20_address, share);
+    let initial_balance = project.balance_of(owner_address, 2025);
+
+    // [Effect] update Vintage status
+    carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+
+    // [Effect] retire list of carbon credits with multiple same vintage
+    let vintages: Span<u256> = array![2025.into(), 2025.into()].span();
+    let carbon_values: Span<u256> = array![50000.into(), 50000.into()].span();
+    let burner = IBurnHandlerDispatcher { contract_address: burner_address };
+    burner.retire_list_carbon_credits(vintages, carbon_values);
+
+    // [Assert] check retired carbon credits
+    let carbon_retired = burner.get_carbon_retired(2025.into());
+    assert(carbon_retired == 100000, 'Error Carbon retired');
+
+    let balance_final = project.balance_of(owner_address, 2025);
+    assert(balance_final == initial_balance - 100000, 'Error balance');
 }
 
 // Error cases
@@ -282,10 +441,7 @@ fn test_burner_not_enough_CC() {
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
     // [Effect] setup a batch of carbon credits
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
-
-    assert(absorber.is_setup(), 'Error during setup');
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100;

@@ -79,7 +79,7 @@ mod BurnComponent {
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of IBurnHandler<ComponentState<TContractState>> {
         fn retire_carbon_credits(
-            ref self: ComponentState<TContractState>, vintage: u256, carbon_values: u256
+            ref self: ComponentState<TContractState>, vintage: u256, cc_value: u256
         ) {
             // [Setup] Setup variable and contract interaction
             let caller_address: ContractAddress = get_caller_address();
@@ -98,12 +98,12 @@ mod BurnComponent {
             // [Check] caller owns the carbon credits for the vintage
             let erc1155 = IERC1155Dispatcher { contract_address: project_address };
             let caller_balance = erc1155.balance_of(caller_address, vintage);
-            assert(caller_balance >= carbon_values, 'Not own enough carbon credits');
+            assert(caller_balance >= cc_value, 'Not own enough carbon credits');
             // [Effect] Add pending retirement
-            self._add_pending_retirement(caller_address, vintage, carbon_values);
+            self._add_pending_retirement(caller_address, vintage, cc_value);
 
             // [Effect] Burn carbon credits
-            self._burn_carbon_credit(caller_address, vintage, carbon_values);
+            self._burn_carbon_credit(caller_address, vintage, cc_value);
         }
 
         fn retire_list_carbon_credits(
