@@ -3,6 +3,9 @@ use carbon_v3::data::carbon_vintage::{CarbonVintage};
 
 #[starknet::interface]
 trait IAbsorber<TContractState> {
+    /// Returns the starting year.
+    fn get_starting_year(self: @TContractState) -> u64;
+
     /// Returns the first timestamp of the absorption.
     fn get_start_time(self: @TContractState) -> u64;
 

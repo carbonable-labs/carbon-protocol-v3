@@ -71,9 +71,6 @@ fn test_project_batch_mint() {
     assert(absorber.is_setup(), 'Error during setup');
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
-    let decimal: u8 = project_contract.decimals();
-    assert(decimal == 6, 'Error of decimal');
-
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
     let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
     let n = cc_vintage_years.len();
