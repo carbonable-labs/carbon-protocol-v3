@@ -196,7 +196,7 @@ fn test_get_available_money_amount() {
 
     // Verify if the initial value is correct
     let remaining_money = minter.get_available_money_amount();
-    assert(remaining_money == initial_money, 'remaning money wrong value');
+    assert(remaining_money == initial_money, 'remaining money wrong value');
 
     let amount_to_buy: u256 = 1000;
 
@@ -208,7 +208,7 @@ fn test_get_available_money_amount() {
     // Test after the buy
     let remaining_money_after_buy = minter.get_available_money_amount();
     assert(
-        remaining_money_after_buy == initial_money - amount_to_buy, 'remaning money wrong value'
+        remaining_money_after_buy == initial_money - amount_to_buy, 'remaining money wrong value'
     );
 
     // Buy all the remaining money
@@ -218,7 +218,7 @@ fn test_get_available_money_amount() {
 
     // Test after buying all the remaining money
     let remaining_money_after_buying_all = minter.get_available_money_amount();
-    assert(remaining_money_after_buying_all == 0, 'remaning money wrong value');
+    assert(remaining_money_after_buying_all == 0, 'remaining money wrong value');
 }
 
 // cancel_mint
