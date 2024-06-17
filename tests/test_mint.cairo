@@ -177,9 +177,6 @@ fn test_get_available_money_amount() {
     setup_project(project_address, 8000000000, times, absorptions,);
 
     // Start testing environment setup
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
     let project = IAbsorberDispatcher { contract_address: project_address };
