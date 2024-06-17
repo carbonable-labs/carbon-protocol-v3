@@ -57,6 +57,7 @@ mod MintComponent {
         PublicSaleClose: PublicSaleClose,
         SoldOut: SoldOut,
         Buy: Buy,
+        MintCanceled: MintCanceled,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -80,6 +81,12 @@ mod MintComponent {
         address: ContractAddress,
         cc_vintage_years: Span<u256>,
         cc_distributed: Span<u256>,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct MintCanceled {
+        is_canceled: bool,
+        time: u64
     }
 
     mod Errors {
@@ -118,6 +125,17 @@ mod MintComponent {
 
         fn is_sold_out(self: @ComponentState<TContractState>) -> bool {
             self.get_available_money_amount() == 0
+        }
+
+        fn cancel_mint(ref self: ComponentState<TContractState>, should_cancel: bool) {
+            // [Effect] Cancel the mint
+            self.Mint_cancel.write(should_cancel);
+
+            // Get the current timestamp
+            let current_time = get_block_timestamp();
+
+            // [Event] Emit cancel event
+            self.emit(MintCanceled { is_canceled: should_cancel, time: current_time });
         }
 
         fn is_canceled(self: @ComponentState<TContractState>) -> bool {
