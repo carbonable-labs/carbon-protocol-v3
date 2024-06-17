@@ -233,9 +233,16 @@ fn test_cancel_mint() {
     assert(!is_canceled, 'mint should not be canceled');
 
     // Cancel the mint
-    minter.cancel_mint();
+    minter.cancel_mint(true);
 
     // Verify that the mint is canceled
     let is_canceled_after = minter.is_canceled();
     assert(is_canceled_after, 'mint should be canceled');
+
+    // Reopen the mint
+    minter.cancel_mint(false);
+
+    // Verify that the mint is reopened
+    let is_canceled_reopened = minter.is_canceled();
+    assert(!is_canceled_reopened, 'mint should be reopened')
 }
