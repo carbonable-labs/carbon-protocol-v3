@@ -220,3 +220,38 @@ fn test_get_available_money_amount() {
     let remaining_money_after_buying_all = minter.get_available_money_amount();
     assert(remaining_money_after_buying_all == 0, 'remaning money wrong value');
 }
+
+// cancel_mint
+
+#[test]
+fn test_cancel_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+
+    setup_project(project_address, 8000000000, times, absorptions,);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    assert(project.is_setup(), 'Error during setup');
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+
+    // Ensure the mint is not canceled initially
+    let is_canceled = minter.is_canceled();
+    assert(!is_canceled, 'mint should not be canceled');
+
+    // Cancel the mint
+    minter.cancel_mint();
+
+    // Verify that the mint is canceled
+    let is_canceled_after = minter.is_canceled();
+    assert(is_canceled_after, 'mint should be canceled');
+}
