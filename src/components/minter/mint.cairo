@@ -85,7 +85,8 @@ mod MintComponent {
 
     #[derive(Drop, starknet::Event)]
     struct MintCanceled {
-        is_canceled: bool
+        is_canceled: bool,
+        time: u64
     }
 
     mod Errors {
@@ -130,8 +131,11 @@ mod MintComponent {
             // [Effect] Cancel the mint
             self.Mint_cancel.write(should_cancel);
 
+            // Get the current timestamp
+            let current_time = get_block_timestamp();
+
             // [Event] Emit cancel event
-            self.emit(MintCanceled { is_canceled: should_cancel });
+            self.emit(MintCanceled { is_canceled: should_cancel, time: current_time });
         }
 
         fn is_canceled(self: @ComponentState<TContractState>) -> bool {
