@@ -225,22 +225,9 @@ fn test_get_available_money_amount() {
 
 #[test]
 fn test_cancel_mint() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = deploy_project();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
-
-    let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
-
-    setup_project(project_address, 8000000000, times, absorptions,);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
-
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
