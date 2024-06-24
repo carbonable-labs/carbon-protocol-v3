@@ -135,9 +135,6 @@ fn test_get_available_money_amount() {
     // Start testing environment setup
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
-
     let minter = IMintDispatcher { contract_address: minter_address };
 
     // Ensure the public sale is open

@@ -177,7 +177,7 @@ mod Project {
         }
 
         fn decimals(self: @ContractState) -> u8 {
-            self.absorber.get_cc_decimals()
+            self.vintage.get_cc_decimals()
         }
 
         fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
