@@ -3,12 +3,12 @@ use core::fmt::{Display, Formatter, Error};
 /// Struct for orders.
 #[derive(Copy, Drop, Debug, starknet::Store, Serde, PartialEq, Default)]
 struct CarbonVintage {
-    /// The vintage of the Carbon Credit, which is also the token_id.
+    /// The vintage of the Carbon Credit
     vintage: u256,
     /// The total supply of Carbon Credit for this vintage.
-    supply: u64,
+    supply: u128,
     /// The total amount of Carbon Credit that failed during audits.
-    failed: u64,
+    failed: u128,
     /// The status of the Carbon Credit of this Vintage. 
     status: CarbonVintageType,
 }
@@ -65,6 +65,18 @@ impl CarbonVintageTypeDisplay of Display<CarbonVintageType> {
         };
         f.buffer.append(@str);
         Result::Ok(())
+    }
+}
+
+impl U8TryIntoCarbon of TryInto<u8, CarbonVintageType> {
+    fn try_into(self: u8) -> Option<CarbonVintageType> {
+        match self {
+            0 => Option::Some(CarbonVintageType::Unset),
+            1 => Option::Some(CarbonVintageType::Projected),
+            2 => Option::Some(CarbonVintageType::Confirmed),
+            3 => Option::Some(CarbonVintageType::Audited),
+            _ => Option::None,
+        }
     }
 }
 

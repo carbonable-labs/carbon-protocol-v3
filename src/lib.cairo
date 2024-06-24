@@ -1,23 +1,24 @@
 mod components {
-    mod absorber;
-    mod minter;
     mod erc1155;
-    mod offsetter;
     mod metadata;
+    mod minter;
+    mod offsetter;
+    mod vintage;
 }
 
-mod data {
+mod models {
     mod carbon_vintage;
+    mod constants;
 }
 
 mod contracts {
-    mod project;
     mod minter;
     mod offsetter;
+    mod project;
 }
 
 mod mock {
-    mod usdcarb;
     mod metadata;
+    mod usdcarb;
 }
 
