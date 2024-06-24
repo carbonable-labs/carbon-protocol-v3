@@ -19,11 +19,8 @@ mod OffsetComponent {
     // Internal imports
 
     use carbon_v3::components::offsetter::interface::IOffsetHandler;
-    use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
-    use carbon_v3::components::absorber::interface::{IAbsorberDispatcher, IAbsorberDispatcherTrait};
-    use carbon_v3::components::absorber::interface::{
-        ICarbonCreditsHandlerDispatcher, ICarbonCreditsHandlerDispatcherTrait
-    };
+    use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
     use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
     use carbon_v3::contracts::project::{
         IExternalDispatcher as IProjectDispatcher,
@@ -86,10 +83,10 @@ mod OffsetComponent {
             let project_address: ContractAddress = self.Offsetter_carbonable_project_address.read();
 
             // [Check] Vintage have the right status
-            let carbon_credits = ICarbonCreditsHandlerDispatcher {
+            let vintages = IVintageDispatcher {
                 contract_address: project_address
             };
-            let stored_vintage: CarbonVintage = carbon_credits
+            let stored_vintage: CarbonVintage = vintages
                 .get_carbon_vintage(vintage.try_into().expect('Invalid vintage year'));
             assert(
                 stored_vintage.status == CarbonVintageType::Audited, 'Vintage status is not audited'

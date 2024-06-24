@@ -39,29 +39,27 @@ trait IExternal<ContractState> {
     fn set_approval_for_all(ref self: ContractState, operator: ContractAddress, approved: bool);
 }
 
-
 #[starknet::contract]
 mod Project {
-    use carbon_v3::components::absorber::interface::ICarbonCreditsHandlerDispatcher;
-    use core::traits::Into;
+    use carbon_v3::components::vintage::interface::IVintageDispatcher;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
 
     // Ownable
     use openzeppelin::access::ownable::OwnableComponent;
     // Upgradable
     use openzeppelin::upgrades::upgradeable::UpgradeableComponent;
-    //SRC5
+    // SRC5
     use openzeppelin::introspection::src5::SRC5Component;
     // ERC1155
     use carbon_v3::components::erc1155::ERC1155Component;
-    // Absorber
-    use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
+    // Vintage
+    use carbon_v3::components::vintage::VintageComponent;
 
     component!(path: ERC1155Component, storage: erc1155, event: ERC1155Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
-    component!(path: AbsorberComponent, storage: absorber, event: AbsorberEvent);
+    component!(path: VintageComponent, storage: vintage, event: VintageEvent);
 
     // ERC1155
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
@@ -76,10 +74,7 @@ mod Project {
     impl OwnableCamelOnlyImpl =
         OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
-    impl AbsorberImpl = AbsorberComponent::AbsorberImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl CarbonCreditsHandlerImpl =
-        AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
+    impl VintageHandlerImpl = VintageComponent::VintageImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
@@ -87,7 +82,7 @@ mod Project {
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
-    impl AbsorberInternalImpl = AbsorberComponent::InternalImpl<ContractState>;
+    impl VintageHandlerInternalImpl = VintageComponent::InternalImpl<ContractState>;
 
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
@@ -105,7 +100,7 @@ mod Project {
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
-        absorber: AbsorberComponent::Storage,
+        vintage: VintageComponent::Storage,
     }
 
     #[event]
@@ -120,7 +115,7 @@ mod Project {
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
-        AbsorberEvent: AbsorberComponent::Event
+        VintageEvent: VintageComponent::Event
     }
 
     mod Errors {
@@ -140,7 +135,7 @@ mod Project {
         let base_uri_bytearray: ByteArray = format!("{}", base_uri);
         self.erc1155.initializer(base_uri_bytearray);
         self.ownable.initializer(owner);
-        self.absorber.initializer(starting_year, number_of_years);
+        self.vintage.initializer(starting_year, number_of_years);
 
         self.src5.register_interface(OLD_IERC1155_ID);
         self.src5.register_interface(IERC165_BACKWARD_COMPATIBLE_ID);
@@ -154,7 +149,7 @@ mod Project {
         }
 
         fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
-            let share_value = self.absorber.cc_to_share(value, token_id);
+            let share_value = self.vintage.cc_to_share(value, token_id);
             self.erc1155.burn(from, token_id, share_value);
         }
 
@@ -219,7 +214,7 @@ mod Project {
             value: u256,
             data: Span<felt252>
         ) {
-            let share_value = self.absorber.cc_to_share(value, token_id);
+            let share_value = self.vintage.cc_to_share(value, token_id);
             self.erc1155.safe_transfer_from(from, to, token_id, share_value, data);
         }
 
@@ -251,7 +246,7 @@ mod Project {
     impl InternalImpl of InternalTrait {
         fn _balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
             let share = self.erc1155.balance_of(account, token_id);
-            self.absorber.share_to_cc(share, token_id)
+            self.vintage.share_to_cc(share, token_id)
         }
     }
 }

@@ -1,14 +1,8 @@
 #[starknet::component]
 mod MintComponent {
     // Core imports
-
-    use zeroable::Zeroable;
-    use traits::{Into, TryInto};
-    use option::OptionTrait;
-    use array::{Array, ArrayTrait};
     use hash::HashStateTrait;
     use poseidon::PoseidonTrait;
-    use debug::PrintTrait;
 
     // Starknet imports
 
@@ -23,15 +17,12 @@ mod MintComponent {
 
     use carbon_v3::components::minter::interface::IMint;
     use carbon_v3::components::minter::booking::{Booking, BookingStatus, BookingTrait};
-    use carbon_v3::components::absorber::interface::{IAbsorberDispatcher, IAbsorberDispatcherTrait};
-    use carbon_v3::components::absorber::interface::{
-        ICarbonCreditsHandlerDispatcher, ICarbonCreditsHandlerDispatcherTrait
-    };
+    use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
     use carbon_v3::contracts::project::{
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
-    use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
 
@@ -79,7 +70,7 @@ mod MintComponent {
     struct Buy {
         #[key]
         address: ContractAddress,
-        cc_vintage_years: Span<u256>,
+        vintages: Span<u256>,
         cc_distributed: Span<u256>,
     }
 
@@ -266,22 +257,23 @@ mod MintComponent {
 
             // [Interaction] Compute the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
-            let carbon_credits = ICarbonCreditsHandlerDispatcher {
-                contract_address: project_address
-            };
-            let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
-            let n = cc_vintage_years.len();
+            let project = IVintageDispatcher { contract_address: project_address };
+            let num_vintages = project.get_num_vintages();
+
             // Initially, share is the same for all the vintages
             let mut cc_shares: Array<u256> = ArrayTrait::<u256>::new();
+            let mut tokens: Array<u256> = Default::default();
             let mut index = 0;
             loop {
-                if index >= n {
+                if index >= num_vintages {
                     break;
                 }
                 cc_shares.append(share);
                 index += 1;
+                tokens.append(index.into());
             };
             let cc_shares = cc_shares.span();
+            let token_ids = tokens.span();
 
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
@@ -297,7 +289,7 @@ mod MintComponent {
 
             // [Interaction] Mint
             let project = IProjectDispatcher { contract_address: project_address };
-            project.batch_mint(caller_address, cc_vintage_years, cc_shares);
+            project.batch_mint(caller_address, token_ids, cc_shares);
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
@@ -305,9 +297,7 @@ mod MintComponent {
                 .emit(
                     Event::Buy(
                         Buy {
-                            address: caller_address,
-                            cc_vintage_years: cc_vintage_years,
-                            cc_distributed: cc_shares
+                            address: caller_address, vintages: token_ids, cc_distributed: cc_shares
                         }
                     )
                 );
