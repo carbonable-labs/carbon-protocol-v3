@@ -10,10 +10,13 @@ mod AbsorberComponent {
     // External imports
     use alexandria_numeric::interpolate::{interpolate, Interpolation, Extrapolation};
     use alexandria_storage::list::{List, ListTrait};
+    use openzeppelin::access::accesscontrol::interface::IAccessControl;
+
 
     // Internal imports
     use carbon_v3::components::absorber::interface::{IAbsorber, ICarbonCreditsHandler};
     use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::contracts::project::Project::{OWNER_ROLE};
 
     // Constants
 
@@ -59,7 +62,7 @@ mod AbsorberComponent {
 
     #[embeddable_as(AbsorberImpl)]
     impl Absorber<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
+        TContractState, +HasComponent<TContractState>, +Drop<TContractState>, +IAccessControl<TContractState>
     > of IAbsorber<ComponentState<TContractState>> {
         // Absorption
         fn get_starting_year(self: @ComponentState<TContractState>) -> u64 {
@@ -169,6 +172,11 @@ mod AbsorberComponent {
         fn set_absorptions(
             ref self: ComponentState<TContractState>, times: Span<u64>, absorptions: Span<u64>
         ) {
+            // [Check] Caller is owner
+            let caller_address = get_caller_address();
+            let isOwner = self.get_contract().has_role(OWNER_ROLE, caller_address); 
+            assert(isOwner, 'Caller is not owner');
+
             // [Check] Times and prices are defined
             assert(times.len() == absorptions.len(), 'Times and absorptions mismatch');
             assert(times.len() > 0, 'Inputs cannot be empty');
@@ -220,6 +228,11 @@ mod AbsorberComponent {
         }
 
         fn set_project_carbon(ref self: ComponentState<TContractState>, project_carbon: u256) {
+            // [Check] Caller is owner
+            let caller_address = get_caller_address();
+            let isOwner = self.get_contract().has_role(OWNER_ROLE, caller_address);
+            assert(isOwner, 'Caller is not owner');
+
             // [Event] Update storage
             self.Absorber_project_carbon.write(project_carbon);
 
