@@ -12,6 +12,7 @@ trait IExternal<ContractState> {
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
+    fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool;
     fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
     fn balance_of_batch(
         self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
@@ -208,6 +209,10 @@ mod Project {
 
         fn decimals(self: @ContractState) -> u8 {
             self.absorber.get_cc_decimals()
+        }
+
+        fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool {
+            self.accesscontrol.has_role(OWNER_ROLE, caller_address)
         }
 
         fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
