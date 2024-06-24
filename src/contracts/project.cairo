@@ -56,12 +56,15 @@ mod Project {
     use carbon_v3::components::erc1155::ERC1155Component;
     // Absorber
     use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
+    // Access Control - RBAC
+    use openzeppelin::access::accesscontrol::AccessControlComponent;
 
     component!(path: ERC1155Component, storage: erc1155, event: ERC1155Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
     component!(path: AbsorberComponent, storage: absorber, event: AbsorberEvent);
+    component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
 
     // ERC1155
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
@@ -82,17 +85,24 @@ mod Project {
         AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+    // Access Control
+    #[abi(embed_v0)]
+    impl AccessControlImpl = AccessControlComponent::AccessControlImpl<ContractState>;
 
     impl ERC1155InternalImpl = ERC1155Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl AbsorberInternalImpl = AbsorberComponent::InternalImpl<ContractState>;
+    impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
     const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
     const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
+    const MINTER_ROLE: felt252 = selector!("Minter");
+    const OFFSETTER_ROLE: felt252 = selector!("Offsetter");
+    const OWNER_ROLE: felt252 = selector!("Owner");
 
     #[storage]
     struct Storage {
@@ -106,6 +116,8 @@ mod Project {
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
         absorber: AbsorberComponent::Storage,
+        #[substorage(v0)]
+        accesscontrol: AccessControlComponent::Storage,
     }
 
     #[event]
@@ -120,7 +132,9 @@ mod Project {
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
-        AbsorberEvent: AbsorberComponent::Event
+        AbsorberEvent: AbsorberComponent::Event,
+        #[flat]
+        AccessControlEvent: AccessControlComponent::Event,
     }
 
     mod Errors {
@@ -141,6 +155,11 @@ mod Project {
         self.erc1155.initializer(base_uri_bytearray);
         self.ownable.initializer(owner);
         self.absorber.initializer(starting_year, number_of_years);
+        self.accesscontrol.initializer();
+        self.accesscontrol._grant_role(OWNER_ROLE, owner);
+        self.accesscontrol._set_role_admin(MINTER_ROLE, OWNER_ROLE);
+        self.accesscontrol._set_role_admin(OFFSETTER_ROLE, OWNER_ROLE);
+        self.accesscontrol._set_role_admin(OWNER_ROLE, OWNER_ROLE);
 
         self.src5.register_interface(OLD_IERC1155_ID);
         self.src5.register_interface(IERC165_BACKWARD_COMPATIBLE_ID);
@@ -150,10 +169,14 @@ mod Project {
     #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
         fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+            // [Check] Only Minter can mint
+            self.accesscontrol.assert_only_role(MINTER_ROLE);
             self.erc1155.mint(to, token_id, value);
         }
 
         fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
+            // [Check] Only Offsetter can offset
+            self.accesscontrol.assert_only_role(OFFSETTER_ROLE);
             let share_value = self.absorber.cc_to_share(value, token_id);
             self.erc1155.burn(from, token_id, share_value);
         }
@@ -161,8 +184,9 @@ mod Project {
         fn batch_mint(
             ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
         ) {
-            // TODO : Add access control as only the Minter in the list should be able to mint the tokens
             // TODO : Check the avalibility of the ampount of vintage cc_supply for each values.it should be done in the absorber/carbon_handler
+            // [Check] Only Minter can mint
+            self.accesscontrol.assert_only_role(MINTER_ROLE);
             self.erc1155.batch_mint(to, token_ids, values);
         }
 
@@ -173,7 +197,8 @@ mod Project {
             values: Span<u256>
         ) {
             // TODO : Check that the caller is the owner of the value he wnt to burn
-            // TODO : Add access control as only the Offsetter in the list should be able to burn the values
+            // [Check] Only Offsetter can offset
+            self.accesscontrol.assert_only_role(OFFSETTER_ROLE);
             self.erc1155.batch_burn(from, token_ids, values);
         }
 
