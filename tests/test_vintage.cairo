@@ -1,19 +1,6 @@
-// Core deps
-
-use array::ArrayTrait;
-use result::ResultTrait;
-use option::OptionTrait;
-use traits::{Into, TryInto};
-use zeroable::Zeroable;
-use debug::PrintTrait;
-use hash::HashStateTrait;
-use pedersen::PedersenTrait;
-
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
-use starknet::{deploy_syscall, get_block_timestamp};
-use starknet::testing::{set_caller_address, set_contract_address};
 
 // External deps
 
@@ -31,8 +18,8 @@ use alexandria_storage::list::{List, ListTrait};
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
 use carbon_v3::components::vintage::{VintageComponent, VintageComponent::{ProjectCarbonUpdate}};
+use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::models::constants::{CC_DECIMALS_MULTIPLIER};
 
 
 // Contracts

@@ -83,9 +83,7 @@ mod OffsetComponent {
             let project_address: ContractAddress = self.Offsetter_carbonable_project_address.read();
 
             // [Check] Vintage have the right status
-            let vintages = IVintageDispatcher {
-                contract_address: project_address
-            };
+            let vintages = IVintageDispatcher { contract_address: project_address };
             let stored_vintage: CarbonVintage = vintages
                 .get_carbon_vintage(vintage.try_into().expect('Invalid vintage year'));
             assert(

@@ -42,19 +42,19 @@ fn test_constructor_ok() {
     let (_project_address, _spy) = deploy_project();
 }
 
-#[test]
-fn test_is_setup() {
-    let (project_address, _) = deploy_project();
-    let project = IVintageDispatcher { contract_address: project_address };
+// #[test]
+// fn test_is_setup() {
+//     let (project_address, _) = deploy_project();
+//     let project = IVintageDispatcher { contract_address: project_address };
 
-    setup_project(
-        project_address,
-        1573000000,
-        array![1706785200, 2306401200].span(),
-        array![0, 1573000000].span(),
-    );
-// assert(project.is_setup(), 'Error during setup');
-}
+//     setup_project(
+//         project_address,
+//         1573000000,
+//         array![1706785200, 2306401200].span(),
+//         array![0, 1573000000].span(),
+//     );
+//  assert(project.is_setup(), 'Error during setup');
+// }
 
 // Mint without the minting contract, should fail after access control is implemented
 #[test]

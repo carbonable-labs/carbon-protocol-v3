@@ -137,10 +137,9 @@ fn setup_project(
     absorptions: Span<u64>
 ) {
     let project = IVintageDispatcher { contract_address };
-
-    // TODO: Remove
-    // project.set_absorptions(times, absorptions);
-    // project.set_project_carbon(project_carbon);
+// TODO: Remove
+// project.set_absorptions(times, absorptions);
+// project.set_project_carbon(project_carbon);
 }
 
 fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
@@ -282,7 +281,6 @@ fn perform_fuzzed_transfer(
     start_prank(CheatTarget::One(project_address), owner_address);
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
-
 
     buy_utils(minter_address, erc20_address, share);
 
