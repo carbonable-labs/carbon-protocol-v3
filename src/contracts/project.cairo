@@ -58,8 +58,6 @@ mod Project {
     use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
     // ERC4906
     use erc4906::erc4906_component::ERC4906Component;
-    // ERC721
-      use openzeppelin::token::erc721::ERC721Component;
 
     component!(path: ERC1155Component, storage: erc1155, event: ERC1155Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -67,7 +65,6 @@ mod Project {
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
     component!(path: AbsorberComponent, storage: absorber, event: AbsorberEvent);
     component!(path: ERC4906Component, storage: erc4906, event: ERC4906Event);
-    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
 
     // ERC1155
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
@@ -88,10 +85,6 @@ mod Project {
         AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC4906HelperImpl = ERC4906Component::ERC4906HelperImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC721MixinImpl = ERC721Component::ERC721MixinImpl<ContractState>;
 
     impl ERC1155InternalImpl = ERC1155Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
@@ -99,7 +92,6 @@ mod Project {
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl AbsorberInternalImpl = AbsorberComponent::InternalImpl<ContractState>;
     impl ERC4906InternalImpl = ERC4906Component::ERC4906HelperInternal<ContractState>;
-    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
 
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
@@ -120,8 +112,6 @@ mod Project {
         absorber: AbsorberComponent::Storage,
         #[substorage(v0)]
         erc4906: ERC4906Component::Storage,
-        #[substorage(v0)]
-        erc721: ERC721Component::Storage,
     }
 
     #[event]
@@ -139,8 +129,6 @@ mod Project {
         AbsorberEvent: AbsorberComponent::Event,
         #[flat]
         ERC4906Event: ERC4906Component::Event,
-        #[flat]
-        ERC721Event: ERC721Component::Event,
     }
 
     mod Errors {
