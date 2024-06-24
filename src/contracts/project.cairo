@@ -12,7 +12,9 @@ trait IExternal<ContractState> {
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
-    fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool;
+    fn only_owner(self: @ContractState) -> bool;
+    fn grant_minter_role(ref self: ContractState, minter: ContractAddress);
+    fn grant_offsetter_role(ref self: ContractState, offsetter: ContractAddress);
     fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
     fn balance_of_batch(
         self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
@@ -152,15 +154,16 @@ mod Project {
         starting_year: u64,
         number_of_years: u64
     ) {
-        let base_uri_bytearray: ByteArray = format!("{}", base_uri);
-        self.erc1155.initializer(base_uri_bytearray);
-        self.ownable.initializer(owner);
-        self.absorber.initializer(starting_year, number_of_years);
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(OWNER_ROLE, owner);
         self.accesscontrol._set_role_admin(MINTER_ROLE, OWNER_ROLE);
         self.accesscontrol._set_role_admin(OFFSETTER_ROLE, OWNER_ROLE);
         self.accesscontrol._set_role_admin(OWNER_ROLE, OWNER_ROLE);
+        let base_uri_bytearray: ByteArray = format!("{}", base_uri);
+        self.erc1155.initializer(base_uri_bytearray);
+        self.ownable.initializer(owner);
+        self.absorber.initializer(starting_year, number_of_years);
+        
 
         self.src5.register_interface(OLD_IERC1155_ID);
         self.src5.register_interface(IERC165_BACKWARD_COMPATIBLE_ID);
@@ -171,13 +174,15 @@ mod Project {
     impl ExternalImpl of super::IExternal<ContractState> {
         fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
             // [Check] Only Minter can mint
-            self.accesscontrol.assert_only_role(MINTER_ROLE);
+            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+            assert(isMinter, 'Only Minter can mint');
             self.erc1155.mint(to, token_id, value);
         }
 
         fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
             // [Check] Only Offsetter can offset
-            self.accesscontrol.assert_only_role(OFFSETTER_ROLE);
+            let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
+            assert(isOffseter, 'Only Offsetter can offset');
             let share_value = self.absorber.cc_to_share(value, token_id);
             self.erc1155.burn(from, token_id, share_value);
         }
@@ -187,7 +192,8 @@ mod Project {
         ) {
             // TODO : Check the avalibility of the ampount of vintage cc_supply for each values.it should be done in the absorber/carbon_handler
             // [Check] Only Minter can mint
-            self.accesscontrol.assert_only_role(MINTER_ROLE);
+            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+            assert(isMinter, 'Only Minter can batch mint');
             self.erc1155.batch_mint(to, token_ids, values);
         }
 
@@ -199,7 +205,8 @@ mod Project {
         ) {
             // TODO : Check that the caller is the owner of the value he wnt to burn
             // [Check] Only Offsetter can offset
-            self.accesscontrol.assert_only_role(OFFSETTER_ROLE);
+            let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
+            assert(isOffseter, 'Only Offsetter can batch offset');
             self.erc1155.batch_burn(from, token_ids, values);
         }
 
@@ -211,8 +218,20 @@ mod Project {
             self.absorber.get_cc_decimals()
         }
 
-        fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool {
-            self.accesscontrol.has_role(OWNER_ROLE, caller_address)
+        fn only_owner(self: @ContractState) -> bool {
+            self.accesscontrol.has_role(OWNER_ROLE, get_caller_address())
+        }
+
+        fn grant_minter_role(ref self: ContractState, minter: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can grant minter role");
+            self.accesscontrol._grant_role(MINTER_ROLE, minter);
+        }
+
+        fn grant_offsetter_role(ref self: ContractState, offsetter: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can grant offsetter role");
+            self.accesscontrol._grant_role(OFFSETTER_ROLE, offsetter);
         }
 
         fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
