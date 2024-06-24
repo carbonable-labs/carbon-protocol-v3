@@ -149,7 +149,7 @@ mod MintComponent {
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
             // [Check] Caller is owner
-            let isOwner = project.only_owner(caller_address);
+            let isOwner = project.only_owner();
             assert(isOwner, 'Caller is not the owner');
 
             // [Effect] Update storage
@@ -173,7 +173,7 @@ mod MintComponent {
             assert(!caller_address.is_zero(), 'Invalid caller');
             
             // [Check] Caller is owner
-            let isOwner = project.only_owner(caller_address);
+            let isOwner = project.only_owner();
             assert(isOwner, 'Caller is not the owner');
 
             // [Check] Value not null
@@ -228,7 +228,7 @@ mod MintComponent {
             assert(!caller_address.is_zero(), 'Invalid caller');
 
             // [Check] Caller is owner
-            let isOwner = project.only_owner(caller_address);
+            let isOwner = project.only_owner();
             assert(isOwner, 'Caller is not the owner');
 
             // [Check] Value in range
@@ -271,7 +271,7 @@ mod MintComponent {
             self.Mint_max_money_amount.write(max_money_amount);
 
             // [Effect] Use dedicated function to emit corresponding events
-            self.set_public_sale_open(public_sale_open);
+            self.Mint_public_sale_open.write(public_sale_open);
         }
 
         fn _buy(
