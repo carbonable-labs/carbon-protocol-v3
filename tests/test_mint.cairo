@@ -1,15 +1,3 @@
-use core::array::SpanTrait;
-// Core deps
-
-use array::ArrayTrait;
-use result::ResultTrait;
-use option::OptionTrait;
-use traits::{Into, TryInto};
-use zeroable::Zeroable;
-use debug::PrintTrait;
-use hash::HashStateTrait;
-use pedersen::PedersenTrait;
-
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
@@ -31,15 +19,9 @@ use alexandria_storage::list::{List, ListTrait};
 
 // Components
 
-use carbon_v3::components::absorber::interface::{
-    IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCreditsHandlerDispatcher,
-    ICarbonCreditsHandlerDispatcherTrait
-};
-use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::{
-    Event, AbsorptionUpdate, ProjectValueUpdate
-};
-use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
+use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
+use carbon_v3::components::vintage::{VintageComponent, VintageComponent::ProjectCarbonUpdate};
+use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
 use carbon_v3::components::minter::interface::{IMintDispatcher, IMintDispatcherTrait};
 
@@ -81,32 +63,6 @@ struct Contracts {
 // Tests
 //
 
-// set_project_carbon
-
-#[test]
-fn test_set_project_carbon() {
-    let (project_address, mut spy) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Assert] project_carbon set correctly
-    project.set_project_carbon(PROJECT_CARBON.into());
-    let fetched_value = project.get_project_carbon();
-    assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    project_address,
-                    AbsorberComponent::Event::ProjectValueUpdate(
-                        AbsorberComponent::ProjectValueUpdate { value: PROJECT_CARBON.into() }
-                    )
-                )
-            ]
-        );
-    // found events are removed from the spy after assertion, so the length should be 0
-    assert(spy.events.len() == 0, 'number of events should be 0');
-}
-
-
 // is_public_sale_open
 
 #[test]
@@ -138,8 +94,8 @@ fn test_is_public_buy() {
     start_prank(CheatTarget::One(erc20_address), owner_address);
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
     // [Assert] project_carbon set correctly

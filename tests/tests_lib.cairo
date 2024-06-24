@@ -4,6 +4,7 @@ use starknet::{ContractAddress, contract_address_const};
 
 // External deps
 
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
 use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank};
@@ -11,15 +12,11 @@ use alexandria_storage::list::{List, ListTrait};
 
 // Data 
 
-use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
 // Components
 
-use carbon_v3::components::absorber::interface::{
-    IAbsorber, IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCreditsHandler,
-    ICarbonCreditsHandlerDispatcher, ICarbonCreditsHandlerDispatcherTrait
-};
-use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::CC_DECIMALS_MULTIPLIER;
+use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
 
 // Contracts
@@ -28,7 +25,8 @@ use carbon_v3::contracts::project::{
     Project, IExternalDispatcher as IProjectDispatcher,
     IExternalDispatcherTrait as IProjectDispatcherTrait
 };
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+
+use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 
 
 ///
@@ -138,10 +136,11 @@ fn setup_project(
     times: Span<u64>,
     absorptions: Span<u64>
 ) {
-    let project = IAbsorberDispatcher { contract_address };
+    let project = IVintageDispatcher { contract_address };
 
-    project.set_absorptions(times, absorptions);
-    project.set_project_carbon(project_carbon);
+    // TODO: Remove
+    // project.set_absorptions(times, absorptions);
+    // project.set_project_carbon(project_carbon);
 }
 
 fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
@@ -279,13 +278,11 @@ fn perform_fuzzed_transfer(
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let (project_address, minter_address, erc20_address, _) = fuzzing_setup(supply);
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     start_prank(CheatTarget::One(project_address), owner_address);
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
-    assert(absorber.is_setup(), 'Error during setup');
 
     buy_utils(minter_address, erc20_address, share);
 

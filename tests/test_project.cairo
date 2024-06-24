@@ -10,17 +10,16 @@ use snforge_std as snf;
 use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank};
 use alexandria_storage::list::{List, ListTrait};
 
-// Data 
+// Models 
 
-use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
+use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 
 // Components
 
-use carbon_v3::components::absorber::interface::{
-    IAbsorber, IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCreditsHandler,
-    ICarbonCreditsHandlerDispatcher, ICarbonCreditsHandlerDispatcherTrait
+use carbon_v3::components::vintage::interface::{
+    IVintage, IVintageDispatcher, IVintageDispatcherTrait
 };
-use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
 
 // Contracts
@@ -46,7 +45,7 @@ fn test_constructor_ok() {
 #[test]
 fn test_is_setup() {
     let (project_address, _) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
+    let project = IVintageDispatcher { contract_address: project_address };
 
     setup_project(
         project_address,
@@ -54,8 +53,7 @@ fn test_is_setup() {
         array![1706785200, 2306401200].span(),
         array![0, 1573000000].span(),
     );
-
-    assert(project.is_setup(), 'Error during setup');
+// assert(project.is_setup(), 'Error during setup');
 }
 
 // Mint without the minting contract, should fail after access control is implemented
@@ -63,18 +61,18 @@ fn test_is_setup() {
 fn test_project_batch_mint() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
-    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let project = IProjectDispatcher { contract_address: project_address };
 
     start_prank(CheatTarget::One(project_address), owner_address);
 
-    assert(absorber.is_setup(), 'Error during setup');
-    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let decimal: u8 = project.decimals();
+    assert(decimal == 6, 'Error of decimal');
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
-    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
-    let n = cc_vintage_years.len();
+    let n = vintages.get_num_vintages();
     let mut cc_distribution: Array<u256> = ArrayTrait::<u256>::new();
+    let mut tokens: Array<u256> = ArrayTrait::<u256>::new();
     let mut index = 0;
     loop {
         if index >= n {
@@ -83,15 +81,16 @@ fn test_project_batch_mint() {
 
         cc_distribution.append(share);
         index += 1;
+        tokens.append(index.into());
     };
     let cc_distribution = cc_distribution.span();
+    let token_ids = tokens.span();
 
-    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
-    project_contract.batch_mint(owner_address, cc_vintage_years, cc_distribution);
+    project.batch_mint(owner_address, token_ids, cc_distribution);
 
-    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
+    let supply_vintage_2025 = vintages.get_carbon_vintage(2025).supply;
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
-    let balance = project_contract.balance_of(owner_address, 2025);
+    let balance = project.balance_of(owner_address, 2025);
 
     assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
 }
@@ -100,16 +99,13 @@ fn test_project_batch_mint() {
 fn test_project_set_vintage_status() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
-    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
 
     start_prank(CheatTarget::One(project_address), owner_address);
 
-    assert(absorber.is_setup(), 'Error during setup');
-
-    carbon_credits.update_vintage_status(2025, 3);
-    let vintage: CarbonVintage = carbon_credits.get_carbon_vintage(2025);
-    assert(vintage.status == CarbonVintageType::Audited, 'Error of status');
+    vintages.update_vintage_status(2025, 3);
+    let vintage2025: CarbonVintage = vintages.get_carbon_vintage(2025);
+    assert(vintage2025.status == CarbonVintageType::Audited, 'Error of status');
 }
 
 /// Test balance_of
@@ -117,8 +113,7 @@ fn test_project_set_vintage_status() {
 fn test_project_balance_of() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
-    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
@@ -127,12 +122,10 @@ fn test_project_balance_of() {
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
-    assert(absorber.is_setup(), 'Error during setup');
-
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
     buy_utils(minter_address, erc20_address, share);
 
-    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
+    let supply_vintage_2025 = vintages.get_carbon_vintage(2025).supply;
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(owner_address, 2025);
 
@@ -143,8 +136,7 @@ fn test_project_balance_of() {
 fn test_transfer_without_loss() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
-    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
@@ -153,12 +145,10 @@ fn test_transfer_without_loss() {
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
-    assert(absorber.is_setup(), 'Error during setup');
-
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
     buy_utils(minter_address, erc20_address, share);
 
-    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
+    let supply_vintage_2025 = vintages.get_carbon_vintage(2025).supply;
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(owner_address, 2025);
 
@@ -186,15 +176,13 @@ fn test_consecutive_transfers_and_rebases(
 ) {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
     start_prank(CheatTarget::One(project_address), owner_address);
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
-    assert(absorber.is_setup(), 'Error during setup');
 
     // Format fuzzing parameters, percentages with 6 digits after the comma, max 299.999999%
     let DECIMALS_FACTORS = 100_000;
@@ -220,11 +208,11 @@ fn test_consecutive_transfers_and_rebases(
             owner_address, receiver_address, 2025, initial_balance.into(), array![].span()
         );
 
-    let initial_vintage_supply = cc_handler.get_carbon_vintage(2025).supply;
+    let initial_vintage_supply = vintages.get_carbon_vintage(2025).supply;
     let new_vintage_supply_1 = initial_vintage_supply
         * first_percentage_rebase.try_into().unwrap()
         / 100_000;
-    absorber.rebase_vintage(2025, new_vintage_supply_1);
+    vintages.rebase_vintage(2025, new_vintage_supply_1);
 
     let balance_receiver = project_contract.balance_of(receiver_address, 2025);
     start_prank(CheatTarget::One(project_address), receiver_address);
@@ -236,19 +224,19 @@ fn test_consecutive_transfers_and_rebases(
     let new_vintage_supply_2 = new_vintage_supply_1
         * second_percentage_rebase.try_into().unwrap()
         / 100_000;
-    absorber.rebase_vintage(2025, new_vintage_supply_2);
+    vintages.rebase_vintage(2025, new_vintage_supply_2);
 
     // revert first rebase with the opposite percentage
     let new_vintage_supply_3 = new_vintage_supply_2
         * undo_first_percentage_rebase.try_into().unwrap()
         / 100_000;
-    absorber.rebase_vintage(2025, new_vintage_supply_3);
+    vintages.rebase_vintage(2025, new_vintage_supply_3);
 
     // revert second rebase with the opposite percentage
     let new_vintage_supply_4 = new_vintage_supply_3
         * undo_second_percentage_rebase.try_into().unwrap()
         / 100_000;
-    absorber.rebase_vintage(2025, new_vintage_supply_4);
+    vintages.rebase_vintage(2025, new_vintage_supply_4);
 
     let balance_owner = project_contract.balance_of(owner_address, 2025);
     assert(equals_with_error(balance_owner, initial_balance, 10), 'Error final balance owner');
