@@ -60,6 +60,7 @@ fn test_is_setup() {
 
 // Mint without the minting contract, should fail after access control is implemented
 #[test]
+#[should_panic(expected: ('Only Minter can batch mint',))]
 fn test_project_batch_mint() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
@@ -122,8 +123,10 @@ fn test_project_balance_of() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
-
+    // Setup roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
+    project_contract.grant_minter_role(owner_address);
+
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
@@ -148,8 +151,10 @@ fn test_transfer_without_loss() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
-
+    // Setup Roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
+    project_contract.grant_minter_role(owner_address);
+
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
@@ -191,7 +196,10 @@ fn test_consecutive_transfers_and_rebases(
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    // Setup Roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
+    project_contract.grant_minter_role(owner_address);
+    
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
     assert(absorber.is_setup(), 'Error during setup');
