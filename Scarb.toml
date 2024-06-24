@@ -17,3 +17,6 @@ test = "snforge test"
 [[target.starknet-contract]]
 sierra = true
 casm = true
+
+[tool.fmt]
+sort-module-level-items = true
