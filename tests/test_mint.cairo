@@ -87,6 +87,9 @@ struct Contracts {
 fn test_set_project_carbon() {
     let (project_address, mut spy) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
+    // [Effect] Setup Roles for the contracts
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] project_carbon set correctly
     project.set_project_carbon(PROJECT_CARBON.into());
     let fetched_value = project.get_project_carbon();
@@ -129,6 +132,11 @@ fn test_is_public_buy() {
     let (project_address, _) = deploy_project();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    // [Effect] Setup Roles for the contracts
+    start_prank(CheatTarget::One(project_address), owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    // [Interaction] Grant owner the Minter role
+    project_contract.grant_minter_role(owner_address);
 
     let times: Span<u64> = get_mock_times();
     let absorptions: Span<u64> = get_mock_absorptions();
@@ -170,6 +178,11 @@ fn test_get_available_money_amount() {
     let (project_address, _) = deploy_project();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    // [Effect] Setup Roles for the contracts
+    start_prank(CheatTarget::One(project_address), owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    // [Interaction] Grant owner Minter role
+    project_contract.grant_minter_role(owner_address);
 
     let times: Span<u64> = get_mock_times();
     let absorptions: Span<u64> = get_mock_absorptions();
