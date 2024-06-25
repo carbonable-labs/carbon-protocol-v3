@@ -31,12 +31,21 @@ jobs:
   
           # Extract summary information
           echo "::group::Summary"
-          total_tests=$(echo "$tests_output" | awk '/Tests:/{print $2}')
-          tests_passed=$(echo "$tests_output" | awk '/Tests:/{print $4}')
-          tests_failed=$(echo "$tests_output" | awk '/Tests:/{print $6}')
+          passed_count=$(echo "$tests_output" | awk -F '[,:] ' '/passed/ {print $2}')
+          failed_count=$(echo "$tests_output" | awk -F '[,:] ' '/failed/ {print $2}')
+          skipped_count=$(echo "$tests_output" | awk -F '[,:] ' '/skipped/ {print $2}')
+          ignored_count=$(echo "$tests_output" | awk -F '[,:] ' '/ignored/ {print $2}')
+          filtered_out_count=$(echo "$tests_output" | awk -F '[,:] ' '/filtered out/ {print $2}')
+
+          # Calculate total tests
+          total_tests=$(( passed_count + failed_count + skipped_count + ignored_count + filtered_out_count ))
+          
           echo "Total tests: $total_tests"
-          echo "Total passed tests: $tests_passed"
-          echo "Total failed tests: $tests_failed"
+          echo "Total passed tests: $passed_count"
+          echo "Total failed tests: $failed_count"
+          echo "Total skipped tests: $skipped_count"
+          echo "Total ignored tests: $ignored_count"
+          echo "Total filtered out tests: $filtered_out_count"
           echo "::endgroup::"
   
           # Check if any test failed
@@ -46,3 +55,4 @@ jobs:
             echo "$failed_tests"
             exit 1
           fi
+          
