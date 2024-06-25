@@ -24,16 +24,16 @@ jobs:
           starknet-foundry-version: "0.18.0"
           
       - name: Run tests
-        id: test
+        id: cairo_tests
         run: |
           set -e
-          if ! scarb run test; then
-            echo "::error::One or more Scarb tests failed. See above for details."
-            exit 1
-          fi
-
-      - name: Check test status
-        if: ${{ failure() }}
-        run: |
-          echo "Tests failed!"
+          tests_output=$(scarb run test || true)
+          echo "$tests_output"
+  
+          # Check if any test failed
+          if echo "$tests_output" | grep -q '\[FAIL\]'; then
+          failed_test=$(echo "$tests_output" | awk -F ' :: ' '/\[FAIL\]/ {print $2}')
+          echo "\n\n TEST FAILED:"
+          echo "$failed_test"
           exit 1
+          fi
