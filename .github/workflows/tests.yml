@@ -21,7 +21,7 @@ jobs:
       - name: Setup snfoundry
         uses: foundry-rs/setup-snfoundry@v3
         with:
-          snforge-version: "0.18.0"
+          starknet-foundry-version: "0.18.0"
           
       - name: Run tests
         id: test
