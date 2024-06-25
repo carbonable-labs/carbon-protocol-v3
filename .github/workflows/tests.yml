@@ -31,25 +31,21 @@ jobs:
   
           # Extract summary information
           echo "::group::Summary"
-          passed_count=$(echo "$tests_output" | grep -oP 'passed: \K\d+')
-          failed_count=$(echo "$tests_output" | grep -oP 'failed: \K\d+')
-          skipped_count=$(echo "$tests_output" | grep -oP 'skipped: \K\d+')
-          ignored_count=$(echo "$tests_output" | grep -oP 'ignored: \K\d+')
-          filtered_out_count=$(echo "$tests_output" | grep -oP 'filtered out: \K\d+')
-
-          # Calculate total tests
-          total_tests=$(( passed_count + failed_count + skipped_count + ignored_count + filtered_out_count ))
-          
-          echo "Total tests: $total_tests"
-          echo "Total passed tests: $passed_count"
-          echo "Total failed tests: $failed_count"
+          tests_passed=$(echo "$tests_output" | awk '/Tests:/{print $2}')
+          tests_failed=$(echo "$tests_output" | awk '/Tests:/{print $4}')
+          skipped_count=$(echo "$tests_output" | awk '/Tests:/{print $6}')
+          ignored_count=$(echo "$tests_output" | awk '/Tests:/{print $6}')
+          filtered_out_count=$(echo "$tests_output" | awk '/Tests:/{print $6}')
+          # echo "Total tests: $total_tests"
+          echo "Total passed tests: $tests_passed"
+          echo "Total failed tests: $tests_failed"
           echo "Total skipped tests: $skipped_count"
           echo "Total ignored tests: $ignored_count"
           echo "Total filtered out tests: $filtered_out_count"
           echo "::endgroup::"
   
           # Check if any test failed
-          if [ "$failed_count" -gt 0 ]; then
+          if [ "$tests_failed" -gt 0 ]; then
             failed_tests=$(echo "$tests_output" | awk '/Failures:/{flag=1;next}/^\s*$/{flag=0}flag')
             echo "::error::Tests failed:"
             echo "$failed_tests"
