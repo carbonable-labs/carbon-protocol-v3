@@ -30,12 +30,15 @@ jobs:
           tests_output=$(scarb run test || true)
   
           # Extract summary information
+          echo "::group::Summary"
+          echo "Tests summary stadistics:"
           total_tests=$(echo "$tests_output" | awk '/Tests:/{print $2}')
           tests_passed=$(echo "$tests_output" | awk '/Tests:/{print $4}')
           tests_failed=$(echo "$tests_output" | awk '/Tests:/{print $6}')
-          echo "total_tests=$total_tests" >> $GITHUB_OUTPUT
-          echo "tests_passed=$tests_passed" >> $GITHUB_OUTPUT
-          echo "tests_failed=$tests_failed" >> $GITHUB_OUTPUT
+          echo "Total tests: $total_tests"
+          echo "Total passed tests: $tests_passed"
+          echo "Total failed tests: $tests_failed"
+          echo "::endgroup::"
   
           # Check if any test failed
           if echo "$tests_output" | grep -q '\[FAIL\]'; then
