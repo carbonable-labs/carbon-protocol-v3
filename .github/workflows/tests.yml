@@ -1,12 +1,14 @@
 name: Run Tests
 on:
-  push:
-    branches:
-    - main
+  pull_request:
+    types:
+      - closed
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -18,6 +20,8 @@ jobs:
       
       - name: Setup snfoundry
         uses: foundry-rs/setup-snfoundry@v3
+        with:
+          snforge-version: "0.18.0"
           
       - name: Run tests
         id: test
