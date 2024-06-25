@@ -149,7 +149,7 @@ mod MintComponent {
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
             // [Check] Caller is owner
-            let isOwner = project.only_owner();
+            let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
             // [Effect] Update storage
@@ -173,7 +173,7 @@ mod MintComponent {
             assert(!caller_address.is_zero(), 'Invalid caller');
             
             // [Check] Caller is owner
-            let isOwner = project.only_owner();
+            let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
             // [Check] Value not null
@@ -228,7 +228,7 @@ mod MintComponent {
             assert(!caller_address.is_zero(), 'Invalid caller');
 
             // [Check] Caller is owner
-            let isOwner = project.only_owner();
+            let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
             // [Check] Value in range

@@ -844,3 +844,35 @@ fn test_rebase_half_supply() {
         index += 1;
     };
 }
+
+#[test]
+#[should_panic(expected: 'Caller is not owner')]
+fn test_set_project_carbon_without_owner_role() {
+    let (project_address, _) = deploy_project();
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    project.set_project_carbon(PROJECT_CARBON.into());
+}
+
+#[test]
+#[should_panic(expected: 'Caller is not owner')]
+fn test_set_absorptions_without_owner_role() {
+    let (project_address, _) = deploy_project();
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![
+        1651363200,
+        1659312000,
+        1667260800,
+        1675209600,
+        1682899200,
+        1690848000,
+        1698796800,
+        2598134400
+    ]
+        .span();
+    let absorptions: Span<u64> = array![
+        0, 1179750, 2359500, 3539250, 4719000, 6685250, 8651500, 1573000000
+    ]
+        .span();
+
+    project.set_absorptions(times, absorptions);
+}

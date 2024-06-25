@@ -287,7 +287,7 @@ fn perform_fuzzed_transfer(
     // Setup Roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
     project_contract.grant_minter_role(owner_address);
-    
+
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 

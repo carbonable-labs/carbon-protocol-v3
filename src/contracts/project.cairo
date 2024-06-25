@@ -12,9 +12,11 @@ trait IExternal<ContractState> {
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
-    fn only_owner(self: @ContractState) -> bool;
+    fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool;
     fn grant_minter_role(ref self: ContractState, minter: ContractAddress);
+    fn revoke_minter_role(ref self: ContractState, account: ContractAddress);
     fn grant_offsetter_role(ref self: ContractState, offsetter: ContractAddress);
+    fn revoke_offsetter_role(ref self: ContractState, account: ContractAddress);
     fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
     fn balance_of_batch(
         self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
@@ -218,8 +220,8 @@ mod Project {
             self.absorber.get_cc_decimals()
         }
 
-        fn only_owner(self: @ContractState) -> bool {
-            self.accesscontrol.has_role(OWNER_ROLE, get_caller_address())
+        fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool {
+            self.accesscontrol.has_role(OWNER_ROLE, caller_address)
         }
 
         fn grant_minter_role(ref self: ContractState, minter: ContractAddress) {
@@ -228,10 +230,22 @@ mod Project {
             self.accesscontrol._grant_role(MINTER_ROLE, minter);
         }
 
+        fn revoke_minter_role(ref self: ContractState, account: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can revoke minter role");
+            self.accesscontrol._revoke_role(MINTER_ROLE, account);
+        }
+
         fn grant_offsetter_role(ref self: ContractState, offsetter: ContractAddress) {
             let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
             assert!(isOwner, "Only Owner can grant offsetter role");
             self.accesscontrol._grant_role(OFFSETTER_ROLE, offsetter);
+        }
+
+        fn revoke_offsetter_role(ref self: ContractState, account: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can revoke offsetter role");
+            self.accesscontrol._revoke_role(OFFSETTER_ROLE, account);
         }
 
         fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {

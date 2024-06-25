@@ -35,7 +35,7 @@ use carbon_v3::contracts::project::{
 use super::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
     default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_erc20,
-    deploy_minter
+    deploy_minter, deploy_offsetter
 };
 
 #[test]
@@ -262,6 +262,247 @@ fn test_consecutive_transfers_and_rebases(
     assert(equals_with_error(balance_owner, initial_balance, 10), 'Error final balance owner');
     let balance_receiver = project_contract.balance_of(receiver_address, 2025);
     assert(equals_with_error(balance_receiver, 0, 10), 'Error final balance receiver');
+}
+
+#[test]
+fn test_project_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(owner_address);
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
+
+    project_contract.mint(owner_address, 2025, share);
+
+    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
+    let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
+    let balance = project_contract.balance_of(owner_address, 2025);
+
+    assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
+}
+
+#[test]
+#[should_panic(expected: 'Only Minter can mint')]
+fn test_project_mint_without_minter_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
+
+    project_contract.mint(owner_address, 2025, share);
+}
+
+#[test]
+fn test_project_batch_mint_with_minter_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(owner_address);
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    let n = cc_vintage_years.len();
+    let mut cc_distribution: Array<u256> = ArrayTrait::<u256>::new();
+    let mut index = 0;
+    loop {
+        if index >= n {
+            break;
+        };
+
+        cc_distribution.append(share);
+        index += 1;
+    };
+    let cc_distribution = cc_distribution.span();
+
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    project_contract.batch_mint(owner_address, cc_vintage_years, cc_distribution);
+
+    let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
+    let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
+    let balance = project_contract.balance_of(owner_address, 2025);
+
+    assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
+}
+
+#[test]
+fn test_project_offset_with_offsetter_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    // [Effect] Grant owner Minter and Offseter role
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(owner_address);
+    project.grant_offsetter_role(owner_address);
+
+    // [Effect] setup a batch of carbon credits
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(minter_address, erc20_address, share);
+
+    // [Effect] update Vintage status
+    carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+
+    // [Effect] offset tokens
+    project.offset(owner_address, 2025, 100);
+}
+
+#[test]
+#[should_panic(expected: 'Only Offsetter can offset')]
+fn test_project_offset_without_offsetter_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    // [Effect] Grant owner Minter and Offseter role
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(owner_address);
+
+    // [Effect] setup a batch of carbon credits
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(minter_address, erc20_address, share);
+
+    // [Effect] update Vintage status
+    carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+
+    // [Effect] offset tokens
+    project.offset(owner_address, 2025, 100);
+}
+
+#[test]
+fn test_project_batch_offset_with_offsetter_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    // [Effect] Grant owner Minter and Offseter role
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(owner_address);
+    project.grant_offsetter_role(owner_address);
+
+    // [Effect] setup a batch of carbon credits
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(minter_address, erc20_address, share);
+
+    // [Effect] update Vintage status
+    carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+
+    let share = 100;
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    let n = cc_vintage_years.len();
+    let mut cc_distribution: Array<u256> = ArrayTrait::<u256>::new();
+    let mut index = 0;
+    loop {
+        if index >= n {
+            break;
+        };
+
+        cc_distribution.append(share);
+        index += 1;
+    };
+    let cc_distribution = cc_distribution.span();
+
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+
+    // [Effect] offset tokens
+    project.batch_offset(owner_address, cc_vintage_years, cc_distribution);
+}
+
+#[test]
+#[should_panic(expected: 'Only Offsetter can batch offset')]
+fn test_project_batch_offset_without_offsetter_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    // [Prank] use owner address as caller
+    start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    // [Effect] Grant owner Minter and Offseter role
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(owner_address);
+
+    // [Effect] setup a batch of carbon credits
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(minter_address, erc20_address, share);
+
+    // [Effect] update Vintage status
+    carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+
+    let share = 100;
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    let n = cc_vintage_years.len();
+    let mut cc_distribution: Array<u256> = ArrayTrait::<u256>::new();
+    let mut index = 0;
+    loop {
+        if index >= n {
+            break;
+        };
+
+        cc_distribution.append(share);
+        index += 1;
+    };
+    let cc_distribution = cc_distribution.span();
+
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+
+    // [Effect] offset tokens
+    project.batch_offset(owner_address, cc_vintage_years, cc_distribution);
 }
 
 #[test]
