@@ -31,7 +31,6 @@ jobs:
   
           # Extract summary information
           echo "::group::Summary"
-          echo "Tests summary stadistics:"
           total_tests=$(echo "$tests_output" | awk '/Tests:/{print $2}')
           tests_passed=$(echo "$tests_output" | awk '/Tests:/{print $4}')
           tests_failed=$(echo "$tests_output" | awk '/Tests:/{print $6}')
