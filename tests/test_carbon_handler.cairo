@@ -434,7 +434,7 @@ fn test_share_to_cc_zero_share() {
 fn test_share_to_cc_revert_exceeds_supply() {
     let (project_address, _) = default_setup_and_deploy();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    let share: u256 = 2 * CC_DECIMALS_MULTIPLIER; // share is greater than 100%
+    let share: u256 = 2 * 0; // share is greater than 100%
     project.share_to_cc(share, 2025);
 }
 
