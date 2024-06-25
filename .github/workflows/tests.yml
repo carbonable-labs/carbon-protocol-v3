@@ -33,9 +33,9 @@ jobs:
           total_tests=$(echo "$tests_output" | awk '/Tests:/{print $2}')
           tests_passed=$(echo "$tests_output" | awk '/Tests:/{print $4}')
           tests_failed=$(echo "$tests_output" | awk '/Tests:/{print $6}')
-          echo "::set-output name=total_tests::$total_tests"
-          echo "::set-output name=tests_passed::$tests_passed"
-          echo "::set-output name=tests_failed::$tests_failed"
+          echo "total_tests=$total_tests" >> $GITHUB_OUTPUT
+          echo "tests_passed=$tests_passed" >> $GITHUB_OUTPUT
+          echo "tests_failed=$tests_failed" >> $GITHUB_OUTPUT
   
           # Check if any test failed
           if echo "$tests_output" | grep -q '\[FAIL\]'; then
