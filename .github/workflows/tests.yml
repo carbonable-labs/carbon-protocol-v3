@@ -1,0 +1,35 @@
+name: Run Tests
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.5.4"
+      
+      - name: Setup snfoundry
+        uses: foundry-rs/setup-snfoundry@v3
+          
+      - name: Run tests
+        id: test
+        run: |
+          set -e
+          if ! scarb run test; then
+            echo "::error::One or more Scarb tests failed. See above for details."
+            exit 1
+          fi
+
+      - name: Check test status
+        if: ${{ failure() }}
+        run: |
+          echo "Tests failed!"
+          exit 1
