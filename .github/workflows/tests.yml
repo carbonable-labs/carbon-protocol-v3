@@ -23,17 +23,24 @@ jobs:
         with:
           starknet-foundry-version: "0.18.0"
           
-      - name: Run tests
+      - name: Run Cairo tests
         id: cairo_tests
         run: |
           set -e
           tests_output=$(scarb run test || true)
-          echo "$tests_output"
+  
+          # Extract summary information
+          total_tests=$(echo "$tests_output" | awk '/Tests:/{print $2}')
+          tests_passed=$(echo "$tests_output" | awk '/Tests:/{print $4}')
+          tests_failed=$(echo "$tests_output" | awk '/Tests:/{print $6}')
+          echo "::set-output name=total_tests::$total_tests"
+          echo "::set-output name=tests_passed::$tests_passed"
+          echo "::set-output name=tests_failed::$tests_failed"
   
           # Check if any test failed
           if echo "$tests_output" | grep -q '\[FAIL\]'; then
-          failed_test=$(echo "$tests_output" | awk -F ' :: ' '/\[FAIL\]/ {print $2}')
-          echo "\n\n TEST FAILED:"
-          echo "$failed_test"
-          exit 1
+            failed_tests=$(echo "$tests_output" | awk '/Failures:/{flag=1;next}/^\s*$/{flag=0}flag')
+            echo "::error::Tests failed:"
+            echo "$failed_tests"
+            exit 1
           fi
