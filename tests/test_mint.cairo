@@ -124,6 +124,33 @@ fn test_is_public_sale_open() {
     assert(sale_open == true, 'public sale not open');
 }
 
+#[test]
+#[should_panic(expected: 'Caller is not the owner')]
+fn test_set_public_sale_open_without_owner_role() {
+    let (project_address, _) = default_setup_and_deploy();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+
+    minter.set_public_sale_open(true);
+}
+
+#[test]
+fn test_set_public_sale_open_with_owner_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    // Make the owner call the contract
+    start_prank(CheatTarget::One(minter_address), owner_address);
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+
+    minter.set_public_sale_open(true);
+}
+
 // is_public_buy
 
 #[test]
@@ -136,16 +163,17 @@ fn test_is_public_buy() {
     start_prank(CheatTarget::One(project_address), owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
     // [Interaction] Grant owner the Minter role
-    project_contract.grant_minter_role(owner_address);
+    project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
     let absorptions: Span<u64> = get_mock_absorptions();
 
     setup_project(project_address, 8000000000, times, absorptions,);
+    stop_prank(CheatTarget::One(project_address));
+
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+
     let project = IAbsorberDispatcher { contract_address: project_address };
     assert(project.is_setup(), 'Error during setup');
 
@@ -165,6 +193,9 @@ fn test_is_public_buy() {
 
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     erc20.approve(minter_address, amount_to_buy);
+    stop_prank(CheatTarget::One(project_address));
+
+    start_prank(CheatTarget::One(project_address), minter_address);
 
     let tokenized_cc: Span<u256> = minter.public_buy(amount_to_buy, false);
     assert(tokenized_cc.len() == 20, 'cc should have 20 element');
@@ -183,12 +214,13 @@ fn test_get_available_money_amount() {
     start_prank(CheatTarget::One(minter_address), owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
     // [Interaction] Grant owner Minter role
-    project_contract.grant_minter_role(owner_address);
+    project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
     let absorptions: Span<u64> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
+    stop_prank(CheatTarget::One(project_address));
 
     // Start testing environment setup
     start_prank(CheatTarget::One(erc20_address), owner_address);
@@ -214,6 +246,10 @@ fn test_get_available_money_amount() {
     // Approve the minter to spend the money and execute a public buy
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     erc20.approve(minter_address, amount_to_buy);
+    stop_prank(CheatTarget::One(project_address));
+
+    start_prank(CheatTarget::One(project_address), minter_address);
+    
     minter.public_buy(amount_to_buy, false);
 
     // Test after the buy
@@ -261,32 +297,7 @@ fn test_cancel_mint() {
     assert(!is_canceled_reopened, 'mint should be reopened')
 }
 
-#[test]
-#[should_panic(expected: 'Caller is not the owner')]
-fn test_set_public_sale_open_without_owner_role() {
-    let (project_address, _) = default_setup_and_deploy();
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    let minter = IMintDispatcher { contract_address: minter_address };
-
-    minter.set_public_sale_open(true);
-}
-
-#[test]
-fn test_set_public_sale_open_with_owner_role() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
-
-    // Make the owner call the contract
-    start_prank(CheatTarget::One(minter_address), owner_address);
-
-    let minter = IMintDispatcher { contract_address: minter_address };
-
-    minter.set_public_sale_open(true);
-}
 
 #[test]
 #[should_panic(expected: 'Caller is not the owner')]

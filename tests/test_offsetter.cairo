@@ -115,16 +115,21 @@ fn test_offsetter_retire_carbon_credits() {
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
+
     // [Effect] Grant owner Minter and Offseter role
     let project = IProjectDispatcher { contract_address: project_address };
-    project.grant_minter_role(owner_address);
-    project.grant_offsetter_role(owner_address);
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
+
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    // [Prank] use Minter address as caller
+    start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
+    stop_prank(CheatTarget::One(project_address));
     let initial_balance = project.balance_of(owner_address, 2025);
 
     // [Effect] update Vintage status
@@ -158,12 +163,14 @@ fn test_offsetter_wrong_status() {
 
     // [Effect] Grant owner Minter and Offsetter role
     let project = IProjectDispatcher { contract_address: project_address };
-    project.grant_minter_role(owner_address);
-    project.grant_offsetter_role(owner_address);
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
 
     // [Effect] setup a batch of carbon credits
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33%
+    start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
+    stop_prank(CheatTarget::One(project_address));
 
     // [Check] Vintage status is not audited
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
@@ -192,14 +199,16 @@ fn test_retire_carbon_credits_insufficient_credits() {
 
     // [Effect] Grant owner Minter and Offseter role
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    project_contract.grant_minter_role(owner_address);
-    project_contract.grant_offsetter_role(owner_address);
+    project_contract.grant_minter_role(minter_address);
+    project_contract.grant_offsetter_role(offsetter_address);
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
+    start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -226,14 +235,16 @@ fn test_retire_carbon_credits_exact_balance() {
 
     // [Effect] Grant owner Minter and Offseter role
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    project_contract.grant_minter_role(owner_address);
-    project_contract.grant_offsetter_role(owner_address);
+    project_contract.grant_minter_role(minter_address);
+    project_contract.grant_offsetter_role(offsetter_address);
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
+    start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
+    stop_prank(CheatTarget::One(project_address));
     let balance_owner = project_contract.balance_of(owner_address, 2025);
 
     // [Effect] update Vintage status
@@ -266,14 +277,16 @@ fn test_retire_carbon_credits_multiple_retirements() {
 
     // [Effect] Grant owner Minter and Offseter role
     let project = IProjectDispatcher { contract_address: project_address };
-    project.grant_minter_role(owner_address);
-    project.grant_offsetter_role(owner_address);
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
+    stop_prank(CheatTarget::One(project_address));
     let balance_initial = project.balance_of(owner_address, 2025);
 
     // [Effect] update Vintage status
@@ -310,14 +323,16 @@ fn test_retire_list_carbon_credits_valid_inputs() {
 
     // [Effect] Grant owner Minter and Offseter role
     let project = IProjectDispatcher { contract_address: project_address };
-    project.grant_minter_role(owner_address);
-    project.grant_offsetter_role(owner_address);
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
+    stop_prank(CheatTarget::One(project_address));
     let balance_initial_2025 = project.balance_of(owner_address, 2025);
     let balance_initial_2026 = project.balance_of(owner_address, 2026);
 
@@ -392,13 +407,15 @@ fn test_retire_list_carbon_credits_partial_valid_inputs() {
 
     // [Effect] Grant owner Minter and Offseter role
     let project = IProjectDispatcher { contract_address: project_address };
-    project.grant_minter_role(owner_address);
-    project.grant_offsetter_role(owner_address);
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -427,14 +444,16 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
 
     // [Effect] Grant owner Minter and Offseter role
     let project = IProjectDispatcher { contract_address: project_address };
-    project.grant_minter_role(owner_address);
-    project.grant_offsetter_role(owner_address);
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
+    stop_prank(CheatTarget::One(project_address));
     let initial_balance = project.balance_of(owner_address, 2025);
 
     // [Effect] update Vintage status

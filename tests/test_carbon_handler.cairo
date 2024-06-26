@@ -104,6 +104,14 @@ fn test_set_project_carbon() {
 }
 
 #[test]
+#[should_panic(expected: 'Caller is not owner')]
+fn test_set_project_carbon_without_owner_role() {
+    let (project_address, _) = deploy_project();
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    project.set_project_carbon(PROJECT_CARBON.into());
+}
+
+#[test]
 fn test_get_project_carbon_not_set() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
@@ -181,6 +189,30 @@ fn test_set_absorptions() {
     // at t = 1659312000
     start_warp(CheatTarget::One(project_address), 1659312000);
     assert(project.get_current_absorption() == 1179750, 'current absorption not correct');
+}
+
+#[test]
+#[should_panic(expected: 'Caller is not owner')]
+fn test_set_absorptions_without_owner_role() {
+    let (project_address, _) = deploy_project();
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    let times: Span<u64> = array![
+        1651363200,
+        1659312000,
+        1667260800,
+        1675209600,
+        1682899200,
+        1690848000,
+        1698796800,
+        2598134400
+    ]
+        .span();
+    let absorptions: Span<u64> = array![
+        0, 1179750, 2359500, 3539250, 4719000, 6685250, 8651500, 1573000000
+    ]
+        .span();
+
+    project.set_absorptions(times, absorptions);
 }
 
 #[test]
@@ -817,7 +849,10 @@ fn test_rebase_half_supply() {
     // [Effect] Setup Roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Interaction] Grant Minter role to owner
-    project.grant_minter_role(owner_address);
+    project.grant_minter_role(minter_address);
+    // Simulate production flow, Minter calls project address
+    stop_prank(CheatTarget::One(project_address));
+    start_prank(CheatTarget::One(project_address), minter_address);
 
     let share = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%
 
@@ -843,36 +878,4 @@ fn test_rebase_half_supply() {
         assert(failed_tokens == old_vintage_supply - new_vintage_supply, 'failed tokens not 0');
         index += 1;
     };
-}
-
-#[test]
-#[should_panic(expected: 'Caller is not owner')]
-fn test_set_project_carbon_without_owner_role() {
-    let (project_address, _) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    project.set_project_carbon(PROJECT_CARBON.into());
-}
-
-#[test]
-#[should_panic(expected: 'Caller is not owner')]
-fn test_set_absorptions_without_owner_role() {
-    let (project_address, _) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    let times: Span<u64> = array![
-        1651363200,
-        1659312000,
-        1667260800,
-        1675209600,
-        1682899200,
-        1690848000,
-        1698796800,
-        2598134400
-    ]
-        .span();
-    let absorptions: Span<u64> = array![
-        0, 1179750, 2359500, 3539250, 4719000, 6685250, 8651500, 1573000000
-    ]
-        .span();
-
-    project.set_absorptions(times, absorptions);
 }
