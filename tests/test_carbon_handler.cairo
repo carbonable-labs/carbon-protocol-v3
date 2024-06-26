@@ -81,7 +81,7 @@ struct Contracts {
 fn test_set_project_carbon() {
     let (project_address, mut spy) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_project_carbon
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] project_carbon set correctly
@@ -124,7 +124,7 @@ fn test_get_project_carbon_not_set() {
 fn test_set_project_carbon_twice() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_project_carbon
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] project_carbon set correctly
@@ -159,7 +159,8 @@ fn test_set_absorptions() {
         0, 1179750, 2359500, 3539250, 4719000, 6685250, 8651500, 1573000000
     ]
         .span();
-    // [Effect] Setup Roles to set_absorptions
+    
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] absorptions & times set correctly
@@ -220,7 +221,7 @@ fn test_set_absorptions_without_owner_role() {
 fn test_set_absorptions_revert_length_mismatch() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract 
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] reverting when times and absorptions have different lengths
@@ -234,7 +235,7 @@ fn test_set_absorptions_revert_length_mismatch() {
 fn test_set_absorptions_revert_empty_inputs() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] reverting when times and absorptions are empty arrays
@@ -248,7 +249,7 @@ fn test_set_absorptions_revert_empty_inputs() {
 fn test_set_absorptions_revert_times_not_sorted() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] reverting when times array is not sorted
@@ -262,7 +263,7 @@ fn test_set_absorptions_revert_times_not_sorted() {
 fn test_set_absorptions_revert_duplicate_times() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1651363200, 1651363200, 1667260800].span(); // duplicate times
@@ -275,7 +276,7 @@ fn test_set_absorptions_revert_duplicate_times() {
 fn test_set_absorptions_revert_absorptions_not_sorted() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] reverting when absorptions array is not sorted
@@ -288,7 +289,7 @@ fn test_set_absorptions_revert_absorptions_not_sorted() {
 fn test_set_absorptions_exact_one_year_interval() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1609459200, 1640995200, 1672531200]
@@ -303,7 +304,7 @@ fn test_set_absorptions_exact_one_year_interval() {
 fn test_set_absorptions_edge_case_timestamps() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![0, 1, 2, 3, 4, 5, 6, 7].span(); // very small timestamps
@@ -320,7 +321,7 @@ fn test_set_absorptions_edge_case_timestamps() {
 fn test_set_absorptions_change_length() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
@@ -345,7 +346,7 @@ fn test_set_absorptions_change_length() {
 fn test_get_absorption_interpolation() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
@@ -375,7 +376,7 @@ fn test_get_absorption_interpolation() {
 fn test_get_current_absorption_extrapolation() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
@@ -413,7 +414,7 @@ fn test_get_current_absorption_not_set() {
 fn test_current_absorption() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800, 1675209600, 1682899200]
@@ -453,7 +454,7 @@ fn test_current_absorption() {
 fn test_get_final_absorption() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
@@ -473,7 +474,7 @@ fn test_get_final_absorption_no_data() {
 fn test_get_final_absorption_single_value() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1651363200].span();
@@ -486,7 +487,7 @@ fn test_get_final_absorption_single_value() {
 fn test_get_final_absorption_after_updates() {
     let (project_address, _) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles to set_absorptions
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     let times: Span<u64> = array![1651363200, 1659312000, 1667260800].span();
@@ -844,14 +845,15 @@ fn test_rebase_half_supply() {
     let project = IProjectDispatcher { contract_address: project_address };
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
+    // [Prank] Use owner as caller to Minter, ERC20 and Project contracts
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
-    // [Effect] Setup Roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    // [Interaction] Grant Minter role to owner
+    // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
-    // Simulate production flow, Minter calls project address
+    // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
+    // [Prank] Simulate production flow, Minter calls Project contract
     start_prank(CheatTarget::One(project_address), minter_address);
 
     let share = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%

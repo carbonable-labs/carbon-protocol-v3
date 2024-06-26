@@ -87,7 +87,7 @@ struct Contracts {
 fn test_set_project_carbon() {
     let (project_address, mut spy) = deploy_project();
     let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Effect] Setup Roles for the contracts
+    // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Assert] project_carbon set correctly
@@ -143,7 +143,7 @@ fn test_set_public_sale_open_with_owner_role() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    // Make the owner call the contract
+    // [Prank] Use owner as caller to Minter contract
     start_prank(CheatTarget::One(minter_address), owner_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
@@ -159,18 +159,19 @@ fn test_is_public_buy() {
     let (project_address, _) = deploy_project();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
-    // [Effect] Setup Roles for the contracts
+    // [Prank] Use owner as caller to Project contract
     start_prank(CheatTarget::One(project_address), owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    // [Interaction] Grant owner the Minter role
+    // [Effect] Grant Minter role to Minter contract
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
     let absorptions: Span<u64> = get_mock_absorptions();
 
     setup_project(project_address, 8000000000, times, absorptions,);
+    // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
-
+    // [Prank] Use owner as caller to Minter and ERC20 contracts
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
@@ -193,10 +194,10 @@ fn test_is_public_buy() {
 
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     erc20.approve(minter_address, amount_to_buy);
+    // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
-
+    // [Prank] Simulate production flow, Minter calls Project contract
     start_prank(CheatTarget::One(project_address), minter_address);
-
     let tokenized_cc: Span<u256> = minter.public_buy(amount_to_buy, false);
     assert(tokenized_cc.len() == 20, 'cc should have 20 element');
 }
@@ -209,20 +210,22 @@ fn test_get_available_money_amount() {
     let (project_address, _) = deploy_project();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
-    // [Effect] Setup Roles for the contracts
+    // [Prank] Use owner as caller to Project and Minter contracts
     start_prank(CheatTarget::One(project_address), owner_address);
     start_prank(CheatTarget::One(minter_address), owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    // [Interaction] Grant owner Minter role
+    // [Effect] Grant Minter role to Minter contract
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
     let absorptions: Span<u64> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
+    // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
     // Start testing environment setup
+    // [Prank] Use owner as caller to ERC20 contract
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
     let project = IAbsorberDispatcher { contract_address: project_address };
@@ -246,8 +249,9 @@ fn test_get_available_money_amount() {
     // Approve the minter to spend the money and execute a public buy
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     erc20.approve(minter_address, amount_to_buy);
+    // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
-
+    // [Prank] Simulate production flow, Minter calls Project contract
     start_prank(CheatTarget::One(project_address), minter_address);
 
     minter.public_buy(amount_to_buy, false);
@@ -319,7 +323,7 @@ fn test_set_unit_price_with_owner_role() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    // Make the owner call the contract
+    // [Prank] Use owner as caller to Minter contract
     start_prank(CheatTarget::One(minter_address), owner_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
@@ -350,7 +354,7 @@ fn test_set_min_money_amount_per_tx_with_owner_role() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    // Make the owner call the contract
+    // [Prank] Use owner as caller to Minter contract
     start_prank(CheatTarget::One(minter_address), owner_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
