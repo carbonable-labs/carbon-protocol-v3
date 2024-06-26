@@ -246,3 +246,149 @@ fn test_cancel_mint() {
     let is_canceled_reopened = minter.is_canceled();
     assert(!is_canceled_reopened, 'mint should be reopened')
 }
+
+// get_carbonable_project_address
+
+#[test]
+fn test_get_carbonable_project_address() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+    // Setup the project with initial values
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    // Start testing environment setup
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    assert(project.is_setup(), 'Error during setup');
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+
+    // Ensure the carbonable project address is correct
+    let carbonable_project_address = minter.get_carbonable_project_address();
+    assert(carbonable_project_address == project_address, 'carbonable project address wrong value');
+}
+
+// get_payment_token_address
+
+#[test]
+fn test_get_payment_token_address() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+    // Setup the project with initial values
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    // Start testing environment setup
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    assert(project.is_setup(), 'Error during setup');
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+
+    // Ensure the payment token address is correct
+    let payment_token_address = minter.get_payment_token_address();
+    assert(payment_token_address == erc20_address, 'payment token address wrong value');
+}
+
+// set_unit_price
+
+#[test]
+fn test_set_unit_price() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+    // Setup the project with initial values
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    // Start testing environment setup
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    assert(project.is_setup(), 'Error during setup');
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+
+    // Ensure the unit price is not set initially
+    let unit_price = minter.get_unit_price();
+    assert(unit_price == 0, 'unit price should be 0');
+
+    // Set the unit price
+    let new_unit_price: u256 = 1000;
+    minter.set_unit_price(new_unit_price);
+
+    // Verify that the unit price is set correctly
+    let unit_price_after = minter.get_unit_price();
+    assert(unit_price_after == new_unit_price, 'unit price wrong value');
+
+    // Set the unit price to a large value
+    let new_unit_price_large: u256 = 1000000000;
+    minter.set_unit_price(new_unit_price_large);
+
+    // Verify that the unit price is set correctly
+    let unit_price_after_large = minter.get_unit_price();
+    assert(unit_price_after_large == new_unit_price_large, 'unit price wrong value');
+
+    // Set the unit price to 0
+    minter.set_unit_price(0);
+
+    // Verify that the unit price is set to 0
+    let unit_price_after_zero = minter.get_unit_price();
+    assert(unit_price_after_zero == 0, 'unit price wrong value');
+}
+
+// get_unit_price
+
+#[test]
+fn test_get_unit_price() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+    // Setup the project with initial values
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    // Start testing environment setup
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+
+    let project = IAbsorberDispatcher { contract_address: project_address };
+    assert(project.is_setup(), 'Error during setup');
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+
+    // Ensure the unit price is not set initially
+    let unit_price = minter.get_unit_price();
+    assert(unit_price == 0, 'unit price should be 0');
+
+    // Set the unit price
+    let new_unit_price: u256 = 1000;
+    minter.set_unit_price(new_unit_price);
+
+    // Verify that the unit price is set correctly
+    let unit_price_after = minter.get_unit_price();
+    assert(unit_price_after == new_unit_price, 'unit price wrong value');
+
+    // Set the unit price to 0
+    minter.set_unit_price(0);
+
+    // Verify that the unit price is set to 0
+    let unit_price_after_zero = minter.get_unit_price();
+    assert(unit_price_after_zero == 0, 'unit price wrong value');
+}
