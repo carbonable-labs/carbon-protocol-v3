@@ -342,7 +342,6 @@ fn test_set_unit_price() {
     // Verify that the unit price is set correctly
     let unit_price_after_large = minter.get_unit_price();
     assert(unit_price_after_large == new_unit_price_large, 'unit price wrong value');
-    
 }
 
 // get_unit_price
@@ -378,5 +377,4 @@ fn test_get_unit_price() {
     // Verify that the unit price is set correctly
     let unit_price_after = minter.get_unit_price();
     assert(unit_price_after == new_unit_price, 'unit price wrong value');
-    
 }
