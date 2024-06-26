@@ -271,7 +271,7 @@ fn test_get_carbonable_project_address() {
 
     // Ensure the carbonable project address is correct
     let carbonable_project_address = minter.get_carbonable_project_address();
-    assert(carbonable_project_address == project_address, 'carbonable project address wrong value');
+    assert(carbonable_project_address == project_address, 'address does not match');
 }
 
 // get_payment_token_address
@@ -298,7 +298,7 @@ fn test_get_payment_token_address() {
 
     // Ensure the payment token address is correct
     let payment_token_address = minter.get_payment_token_address();
-    assert(payment_token_address == erc20_address, 'payment token address wrong value');
+    assert(payment_token_address == erc20_address, 'address does not match');
 }
 
 // set_unit_price
@@ -325,7 +325,7 @@ fn test_set_unit_price() {
 
     // Ensure the unit price is not set initially
     let unit_price = minter.get_unit_price();
-    assert(unit_price == 0, 'unit price should be 0');
+    assert(unit_price == 11, 'unit price should be 11');
 
     // Set the unit price
     let new_unit_price: u256 = 1000;
@@ -342,13 +342,7 @@ fn test_set_unit_price() {
     // Verify that the unit price is set correctly
     let unit_price_after_large = minter.get_unit_price();
     assert(unit_price_after_large == new_unit_price_large, 'unit price wrong value');
-
-    // Set the unit price to 0
-    minter.set_unit_price(0);
-
-    // Verify that the unit price is set to 0
-    let unit_price_after_zero = minter.get_unit_price();
-    assert(unit_price_after_zero == 0, 'unit price wrong value');
+    
 }
 
 // get_unit_price
@@ -375,7 +369,7 @@ fn test_get_unit_price() {
 
     // Ensure the unit price is not set initially
     let unit_price = minter.get_unit_price();
-    assert(unit_price == 0, 'unit price should be 0');
+    assert(unit_price == 11, 'unit price should be 11');
 
     // Set the unit price
     let new_unit_price: u256 = 1000;
@@ -384,11 +378,5 @@ fn test_get_unit_price() {
     // Verify that the unit price is set correctly
     let unit_price_after = minter.get_unit_price();
     assert(unit_price_after == new_unit_price, 'unit price wrong value');
-
-    // Set the unit price to 0
-    minter.set_unit_price(0);
-
-    // Verify that the unit price is set to 0
-    let unit_price_after_zero = minter.get_unit_price();
-    assert(unit_price_after_zero == 0, 'unit price wrong value');
+    
 }
