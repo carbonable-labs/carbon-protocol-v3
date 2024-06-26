@@ -159,7 +159,7 @@ fn test_set_absorptions() {
         0, 1179750, 2359500, 3539250, 4719000, 6685250, 8651500, 1573000000
     ]
         .span();
-    
+
     // [Prank] Use owner as caller to Project contract
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(project_address), owner_address);
