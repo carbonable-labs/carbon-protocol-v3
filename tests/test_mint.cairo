@@ -249,7 +249,7 @@ fn test_get_available_money_amount() {
     stop_prank(CheatTarget::One(project_address));
 
     start_prank(CheatTarget::One(project_address), minter_address);
-    
+
     minter.public_buy(amount_to_buy, false);
 
     // Test after the buy
@@ -296,7 +296,6 @@ fn test_cancel_mint() {
     let is_canceled_reopened = minter.is_canceled();
     assert(!is_canceled_reopened, 'mint should be reopened')
 }
-
 
 
 #[test]

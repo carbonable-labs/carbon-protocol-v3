@@ -62,7 +62,10 @@ mod AbsorberComponent {
 
     #[embeddable_as(AbsorberImpl)]
     impl Absorber<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>, +IAccessControl<TContractState>
+        TContractState,
+        +HasComponent<TContractState>,
+        +Drop<TContractState>,
+        +IAccessControl<TContractState>
     > of IAbsorber<ComponentState<TContractState>> {
         // Absorption
         fn get_starting_year(self: @ComponentState<TContractState>) -> u64 {
@@ -174,7 +177,7 @@ mod AbsorberComponent {
         ) {
             // [Check] Caller is owner
             let caller_address = get_caller_address();
-            let isOwner = self.get_contract().has_role(OWNER_ROLE, caller_address); 
+            let isOwner = self.get_contract().has_role(OWNER_ROLE, caller_address);
             assert(isOwner, 'Caller is not owner');
 
             // [Check] Times and prices are defined

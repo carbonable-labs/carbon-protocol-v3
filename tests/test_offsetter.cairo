@@ -115,12 +115,10 @@ fn test_offsetter_retire_carbon_credits() {
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
-
     // [Effect] Grant owner Minter and Offseter role
     let project = IProjectDispatcher { contract_address: project_address };
     project.grant_minter_role(minter_address);
     project.grant_offsetter_role(offsetter_address);
-
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };

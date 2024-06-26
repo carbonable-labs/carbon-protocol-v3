@@ -92,7 +92,8 @@ mod Project {
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     // Access Control
     #[abi(embed_v0)]
-    impl AccessControlImpl = AccessControlComponent::AccessControlImpl<ContractState>;
+    impl AccessControlImpl =
+        AccessControlComponent::AccessControlImpl<ContractState>;
 
     impl ERC1155InternalImpl = ERC1155Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
@@ -165,7 +166,6 @@ mod Project {
         self.erc1155.initializer(base_uri_bytearray);
         self.ownable.initializer(owner);
         self.absorber.initializer(starting_year, number_of_years);
-        
 
         self.src5.register_interface(OLD_IERC1155_ID);
         self.src5.register_interface(IERC165_BACKWARD_COMPATIBLE_ID);

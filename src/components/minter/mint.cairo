@@ -167,11 +167,11 @@ mod MintComponent {
         fn set_unit_price(ref self: ComponentState<TContractState>, unit_price: u256) {
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
-            
+
             // [Check] Caller is not zero
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
-            
+
             // [Check] Caller is owner
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
@@ -219,7 +219,6 @@ mod MintComponent {
         fn set_min_money_amount_per_tx(
             ref self: ComponentState<TContractState>, min_money_amount_per_tx: u256
         ) {
-            
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
 
