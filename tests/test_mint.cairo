@@ -332,7 +332,7 @@ fn test_set_unit_price_with_owner_role() {
 
 #[test]
 #[should_panic(expected: 'Caller is not the owner')]
-fn test_set_min_money_amoount_per_tx_without_owner_role() {
+fn test_set_min_money_amount_per_tx_without_owner_role() {
     let (project_address, _) = default_setup_and_deploy();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
@@ -345,7 +345,7 @@ fn test_set_min_money_amoount_per_tx_without_owner_role() {
 }
 
 #[test]
-fn test_set_min_money_amoount_per_tx_with_owner_role() {
+fn test_set_min_money_amount_per_tx_with_owner_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (erc20_address, _) = deploy_erc20();
