@@ -11,6 +11,7 @@ trait IExternal<ContractState> {
         ref self: ContractState, from: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
+    fn get_uri(self: @ContractState, token_id:u256) -> ByteArray;
     fn decimals(self: @ContractState) -> u8;
     fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
     fn balance_of_batch(
@@ -179,6 +180,11 @@ mod Project {
 
         fn set_uri(ref self: ContractState, uri: ByteArray) {
             self.erc1155.set_base_uri(uri);
+        }
+
+        fn get_uri(self: @ContractState, token_id:u256) -> ByteArray{
+            let uri_result:ByteArray = self.erc1155.uri(token_id);
+            uri_result
         }
 
         fn decimals(self: @ContractState) -> u8 {
