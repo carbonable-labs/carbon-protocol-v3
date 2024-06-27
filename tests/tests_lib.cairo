@@ -139,6 +139,9 @@ fn setup_project(
     absorptions: Span<u64>
 ) {
     let project = IAbsorberDispatcher { contract_address };
+    // Fake the owner to call set_absorptions and set_project_carbon which can only be run by owner
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    start_prank(CheatTarget::One(contract_address), owner_address);
 
     project.set_absorptions(times, absorptions);
     project.set_project_carbon(project_carbon);
@@ -281,7 +284,10 @@ fn perform_fuzzed_transfer(
     let (project_address, minter_address, erc20_address, _) = fuzzing_setup(supply);
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
+    // Setup Roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
+    project_contract.grant_minter_role(owner_address);
+
     start_prank(CheatTarget::One(minter_address), owner_address);
     start_prank(CheatTarget::One(erc20_address), owner_address);
 

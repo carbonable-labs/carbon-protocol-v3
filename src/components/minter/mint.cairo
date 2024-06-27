@@ -143,6 +143,15 @@ mod MintComponent {
         }
 
         fn set_public_sale_open(ref self: ComponentState<TContractState>, public_sale_open: bool) {
+            let project_address = self.Mint_carbonable_project_address.read();
+            let project = IProjectDispatcher { contract_address: project_address };
+            // [Check] Caller is not zero
+            let caller_address = get_caller_address();
+            assert(!caller_address.is_zero(), 'Invalid caller');
+            // [Check] Caller is owner
+            let isOwner = project.only_owner(caller_address);
+            assert(isOwner, 'Caller is not the owner');
+
             // [Effect] Update storage
             self.Mint_public_sale_open.write(public_sale_open);
 
@@ -156,6 +165,17 @@ mod MintComponent {
         }
 
         fn set_unit_price(ref self: ComponentState<TContractState>, unit_price: u256) {
+            let project_address = self.Mint_carbonable_project_address.read();
+            let project = IProjectDispatcher { contract_address: project_address };
+
+            // [Check] Caller is not zero
+            let caller_address = get_caller_address();
+            assert(!caller_address.is_zero(), 'Invalid caller');
+
+            // [Check] Caller is owner
+            let isOwner = project.only_owner(caller_address);
+            assert(isOwner, 'Caller is not the owner');
+
             // [Check] Value not null
             assert(unit_price > 0, 'Invalid unit price');
             // [Effect] Store value
@@ -199,6 +219,17 @@ mod MintComponent {
         fn set_min_money_amount_per_tx(
             ref self: ComponentState<TContractState>, min_money_amount_per_tx: u256
         ) {
+            let project_address = self.Mint_carbonable_project_address.read();
+            let project = IProjectDispatcher { contract_address: project_address };
+
+            // [Check] Caller is not zero
+            let caller_address = get_caller_address();
+            assert(!caller_address.is_zero(), 'Invalid caller');
+
+            // [Check] Caller is owner
+            let isOwner = project.only_owner(caller_address);
+            assert(isOwner, 'Caller is not the owner');
+
             // [Check] Value in range
             let max_money_amount_per_tx = self.Mint_max_money_amount.read();
             assert(
@@ -239,7 +270,7 @@ mod MintComponent {
             self.Mint_max_money_amount.write(max_money_amount);
 
             // [Effect] Use dedicated function to emit corresponding events
-            self.set_public_sale_open(public_sale_open);
+            self.Mint_public_sale_open.write(public_sale_open);
         }
 
         fn _buy(
