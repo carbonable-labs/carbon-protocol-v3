@@ -443,6 +443,7 @@ fn test_project_balance_of() {
 #[test]
 fn test_transfer_without_loss() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
@@ -451,8 +452,8 @@ fn test_transfer_without_loss() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
     // [Prank] Use owner as caller to Project, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), user_address);
+    start_prank(CheatTarget::One(erc20_address), user_address);
     // [Effect] Grant Minter role to Minter contract
     project_contract.grant_minter_role(minter_address);
 
@@ -461,17 +462,18 @@ fn test_transfer_without_loss() {
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
+
     // [Prank] Simulate production flow, Minter calls Project contract
     start_prank(CheatTarget::One(project_address), minter_address);
     buy_utils(minter_address, erc20_address, share);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
     // [Prank] Simulate production flow, owner calls Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_prank(CheatTarget::One(project_address), user_address);
 
     let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
-    let balance = project_contract.balance_of(owner_address, 2025);
+    let balance = project_contract.balance_of(user_address, 2025);
 
     assert(equals_with_error(balance, expected_balance, 10), 'Error balance owner 1');
 
@@ -480,9 +482,9 @@ fn test_transfer_without_loss() {
     assert(equals_with_error(receiver_balance, 0, 10), 'Error of receiver balance 1');
 
     project_contract
-        .safe_transfer_from(owner_address, receiver_address, 2025, balance.into(), array![].span());
+        .safe_transfer_from(user_address, receiver_address, 2025, balance.into(), array![].span());
 
-    let balance = project_contract.balance_of(owner_address, 2025);
+    let balance = project_contract.balance_of(user_address, 2025);
     assert(equals_with_error(balance, 0, 10), 'Error balance owner 2');
 
     let receiver_balance = project_contract.balance_of(receiver_address, 2025);

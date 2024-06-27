@@ -252,6 +252,7 @@ fn buy_utils(minter_address: ContractAddress, erc20_address: ContractAddress, sh
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
 
     erc20.approve(minter_address, amount_to_buy);
+    start_prank(CheatTarget::One(erc20_address), minter_address);
     minter.public_buy(amount_to_buy, false);
 }
 
