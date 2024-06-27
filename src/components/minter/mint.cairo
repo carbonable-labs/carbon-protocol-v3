@@ -319,7 +319,7 @@ mod MintComponent {
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let minter_address = get_contract_address();
 
-            let success = erc20.transfer_from(caller_address, minter_address, money_amount);
+            let success = erc20.transfer(minter_address, money_amount);
             // [Check] Transfer successful
             assert(success, 'Transfer failed');
 
