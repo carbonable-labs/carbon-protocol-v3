@@ -187,6 +187,18 @@ mod Project {
 
         fn set_uri(ref self: ContractState, uri: ByteArray) {
             self.erc1155.set_base_uri(uri);
+
+            // get all vintage years 
+            let cc_vintage_years: Span<u256> = self.absorber.get_vintage_years();
+            let from_vintage_year = *cc_vintage_years.at(0);
+            let to_vintage_year = *cc_vintage_years.at(cc_vintage_years.len() - 1);
+
+            /// Emit BatchMetadataUpdate event
+            self
+                .erc4906
+                ._emit_batch_metadata_update(
+                    fromTokenId: from_vintage_year, toTokenId: to_vintage_year
+                );
         }
 
         fn decimals(self: @ContractState) -> u8 {
