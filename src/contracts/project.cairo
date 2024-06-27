@@ -12,6 +12,11 @@ trait IExternal<ContractState> {
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
     fn decimals(self: @ContractState) -> u8;
+    fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool;
+    fn grant_minter_role(ref self: ContractState, minter: ContractAddress);
+    fn revoke_minter_role(ref self: ContractState, account: ContractAddress);
+    fn grant_offsetter_role(ref self: ContractState, offsetter: ContractAddress);
+    fn revoke_offsetter_role(ref self: ContractState, account: ContractAddress);
     fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
     fn balance_of_batch(
         self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
@@ -56,6 +61,8 @@ mod Project {
     use carbon_v3::components::erc1155::ERC1155Component;
     // Absorber
     use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
+    // Access Control - RBAC
+    use openzeppelin::access::accesscontrol::AccessControlComponent;
     // ERC4906
     use erc4906::erc4906_component::ERC4906Component;
 
@@ -64,6 +71,7 @@ mod Project {
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
     component!(path: AbsorberComponent, storage: absorber, event: AbsorberEvent);
+    component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
     component!(path: ERC4906Component, storage: erc4906, event: ERC4906Event);
 
     // ERC1155
@@ -85,18 +93,26 @@ mod Project {
         AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+    // Access Control
+    #[abi(embed_v0)]
+    impl AccessControlImpl =
+        AccessControlComponent::AccessControlImpl<ContractState>;
 
     impl ERC1155InternalImpl = ERC1155Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl AbsorberInternalImpl = AbsorberComponent::InternalImpl<ContractState>;
+    impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
     impl ERC4906InternalImpl = ERC4906Component::ERC4906HelperInternal<ContractState>;
 
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
     const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
     const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
+    const MINTER_ROLE: felt252 = selector!("Minter");
+    const OFFSETTER_ROLE: felt252 = selector!("Offsetter");
+    const OWNER_ROLE: felt252 = selector!("Owner");
 
     #[storage]
     struct Storage {
@@ -110,6 +126,8 @@ mod Project {
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
         absorber: AbsorberComponent::Storage,
+        #[substorage(v0)]
+        accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
         erc4906: ERC4906Component::Storage,
     }
@@ -128,6 +146,8 @@ mod Project {
         #[flat]
         AbsorberEvent: AbsorberComponent::Event,
         #[flat]
+        AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
         ERC4906Event: ERC4906Component::Event,
     }
 
@@ -145,6 +165,11 @@ mod Project {
         starting_year: u64,
         number_of_years: u64
     ) {
+        self.accesscontrol.initializer();
+        self.accesscontrol._grant_role(OWNER_ROLE, owner);
+        self.accesscontrol._set_role_admin(MINTER_ROLE, OWNER_ROLE);
+        self.accesscontrol._set_role_admin(OFFSETTER_ROLE, OWNER_ROLE);
+        self.accesscontrol._set_role_admin(OWNER_ROLE, OWNER_ROLE);
         let base_uri_bytearray: ByteArray = format!("{}", base_uri);
         self.erc1155.initializer(base_uri_bytearray);
         self.ownable.initializer(owner);
@@ -158,10 +183,16 @@ mod Project {
     #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
         fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+            // [Check] Only Minter can mint
+            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+            assert(isMinter, 'Only Minter can mint');
             self.erc1155.mint(to, token_id, value);
         }
 
         fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
+            // [Check] Only Offsetter can offset
+            let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
+            assert(isOffseter, 'Only Offsetter can offset');
             let share_value = self.absorber.cc_to_share(value, token_id);
             self.erc1155.burn(from, token_id, share_value);
         }
@@ -169,8 +200,10 @@ mod Project {
         fn batch_mint(
             ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
         ) {
-            // TODO : Add access control as only the Minter in the list should be able to mint the tokens
             // TODO : Check the avalibility of the ampount of vintage cc_supply for each values.it should be done in the absorber/carbon_handler
+            // [Check] Only Minter can mint
+            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+            assert(isMinter, 'Only Minter can batch mint');
             self.erc1155.batch_mint(to, token_ids, values);
         }
 
@@ -181,7 +214,9 @@ mod Project {
             values: Span<u256>
         ) {
             // TODO : Check that the caller is the owner of the value he wnt to burn
-            // TODO : Add access control as only the Offsetter in the list should be able to burn the values
+            // [Check] Only Offsetter can offset
+            let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
+            assert(isOffseter, 'Only Offsetter can batch offset');
             self.erc1155.batch_burn(from, token_ids, values);
         }
 
@@ -203,6 +238,34 @@ mod Project {
 
         fn decimals(self: @ContractState) -> u8 {
             self.absorber.get_cc_decimals()
+        }
+
+        fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool {
+            self.accesscontrol.has_role(OWNER_ROLE, caller_address)
+        }
+
+        fn grant_minter_role(ref self: ContractState, minter: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can grant minter role");
+            self.accesscontrol._grant_role(MINTER_ROLE, minter);
+        }
+
+        fn revoke_minter_role(ref self: ContractState, account: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can revoke minter role");
+            self.accesscontrol._revoke_role(MINTER_ROLE, account);
+        }
+
+        fn grant_offsetter_role(ref self: ContractState, offsetter: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can grant offsetter role");
+            self.accesscontrol._grant_role(OFFSETTER_ROLE, offsetter);
+        }
+
+        fn revoke_offsetter_role(ref self: ContractState, account: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can revoke offsetter role");
+            self.accesscontrol._revoke_role(OFFSETTER_ROLE, account);
         }
 
         fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
