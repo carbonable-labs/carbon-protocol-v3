@@ -414,18 +414,19 @@ fn test_project_metadata_update() {
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
-    let new_uri = "new/uri";
+    let base_uri: ByteArray = format!("{}", 'uri');
+    let mut new_uri: ByteArray = format!("{}", 'new/uri');
 
     start_prank(CheatTarget::One(project_address), owner_address);
 
     let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
     let vintage = *cc_vintage_years.at(0);
 
-    assert(erc1155_meta.uri(vintage) == "uri", 'Wrong base token URI');
+    assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
 
-    project_contract.set_uri(new_uri);
+    project_contract.set_uri(new_uri.clone());
 
-    assert(erc1155_meta.uri(vintage) == "new/uri", 'Wrong updated token URI');
+    assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
 
     //check event emitted 
     let expected_batch_metadata_update = BatchMetadataUpdate {
