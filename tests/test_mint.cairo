@@ -378,10 +378,10 @@ fn test_get_max_money_amount() {
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     erc20.approve(minter_address, amount_to_buy);
     // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address);
+    stop_prank(CheatTarget::One(project_address));
     // [Prank] Simulate production flow, Minter calls Project contract
     start_prank(CheatTarget::One(project_address), minter_address);
-    
+
     minter.public_buy(amount_to_buy, false);
 
     // Test after the buy
@@ -436,20 +436,18 @@ fn test_get_min_money_amount_per_tx() {
     let sale_open = minter.is_public_sale_open();
     assert(sale_open == true, 'public sale not open');
 
-    // Default initial min amount of money per transaction = 100
-    let initial_min_money_per_tx: u256 = 100;
+    // Default initial min amount of money per transaction = 0
+    let initial_min_money_per_tx: u256 = 0;
 
     // Verify if the initial min value is correct
     let min_money_per_tx = minter.get_min_money_amount_per_tx();
-    assert(min_money_per_tx == initial_min_money_per_tx, 'min money per tx is incorrect');
+    assert!(min_money_per_tx == initial_min_money_per_tx, "initial min money per tx is incorrect");
 
     let amount_to_buy: u256 = 1000;
 
     // Approve the minter to spend the money and execute a public buy
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     erc20.approve(minter_address, amount_to_buy);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address);
     // [Prank] Simulate production flow, Minter calls Project contract
     start_prank(CheatTarget::One(project_address), minter_address);
 
@@ -461,7 +459,10 @@ fn test_get_min_money_amount_per_tx() {
 
     // Verify the min money amount per transaction remains unchanged
     let min_money_per_tx_after_buy = minter.get_min_money_amount_per_tx();
-    assert(min_money_per_tx_after_buy == initial_min_money_per_tx, 'min money per tx is incorrect');
+    assert!(
+        min_money_per_tx_after_buy == initial_min_money_per_tx,
+        "min money per tx after buy is incorrect"
+    );
 }
 
 #[test]
@@ -508,7 +509,7 @@ fn test_is_sold_out() {
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     erc20.approve(minter_address, initial_money);
     // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address);
+    stop_prank(CheatTarget::One(project_address));
     // [Prank] Simulate production flow, Minter calls Project contract
     start_prank(CheatTarget::One(project_address), minter_address);
     minter.public_buy(initial_money, false);
@@ -540,7 +541,7 @@ fn test_set_min_money_amount_per_tx() {
     let absorptions: Span<u64> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
-   
+
     // Start testing environment setup
     // [Prank] Use owner as caller to ERC20 contract
     start_prank(CheatTarget::One(erc20_address), owner_address);
