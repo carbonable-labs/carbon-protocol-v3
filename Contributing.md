@@ -29,7 +29,9 @@ If you have an idea for a new feature, please submit a feature request using the
 We recommend installing dependencies using [asdf](https://asdf-vm.com/):
 
 ```bash
+asdf plugin add scarb
 asdf install scarb 2.5.4
+asdf plugin add starknet-foundry
 asdf install starknet-foundry 0.18.0
 ```
 
