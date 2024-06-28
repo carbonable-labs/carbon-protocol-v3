@@ -17,12 +17,21 @@
       ]
     },
     {
-      "login": "raizo07",
-      "name": "Wolf",
-      "avatar_url": "https://avatars.githubusercontent.com/u/81079370?v=4",
-      "profile": "https://github.com/raizo07",
+      "login": "tekkac",
+      "name": "Trunks @ Carbonable",
+      "avatar_url": "https://avatars.githubusercontent.com/u/98529704?v=4",
+      "profile": "https://github.com/tekkac",
       "contributions": [
-        "bug"
+        "code"
+      ]
+    },
+    {
+      "login": "bitfalt",
+      "name": "bitfalt",
+      "avatar_url": "https://avatars.githubusercontent.com/u/75431447?v=4",
+      "profile": "https://github.com/bitfalt",
+      "contributions": [
+        "code"
       ]
     },
     {
@@ -30,15 +39,6 @@
       "name": "Axel Izsak",
       "avatar_url": "https://avatars.githubusercontent.com/u/98711930?v=4",
       "profile": "https://github.com/axelizsak",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "tekkac",
-      "name": "Trunks @ Carbonable",
-      "avatar_url": "https://avatars.githubusercontent.com/u/98529704?v=4",
-      "profile": "https://github.com/tekkac",
       "contributions": [
         "code"
       ]
@@ -68,6 +68,15 @@
       "profile": "https://shivam6862.github.io/",
       "contributions": [
         "code"
+      ]
+    },
+    {
+      "login": "raizo07",
+      "name": "Wolf",
+      "avatar_url": "https://avatars.githubusercontent.com/u/81079370?v=4",
+      "profile": "https://github.com/raizo07",
+      "contributions": [
+        "bug"
       ]
     },
     {
