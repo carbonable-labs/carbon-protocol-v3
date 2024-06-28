@@ -27,3 +27,19 @@ if [ "$tests_failed" -gt 0 ]; then
   echo "$failed_tests"
   exit 1
 fi
+
+# Check if badge already exists in README
+if ! grep -q '\[!\[Tests\]' README.md; then
+  # Badge markdown to add if not present
+  badge="[![Tests](https://img.shields.io/badge/Tests-Passed-brightgreen)](README.md)"
+  echo "$badge" > badge_temp
+  sed -i '1s/^/'"$badge"'\n\n/' README.md
+fi
+
+echo "Passed tests: $tests_passed" > temp_file
+
+# Replace passed tests count in README
+sed -i 's/\(Passed tests: \).*/\1'"$tests_passed"'/' README.md
+
+# Clean up temporary files
+rm temp_file badge_temp

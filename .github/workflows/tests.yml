@@ -26,3 +26,11 @@ jobs:
       - name: Run Cairo tests
         id: cairo_tests
         run: bash scripts/run_tests.sh
+      
+      - name: Commit and push changes to README
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "Update passed tests count and badge in README"
+          git push
