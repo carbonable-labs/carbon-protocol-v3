@@ -1,4 +1,7 @@
 <div align="center">
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
   <h1 align="center">Carbon Protocol V3 on Starknet</h1>
   <h3 align="center">Leading Web3 Infrastructure to Manage Real-World Assets (RWA)</h3>
   <img src="https://user-images.githubusercontent.com/25151724/214644164-61d5718b-fcf3-474e-9cdb-135836416e68.png" height="200">
@@ -71,6 +74,21 @@ This project is licensed under the **Apache License, Version 2.0**. See [LICENSE
 ## Contributors ✨
 
 Thanks go to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/julienbrs"><img src="https://avatars.githubusercontent.com/u/106234742?v=4?s=100" width="100px;" alt="Ainur"/><br /><sub><b>Ainur</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=julienbrs" title="Code">💻</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
