@@ -11,6 +11,7 @@ trait IExternal<ContractState> {
         ref self: ContractState, from: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
+    fn get_uri(self: @ContractState, token_id: u256) -> ByteArray;
     fn decimals(self: @ContractState) -> u8;
     fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool;
     fn grant_minter_role(ref self: ContractState, minter: ContractAddress);
@@ -234,6 +235,11 @@ mod Project {
                 ._emit_batch_metadata_update(
                     fromTokenId: from_vintage_year, toTokenId: to_vintage_year
                 );
+        }
+
+        fn get_uri(self: @ContractState, token_id: u256) -> ByteArray {
+            let uri_result: ByteArray = self.erc1155.uri(token_id);
+            uri_result
         }
 
         fn decimals(self: @ContractState) -> u8 {
