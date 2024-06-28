@@ -1,10 +1,4 @@
 {
   "projectName": "carbon-protocol-v3",
-  "projectOwner": "carbonable-labs",
-  "repoType": "github",
-  "repoHost": "https://github.com",
-  "files": ["README.md"],
-  "imageSize": 100,
-  "commit": true,
-  "commitConvention": "gitmoji"
+  "projectOwner": "carbonable-labs"
 }
