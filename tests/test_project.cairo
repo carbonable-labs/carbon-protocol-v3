@@ -774,7 +774,7 @@ fn test_set_uri() {
     assert(absorber.is_setup(), 'Error during setup');
     project_contract.set_uri("test_uri");
     let uri = project_contract.get_uri(1);
-    assert_eq!(uri, 'test_uri');
+    assert_eq!(uri, "test_uri");
 }
 
 #[test]

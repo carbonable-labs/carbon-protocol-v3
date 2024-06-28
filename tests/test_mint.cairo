@@ -676,9 +676,6 @@ fn test_set_unit_price() {
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
 
-    // Start testing environment setup
-    start_prank(CheatTarget::One(erc20_address), owner_address);
-
     let project = IAbsorberDispatcher { contract_address: project_address };
     assert(project.is_setup(), 'Error during setup');
 
@@ -690,7 +687,9 @@ fn test_set_unit_price() {
 
     // Set the unit price
     let new_unit_price: u256 = 1000;
+    start_prank(CheatTarget::One(minter_address), owner_address);
     minter.set_unit_price(new_unit_price);
+    stop_prank(CheatTarget::One(minter_address));
 
     // Verify that the unit price is set correctly
     let unit_price_after = minter.get_unit_price();
@@ -698,7 +697,9 @@ fn test_set_unit_price() {
 
     // Set the unit price to a large value
     let new_unit_price_large: u256 = 1000000000;
+    start_prank(CheatTarget::One(minter_address), owner_address);
     minter.set_unit_price(new_unit_price_large);
+    stop_prank(CheatTarget::One(minter_address));
 
     // Verify that the unit price is set correctly
     let unit_price_after_large = minter.get_unit_price();
@@ -733,7 +734,9 @@ fn test_get_unit_price() {
 
     // Set the unit price
     let new_unit_price: u256 = 1000;
+    start_prank(CheatTarget::One(minter_address), owner_address);
     minter.set_unit_price(new_unit_price);
+    stop_prank(CheatTarget::One(minter_address));
 
     // Verify that the unit price is set correctly
     let unit_price_after = minter.get_unit_price();
