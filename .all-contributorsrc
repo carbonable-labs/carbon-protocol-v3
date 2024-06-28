@@ -35,6 +35,24 @@
       ]
     },
     {
+      "login": "tekkac",
+      "name": "Trunks @ Carbonable",
+      "avatar_url": "https://avatars.githubusercontent.com/u/98529704?v=4",
+      "profile": "https://github.com/tekkac",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "adrianvrj",
+      "name": "ADR!AN",
+      "avatar_url": "https://avatars.githubusercontent.com/u/111903096?v=4",
+      "profile": "https://github.com/adrianvrj",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
       "login": "thomas192",
       "name": "0xK2",
       "avatar_url": "https://avatars.githubusercontent.com/u/65908739?v=4",
@@ -51,7 +69,7 @@
       "contributions": [
         "code"
       ]
-    }   
+    }
   ],
   "contributorsPerLine": 7,
   "skipCi": true,
