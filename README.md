@@ -80,26 +80,17 @@ Thanks go to these wonderful people ([emoji key](https://allcontributors.org/doc
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/julienbrs"><img src="https://avatars.githubusercontent.com/u/106234742?v=4?s=100" width="100px;" alt="Ainur"/><br /><sub><b>Ainur</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=julienbrs" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/tekkac"><img src="https://avatars.githubusercontent.com/u/98529704?v=4?s=100" width="100px;" alt="Trunks @ Carbonable"/><br /><sub><b>Trunks @ Carbonable</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=tekkac" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/bitfalt"><img src="https://avatars.githubusercontent.com/u/75431447?v=4?s=100" width="100px;" alt="bitfalt"/><br /><sub><b>bitfalt</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=bitfalt" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/axelizsak"><img src="https://avatars.githubusercontent.com/u/98711930?v=4?s=100" width="100px;" alt="Axel Izsak"/><br /><sub><b>Axel Izsak</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=axelizsak" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/adrianvrj"><img src="https://avatars.githubusercontent.com/u/111903096?v=4?s=100" width="100px;" alt="ADR!AN"/><br /><sub><b>ADR!AN</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=adrianvrj" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/thomas192"><img src="https://avatars.githubusercontent.com/u/65908739?v=4?s=100" width="100px;" alt="0xK2"/><br /><sub><b>0xK2</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=thomas192" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://shivam6862.github.io/"><img src="https://avatars.githubusercontent.com/u/115404926?v=4?s=100" width="100px;" alt="Shivam kumar"/><br /><sub><b>Shivam kumar</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=shivam6862" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/adrianvrj"><img src="https://avatars.githubusercontent.com/u/111903096?v=4?s=100" width="100px;" alt="ADR!AN"/><br /><sub><b>ADR!AN</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=adrianvrj" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/axelizsak"><img src="https://avatars.githubusercontent.com/u/98711930?v=4?s=100" width="100px;" alt="Axel Izsak"/><br /><sub><b>Axel Izsak</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=axelizsak" title="Code">💻</a></td>
     </tr>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/raizo07"><img src="https://avatars.githubusercontent.com/u/81079370?v=4?s=100" width="100px;" alt="Wolf"/><br /><sub><b>Wolf</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/issues?q=author%3Araizo07" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://soetandev.netlify.app/"><img src="https://avatars.githubusercontent.com/u/17912134?v=4?s=100" width="100px;" alt="Emmanuel Soetan"/><br /><sub><b>Emmanuel Soetan</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=Shoetan" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
