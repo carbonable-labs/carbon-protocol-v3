@@ -23,7 +23,7 @@
 </div>
 
 ## About
-<!-- [![All Contributors](https://img.shields.io/github/all-contributors/carbonable-labs/carbon-protocol-v3?color=ee8449&style=flat-square)](#contributors) -->
+<!-- [![All Contributors](https://img.shields.io/github/all-contributors/carbonable-labs/carbon-protocol-v3?color=ee8449&style=flat-square)](#contributors) --> 
 
 Carbon Protocol V3 is a cutting-edge, open-source tool designed for the tokenization, trading, and management of carbon credits on Starknet.
 
