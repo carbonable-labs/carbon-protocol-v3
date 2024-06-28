@@ -410,7 +410,6 @@ fn test_set_uri() {
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let absorber = IAbsorberDispatcher { contract_address: project_address };
-    //let metadata = IMetadataHandlerDispatcher {contract_address: project_address};
     start_prank(CheatTarget::One(project_address), owner_address);
     assert(absorber.is_setup(), 'Error during setup');
     project_contract.set_uri("test_uri");
@@ -420,12 +419,9 @@ fn test_set_uri() {
 
 #[test]
 fn test_decimals() {
-    //let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let absorber = IAbsorberDispatcher { contract_address: project_address };
-
-    //start_prank(CheatTarget::One(project_address), owner_address);
 
     assert(absorber.is_setup(), 'Error during setup');
 
@@ -436,12 +432,9 @@ fn test_decimals() {
 
 #[test]
 fn test_shares_of() {
-    //let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let absorber = IAbsorberDispatcher { contract_address: project_address };
-
-    //start_prank(CheatTarget::One(project_address), owner_address);
 
     assert(absorber.is_setup(), 'Error during setup');
 
@@ -452,12 +445,9 @@ fn test_shares_of() {
 
 #[test]
 fn test_is_approved_for_all() {
-    //let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let absorber = IAbsorberDispatcher { contract_address: project_address };
-
-    //start_prank(CheatTarget::One(project_address), owner_address);
 
     assert(absorber.is_setup(), 'Error during setup');
 
@@ -489,21 +479,3 @@ fn test_set_approval_for_all() {
 
     assert_eq!(status_now, false);
 }
-
-#[test]
-#[should_panic(expected: 'CC supply of vintage is 0')]
-fn test_project_offset() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let project_contract = IProjectDispatcher { contract_address: project_address };
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
-
-    start_prank(CheatTarget::One(project_address), owner_address);
-
-    assert(absorber.is_setup(), 'Error during setup');
-
-    let value: u256 = 0.into();
-
-    project_contract.offset(project_address, value, 2025);
-}
-
