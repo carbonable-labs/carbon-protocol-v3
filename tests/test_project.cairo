@@ -1,14 +1,16 @@
 // Starknet deps
 
-use starknet::{ContractAddress, contract_address_const};
-use starknet::get_caller_address;
+use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
 // External deps
 
 use openzeppelin::tests::utils::constants as c;
 use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
-use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank};
+use snforge_std::{
+    CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank,
+    cheatcodes::events::EventAssertions
+};
 use alexandria_storage::list::{List, ListTrait};
 
 // Data 
@@ -23,7 +25,10 @@ use carbon_v3::components::absorber::interface::{
 };
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
-//use carbon_v3::components::metadata::{IMetadataHandler, IMetadataHandlerDispatcher, IMetadataHandlerDispatcherTrait};
+use carbon_v3::components::erc1155::interface::{
+    IERC1155MetadataURI, IERC1155MetadataURIDispatcher, IERC1155MetadataURIDispatcherTrait
+};
+use erc4906::erc4906_component::ERC4906Component::{Event, MetadataUpdate, BatchMetadataUpdate};
 
 // Contracts
 
@@ -728,6 +733,38 @@ fn fuzz_test_transfer_high_supply_high_amount(
 }
 
 #[test]
+fn test_project_metadata_update() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, mut spy) = default_setup_and_deploy();
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
+    let base_uri: ByteArray = format!("{}", 'uri');
+    let mut new_uri: ByteArray = format!("{}", 'new/uri');
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    let vintage = *cc_vintage_years.at(0);
+
+    assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
+
+    project_contract.set_uri(new_uri.clone());
+
+    assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
+
+    //check event emitted 
+    let expected_batch_metadata_update = BatchMetadataUpdate {
+        from_token_id: *cc_vintage_years.at(0),
+        to_token_id: *cc_vintage_years.at(cc_vintage_years.len() - 1)
+    };
+
+    spy
+        .assert_emitted(
+            @array![(project_address, Event::BatchMetadataUpdate(expected_batch_metadata_update))]
+        )
+}
+
 fn test_set_uri() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
@@ -737,7 +774,7 @@ fn test_set_uri() {
     assert(absorber.is_setup(), 'Error during setup');
     project_contract.set_uri("test_uri");
     let uri = project_contract.get_uri(1);
-    assert_eq!(uri, "test_uri");
+    assert_eq!(uri, 'test_uri');
 }
 
 #[test]

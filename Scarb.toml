@@ -7,6 +7,7 @@ starknet = ">=2.5.3"
 alexandria_storage = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.5.4" }
 alexandria_numeric = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.5.4" }
 openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.10.0" }
+erc4906 = { git = "https://github.com/carbonable-labs/cairo-erc-4906" }
 
 [dev-dependencies]
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.18.0" }
