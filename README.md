@@ -1,6 +1,6 @@
 <div align="center">
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
   <h1 align="center">Carbon Protocol V3 on Starknet</h1>
   <h3 align="center">Leading Web3 Infrastructure to Manage Real-World Assets (RWA)</h3>
@@ -83,6 +83,7 @@ Thanks go to these wonderful people ([emoji key](https://allcontributors.org/doc
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/julienbrs"><img src="https://avatars.githubusercontent.com/u/106234742?v=4?s=100" width="100px;" alt="Ainur"/><br /><sub><b>Ainur</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=julienbrs" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/raizo07"><img src="https://avatars.githubusercontent.com/u/81079370?v=4?s=100" width="100px;" alt="Wolf"/><br /><sub><b>Wolf</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/issues?q=author%3Araizo07" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/tekkac"><img src="https://avatars.githubusercontent.com/u/98529704?v=4?s=100" width="100px;" alt="Trunks @ Carbonable"/><br /><sub><b>Trunks @ Carbonable</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=tekkac" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/adrianvrj"><img src="https://avatars.githubusercontent.com/u/111903096?v=4?s=100" width="100px;" alt="ADR!AN"/><br /><sub><b>ADR!AN</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=adrianvrj" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
