@@ -24,6 +24,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "tekkac",
+      "name": "Trunks @ Carbonable",
+      "avatar_url": "https://avatars.githubusercontent.com/u/98529704?v=4",
+      "profile": "https://github.com/tekkac",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
