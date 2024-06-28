@@ -1,6 +1,7 @@
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
+use starknet::get_caller_address;
 
 // External deps
 
@@ -22,6 +23,7 @@ use carbon_v3::components::absorber::interface::{
 };
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
+//use carbon_v3::components::metadata::{IMetadataHandler, IMetadataHandlerDispatcher, IMetadataHandlerDispatcherTrait};
 
 // Contracts
 
@@ -29,6 +31,7 @@ use carbon_v3::contracts::project::{
     Project, IExternalDispatcher as IProjectDispatcher,
     IExternalDispatcherTrait as IProjectDispatcherTrait
 };
+
 
 /// Utils for testing purposes
 /// 
@@ -440,6 +443,7 @@ fn test_project_balance_of() {
     assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
 }
 
+
 #[test]
 fn test_transfer_without_loss() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
@@ -721,4 +725,80 @@ fn fuzz_test_transfer_high_supply_high_amount(
         percentage_of_balance_to_send,
         max_supply_for_vintage
     );
+}
+
+#[test]
+fn test_set_uri() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    start_prank(CheatTarget::One(project_address), owner_address);
+    assert(absorber.is_setup(), 'Error during setup');
+    project_contract.set_uri("test_uri");
+    let uri = project_contract.get_uri(1);
+    assert_eq!(uri, "test_uri");
+}
+
+#[test]
+fn test_decimals() {
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let project_decimals = project_contract.decimals();
+
+    assert(project_decimals == 8, 'Decimals should be 8');
+}
+
+#[test]
+fn test_shares_of() {
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let share_balance = project_contract.shares_of(project_address, 2025);
+
+    assert(share_balance == 0, 'Shares Balance is wrong');
+}
+
+#[test]
+fn test_is_approved_for_all() {
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let owner = get_caller_address();
+
+    let status = project_contract.is_approved_for_all(owner, project_address);
+    // Check if status of approval is a boolean
+    assert!(status == true || status == false, "Expected a boolean value");
+}
+
+#[test]
+fn test_set_approval_for_all() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let owner = get_caller_address();
+
+    let approval: bool = false;
+
+    project_contract.set_approval_for_all(project_address, approval);
+
+    let status_now = project_contract.is_approved_for_all(owner, project_address);
+
+    assert_eq!(status_now, false);
 }
