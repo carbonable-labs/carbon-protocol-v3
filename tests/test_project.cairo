@@ -488,12 +488,11 @@ fn test_set_approval_for_all() {
     let status_now = project_contract.is_approved_for_all(owner, project_address);
 
     assert_eq!(status_now, false);
-
 }
 
 #[test]
 #[should_panic(expected: 'CC supply of vintage is 0')]
-fn test_project_offset(){
+fn test_project_offset() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
@@ -503,16 +502,8 @@ fn test_project_offset(){
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    let value:u256 = 1000.into();
-
-   
+    let value: u256 = 0.into();
 
     project_contract.offset(project_address, value, 2025);
-
-
-
-
-
-
 }
 
