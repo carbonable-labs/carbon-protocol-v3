@@ -32,6 +32,7 @@ mod MintComponent {
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
     use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::contracts::project::Project::{OWNER_ROLE};
 
     // Constants
 
@@ -128,6 +129,15 @@ mod MintComponent {
         }
 
         fn cancel_mint(ref self: ComponentState<TContractState>, should_cancel: bool) {
+            let project_address = self.Mint_carbonable_project_address.read();
+            let project = IProjectDispatcher { contract_address: project_address };
+            // [Check] Caller is not zero
+            let caller_address = get_caller_address();
+            assert(!caller_address.is_zero(), 'Invalid caller');
+            // [Check] Caller is owner
+            let isOwner = project.only_owner(caller_address);
+            assert(isOwner, 'Caller is not the owner');
+
             // [Effect] Cancel the mint
             self.Mint_cancel.write(should_cancel);
 
@@ -183,6 +193,14 @@ mod MintComponent {
         }
 
         fn withdraw(ref self: ComponentState<TContractState>) {
+            let project_address = self.Mint_carbonable_project_address.read();
+            let project = IProjectDispatcher { contract_address: project_address };
+            // [Check] Caller is not zero
+            let caller_address = get_caller_address();
+            assert(!caller_address.is_zero(), 'Invalid caller');
+            // [Check] Caller is owner
+            let isOwner = project.only_owner(caller_address);
+            assert(isOwner, 'Caller is not the owner');
             // [Compute] Balance to withdraw
             let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20Dispatcher { contract_address: token_address };
@@ -190,7 +208,6 @@ mod MintComponent {
             let balance = erc20.balance_of(contract_address);
 
             // [Interaction] Transfer tokens
-            let caller_address = get_caller_address();
             let success = erc20.transfer(caller_address, balance);
             assert(success, 'Transfer failed');
         }
