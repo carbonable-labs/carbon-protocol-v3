@@ -346,7 +346,7 @@ mod MintComponent {
             // [Effect] Close the sale if sold out
             if self.is_sold_out() {
                 // [Effect] Close public sale
-                self.set_public_sale_open(false);
+                self.Mint_public_sale_open.write(false);
 
                 // [Event] Emit sold out event
                 self.emit(Event::SoldOut(SoldOut { time: current_time }));
