@@ -19,7 +19,7 @@ echo "Total skipped tests: $skipped_count"
 echo "Total ignored tests: $ignored_count"
 echo "Total filtered out tests: $filtered_out_count"
 echo "::endgroup::"
-  
+
 # Check if any test failed
 if [ "$tests_failed" -gt 0 ]; then
   failed_tests=$(echo "$tests_output" | awk '/Failures:/{flag=1;next}/^\s*$/{flag=0}flag')
@@ -31,15 +31,11 @@ fi
 # Generate badge markdown
 badge="[![Tests](https://img.shields.io/badge/Tests-${tests_passed}%20passed-brightgreen)](README.md)"
 
-# Check if badge already exists in README
-if ! grep -q '\[!\[Tests\]' README.md; then
-  # Add badge markdown at the top if not present
-  echo -e "\n" >> README.md
-  echo "## Tests" >> README.md
-  echo -e "\n" >> README.md
-  echo "$badge" >> README.md
-
+# Replace or add the badge below "## About"
+if grep -q '\[!\[Tests\]' README.md; then
+  # Replace the existing badge
+  sed -i "s|\[!\[Tests\].*|$badge|" README.md
 else
-  # Replace existing badge with new badge
-  sed -i '' "s|\[!\[Tests\].*|$badge|" README.md
+  # Add the badge below "## About"
+  sed -i "/## About/a \ \n$badge\n" README.md
 fi
