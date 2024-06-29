@@ -1,13 +1,16 @@
 // Starknet deps
 
-use starknet::{ContractAddress, contract_address_const};
+use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
 // External deps
 
 use openzeppelin::tests::utils::constants as c;
 use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
-use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank};
+use snforge_std::{
+    CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank,
+    cheatcodes::events::EventAssertions
+};
 use alexandria_storage::list::{List, ListTrait};
 
 // Data 
@@ -22,6 +25,10 @@ use carbon_v3::components::absorber::interface::{
 };
 use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
+use carbon_v3::components::erc1155::interface::{
+    IERC1155MetadataURI, IERC1155MetadataURIDispatcher, IERC1155MetadataURIDispatcherTrait
+};
+use erc4906::erc4906_component::ERC4906Component::{Event, MetadataUpdate, BatchMetadataUpdate};
 
 // Contracts
 
@@ -431,6 +438,7 @@ fn test_project_balance_of() {
     assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
 }
 
+
 #[test]
 fn test_transfer_without_loss() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
@@ -706,4 +714,112 @@ fn fuzz_test_transfer_high_supply_high_amount(
         percentage_of_balance_to_send,
         max_supply_for_vintage
     );
+}
+
+#[test]
+fn test_project_metadata_update() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, mut spy) = default_setup_and_deploy();
+    let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
+    let base_uri: ByteArray = format!("{}", 'uri');
+    let mut new_uri: ByteArray = format!("{}", 'new/uri');
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
+    let vintage = *cc_vintage_years.at(0);
+
+    assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
+
+    project_contract.set_uri(new_uri.clone());
+
+    assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
+
+    //check event emitted 
+    let expected_batch_metadata_update = BatchMetadataUpdate {
+        from_token_id: *cc_vintage_years.at(0),
+        to_token_id: *cc_vintage_years.at(cc_vintage_years.len() - 1)
+    };
+
+    spy
+        .assert_emitted(
+            @array![(project_address, Event::BatchMetadataUpdate(expected_batch_metadata_update))]
+        )
+}
+
+fn test_set_uri() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+    start_prank(CheatTarget::One(project_address), owner_address);
+    assert(absorber.is_setup(), 'Error during setup');
+    project_contract.set_uri("test_uri");
+    let uri = project_contract.get_uri(1);
+    assert_eq!(uri, "test_uri");
+}
+
+#[test]
+fn test_decimals() {
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let project_decimals = project_contract.decimals();
+
+    assert(project_decimals == 8, 'Decimals should be 8');
+}
+
+#[test]
+fn test_shares_of() {
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let share_balance = project_contract.shares_of(project_address, 2025);
+
+    assert(share_balance == 0, 'Shares Balance is wrong');
+}
+
+#[test]
+fn test_is_approved_for_all() {
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let owner = get_caller_address();
+
+    let status = project_contract.is_approved_for_all(owner, project_address);
+    // Check if status of approval is a boolean
+    assert!(status == true || status == false, "Expected a boolean value");
+}
+
+#[test]
+fn test_set_approval_for_all() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let (project_address, _) = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let absorber = IAbsorberDispatcher { contract_address: project_address };
+
+    start_prank(CheatTarget::One(project_address), owner_address);
+
+    assert(absorber.is_setup(), 'Error during setup');
+
+    let owner = get_caller_address();
+
+    let approval: bool = false;
+
+    project_contract.set_approval_for_all(project_address, approval);
+
+    let status_now = project_contract.is_approved_for_all(owner, project_address);
+
+    assert_eq!(status_now, false);
 }

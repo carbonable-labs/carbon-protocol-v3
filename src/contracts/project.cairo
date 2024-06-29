@@ -11,6 +11,7 @@ trait IExternal<ContractState> {
         ref self: ContractState, from: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
     fn set_uri(ref self: ContractState, uri: ByteArray);
+    fn get_uri(self: @ContractState, token_id: u256) -> ByteArray;
     fn decimals(self: @ContractState) -> u8;
     fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool;
     fn grant_minter_role(ref self: ContractState, minter: ContractAddress);
@@ -63,6 +64,8 @@ mod Project {
     use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
     // Access Control - RBAC
     use openzeppelin::access::accesscontrol::AccessControlComponent;
+    // ERC4906
+    use erc4906::erc4906_component::ERC4906Component;
 
     component!(path: ERC1155Component, storage: erc1155, event: ERC1155Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -70,6 +73,7 @@ mod Project {
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
     component!(path: AbsorberComponent, storage: absorber, event: AbsorberEvent);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
+    component!(path: ERC4906Component, storage: erc4906, event: ERC4906Event);
 
     // ERC1155
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
@@ -101,6 +105,7 @@ mod Project {
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl AbsorberInternalImpl = AbsorberComponent::InternalImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
+    impl ERC4906InternalImpl = ERC4906Component::ERC4906HelperInternal<ContractState>;
 
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
@@ -124,6 +129,8 @@ mod Project {
         absorber: AbsorberComponent::Storage,
         #[substorage(v0)]
         accesscontrol: AccessControlComponent::Storage,
+        #[substorage(v0)]
+        erc4906: ERC4906Component::Storage,
     }
 
     #[event]
@@ -141,6 +148,8 @@ mod Project {
         AbsorberEvent: AbsorberComponent::Event,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
+        ERC4906Event: ERC4906Component::Event,
     }
 
     mod Errors {
@@ -214,6 +223,23 @@ mod Project {
 
         fn set_uri(ref self: ContractState, uri: ByteArray) {
             self.erc1155.set_base_uri(uri);
+
+            // get all vintage years 
+            let cc_vintage_years: Span<u256> = self.absorber.get_vintage_years();
+            let from_vintage_year = *cc_vintage_years.at(0);
+            let to_vintage_year = *cc_vintage_years.at(cc_vintage_years.len() - 1);
+
+            /// Emit BatchMetadataUpdate event
+            self
+                .erc4906
+                ._emit_batch_metadata_update(
+                    fromTokenId: from_vintage_year, toTokenId: to_vintage_year
+                );
+        }
+
+        fn get_uri(self: @ContractState, token_id: u256) -> ByteArray {
+            let uri_result: ByteArray = self.erc1155.uri(token_id);
+            uri_result
         }
 
         fn decimals(self: @ContractState) -> u8 {
