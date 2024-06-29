@@ -57,7 +57,8 @@ use carbon_v3::mock::usdcarb::USDCarb;
 // Utils for testing purposes
 
 use super::tests_lib::{
-    default_setup_and_deploy, buy_utils, deploy_offsetter, deploy_erc20, deploy_minter, buy_utils_test
+    default_setup_and_deploy, buy_utils, deploy_offsetter, deploy_erc20, deploy_minter,
+    buy_utils_test
 };
 
 // Constants
@@ -167,7 +168,7 @@ fn test_offsetter_wrong_status() {
 
     // [Effect] setup a batch of carbon credits
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33%
- 
+
     buy_utils_test(owner_address, user_address, minter_address, share);
 
     // [Check] Vintage status is not audited

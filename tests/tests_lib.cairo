@@ -258,7 +258,12 @@ fn buy_utils(minter_address: ContractAddress, erc20_address: ContractAddress, sh
 /// Utility function to buy a share of the total supply.
 /// The share is calculated as a percentage of the total supply. We use share instead of amount
 /// to make it easier to determine the expected values, but in practice the amount is used.
-fn buy_utils_test(owner_address: ContractAddress, caller_address: ContractAddress, minter_address: ContractAddress, share: u256) {
+fn buy_utils_test(
+    owner_address: ContractAddress,
+    caller_address: ContractAddress,
+    minter_address: ContractAddress,
+    share: u256
+) {
     // [Prank] Use caller (usually user) as caller for the Minter contract
     start_prank(CheatTarget::One(minter_address), caller_address);
     let minter = IMintDispatcher { contract_address: minter_address };
@@ -267,13 +272,13 @@ fn buy_utils_test(owner_address: ContractAddress, caller_address: ContractAddres
 
     let amount_to_buy = share_to_buy_amount(minter_address, share);
     // [Prank] Use owner as caller for the ERC20 contract
-    start_prank(CheatTarget::One(erc20_address), owner_address);    // Owner holds initial supply
+    start_prank(CheatTarget::One(erc20_address), owner_address); // Owner holds initial supply
     erc20.transfer(caller_address, amount_to_buy);
-    
+
     // [Prank] Use caller address (usually user) as caller for the ERC20 contract
     start_prank(CheatTarget::One(erc20_address), caller_address);
     erc20.approve(minter_address, amount_to_buy);
-    
+
     // [Prank] Use Minter as caller for the ERC20 contract
     start_prank(CheatTarget::One(erc20_address), minter_address);
     // [Prank] Use caller (usually user) as caller for the Minter contract
