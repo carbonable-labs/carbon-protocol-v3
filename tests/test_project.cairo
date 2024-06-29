@@ -37,7 +37,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use super::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
     default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_erc20,
-    deploy_minter, deploy_offsetter, buy_utils_test, share_to_buy_amount
+    deploy_minter, deploy_offsetter, share_to_buy_amount
 };
 
 #[test]
@@ -224,7 +224,7 @@ fn test_project_offset_with_offsetter_role() {
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
@@ -261,7 +261,7 @@ fn test_project_offset_without_offsetter_role() {
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -299,7 +299,7 @@ fn test_project_batch_offset_with_offsetter_role() {
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
@@ -354,7 +354,7 @@ fn test_project_batch_offset_without_offsetter_role() {
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
@@ -422,7 +422,7 @@ fn test_project_balance_of() {
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
@@ -451,7 +451,7 @@ fn test_transfer_without_loss() {
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
     // [Prank] Simulate production flow, user calls Project contract
@@ -515,7 +515,7 @@ fn test_consecutive_transfers_and_rebases(
 
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
     let initial_balance = project_contract.balance_of(user_address, 2025);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));

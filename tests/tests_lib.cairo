@@ -246,19 +246,7 @@ fn fuzzing_setup(cc_supply: u64) -> (ContractAddress, ContractAddress, ContractA
 /// Utility function to buy a share of the total supply.
 /// The share is calculated as a percentage of the total supply. We use share instead of amount
 /// to make it easier to determine the expected values, but in practice the amount is used.
-fn buy_utils(minter_address: ContractAddress, erc20_address: ContractAddress, share: u256) {
-    let minter = IMintDispatcher { contract_address: minter_address };
-    let amount_to_buy = share_to_buy_amount(minter_address, share);
-    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
-
-    erc20.approve(minter_address, amount_to_buy);
-    minter.public_buy(amount_to_buy, false);
-}
-
-/// Utility function to buy a share of the total supply.
-/// The share is calculated as a percentage of the total supply. We use share instead of amount
-/// to make it easier to determine the expected values, but in practice the amount is used.
-fn buy_utils_test(
+fn buy_utils(
     owner_address: ContractAddress,
     caller_address: ContractAddress,
     minter_address: ContractAddress,
@@ -327,7 +315,7 @@ fn perform_fuzzed_transfer(
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     start_prank(CheatTarget::One(project_address), user_address);
 

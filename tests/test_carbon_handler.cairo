@@ -51,7 +51,7 @@ use carbon_v3::contracts::project::{
 use super::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
     default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_offsetter,
-    deploy_minter, deploy_erc20, buy_utils_test
+    deploy_minter, deploy_erc20
 };
 
 // Constants
@@ -857,7 +857,7 @@ fn test_rebase_half_supply() {
 
     let share = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     let cc_vintage_years: Span<u256> = cc_handler.get_vintage_years();
 

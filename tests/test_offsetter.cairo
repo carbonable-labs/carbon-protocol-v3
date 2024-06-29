@@ -57,8 +57,7 @@ use carbon_v3::mock::usdcarb::USDCarb;
 // Utils for testing purposes
 
 use super::tests_lib::{
-    default_setup_and_deploy, buy_utils, deploy_offsetter, deploy_erc20, deploy_minter,
-    buy_utils_test
+    default_setup_and_deploy, buy_utils, deploy_offsetter, deploy_erc20, deploy_minter
 };
 
 // Constants
@@ -127,7 +126,7 @@ fn test_offsetter_retire_carbon_credits() {
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
     let initial_balance = project.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
@@ -169,7 +168,7 @@ fn test_offsetter_wrong_status() {
     // [Effect] setup a batch of carbon credits
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33%
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     // [Check] Vintage status is not audited
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
@@ -207,7 +206,7 @@ fn test_retire_carbon_credits_insufficient_credits() {
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -244,7 +243,7 @@ fn test_retire_carbon_credits_exact_balance() {
 
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     let user_balance = project_contract.balance_of(user_address, 2025);
 
@@ -288,7 +287,7 @@ fn test_retire_carbon_credits_multiple_retirements() {
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     let balance_initial = project.balance_of(user_address, 2025);
 
@@ -336,7 +335,7 @@ fn test_retire_list_carbon_credits_valid_inputs() {
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     let balance_initial_2025 = project.balance_of(user_address, 2025);
     let balance_initial_2026 = project.balance_of(user_address, 2026);
@@ -421,7 +420,7 @@ fn test_retire_list_carbon_credits_partial_valid_inputs() {
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     // [Effect] update Vintage status
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
@@ -460,7 +459,7 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
 
-    buy_utils_test(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     let initial_balance = project.balance_of(user_address, 2025);
 
