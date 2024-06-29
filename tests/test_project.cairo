@@ -236,7 +236,9 @@ fn test_project_offset_with_offsetter_role() {
     stop_prank(CheatTarget::One(project_address));
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Prank] Simulate production flow, Offsetter calls Project contract
     start_prank(CheatTarget::One(project_address), offsetter_address);
@@ -271,7 +273,9 @@ fn test_project_offset_without_offsetter_role() {
     buy_utils(owner_address, user_address, minter_address, share);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Prank] Simulate error flow, owner calls Project contract
     start_prank(CheatTarget::One(project_address), owner_address);
@@ -311,7 +315,9 @@ fn test_project_batch_offset_with_offsetter_role() {
     stop_prank(CheatTarget::One(project_address));
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     let share = 100;
     let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
@@ -366,7 +372,9 @@ fn test_project_batch_offset_without_offsetter_role() {
     stop_prank(CheatTarget::One(project_address));
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     let share = 100;
     let cc_vintage_years: Span<u256> = carbon_credits.get_vintage_years();
@@ -540,7 +548,11 @@ fn test_consecutive_transfers_and_rebases(
     let new_vintage_supply_1 = initial_vintage_supply
         * first_percentage_rebase.try_into().unwrap()
         / 100_000;
+    stop_prank(CheatTarget::One(project_address));
+
+    start_prank(CheatTarget::One(project_address), owner_address);
     absorber.rebase_vintage(2025, new_vintage_supply_1);
+    stop_prank(CheatTarget::One(project_address));
 
     let balance_receiver = project_contract.balance_of(receiver_address, 2025);
     start_prank(CheatTarget::One(project_address), receiver_address);
@@ -548,10 +560,12 @@ fn test_consecutive_transfers_and_rebases(
         .safe_transfer_from(
             receiver_address, user_address, 2025, balance_receiver.into(), array![].span()
         );
+    stop_prank(CheatTarget::One(project_address));
 
     let new_vintage_supply_2 = new_vintage_supply_1
         * second_percentage_rebase.try_into().unwrap()
         / 100_000;
+    start_prank(CheatTarget::One(project_address), owner_address);
     absorber.rebase_vintage(2025, new_vintage_supply_2);
 
     // revert first rebase with the opposite percentage
@@ -565,6 +579,10 @@ fn test_consecutive_transfers_and_rebases(
         * undo_second_percentage_rebase.try_into().unwrap()
         / 100_000;
     absorber.rebase_vintage(2025, new_vintage_supply_4);
+
+    stop_prank(CheatTarget::One(project_address));
+
+    start_prank(CheatTarget::One(project_address), user_address);
 
     let balance_user = project_contract.balance_of(user_address, 2025);
     assert(equals_with_error(balance_user, initial_balance, 10), 'Error final balance owner');

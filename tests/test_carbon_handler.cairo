@@ -870,7 +870,11 @@ fn test_rebase_half_supply() {
         let old_vintage_supply = cc_handler.get_carbon_vintage(*cc_vintage_years.at(index)).supply;
         let old_cc_balance = project.balance_of(owner_address, *cc_vintage_years.at(index));
         // rebase
+        // [Prank] use owner to rebase rebase_vintage
+        start_prank(CheatTarget::One(project_address), owner_address);
         absorber.rebase_vintage(*cc_vintage_years.at(index), old_vintage_supply / 2);
+        // [Prank] stop prank on absorber contract
+        stop_prank(CheatTarget::One(project_address));
         let new_vintage_supply = cc_handler.get_carbon_vintage(*cc_vintage_years.at(index)).supply;
         let new_cc_balance = project.balance_of(owner_address, *cc_vintage_years.at(index));
         let failed_tokens = cc_handler.get_carbon_vintage(*cc_vintage_years.at(index)).failed;

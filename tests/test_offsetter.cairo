@@ -130,7 +130,9 @@ fn test_offsetter_retire_carbon_credits() {
     let initial_balance = project.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] try to retire carbon credits
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
@@ -209,7 +211,9 @@ fn test_retire_carbon_credits_insufficient_credits() {
     buy_utils(owner_address, user_address, minter_address, share);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] try to retire carbon credits
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
@@ -248,7 +252,9 @@ fn test_retire_carbon_credits_exact_balance() {
     let user_balance = project_contract.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] try to retire carbon credits
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
@@ -292,7 +298,9 @@ fn test_retire_carbon_credits_multiple_retirements() {
     let balance_initial = project.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] retire carbon credits multiple times
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
@@ -341,8 +349,10 @@ fn test_retire_list_carbon_credits_valid_inputs() {
     let balance_initial_2026 = project.balance_of(user_address, 2026);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
     carbon_credits.update_vintage_status(2026, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] retire list of carbon credits
     let vintages: Span<u256> = array![2025.into(), 2026.into()].span();
@@ -423,7 +433,9 @@ fn test_retire_list_carbon_credits_partial_valid_inputs() {
     buy_utils(owner_address, user_address, minter_address, share);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
     // Do not update 2026 to keep it invalid
 
     // [Effect] retire list of carbon credits
@@ -464,7 +476,9 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
     let initial_balance = project.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] retire list of carbon credits with multiple same vintage
     let vintages: Span<u256> = array![2025.into(), 2025.into()].span();

@@ -285,11 +285,15 @@ fn test_get_available_money_amount() {
 
 #[test]
 fn test_cancel_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = deploy_project();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
+
+    // [Prank] Use owner as caller to Minter contract
+    start_prank(CheatTarget::One(minter_address), owner_address);
 
     // Ensure the mint is not canceled initially
     let is_canceled = minter.is_canceled();
