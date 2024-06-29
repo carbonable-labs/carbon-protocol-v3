@@ -23,6 +23,8 @@
 </div>
 
 ## About
+ 
+[![Tests](https://img.shields.io/badge/Tests-79%20passed-brightgreen)](README.md)
 
 Carbon Protocol V3 is a cutting-edge, open-source tool designed for the tokenization, trading, and management of carbon credits on Starknet.
 
@@ -89,6 +91,7 @@ Thanks go to these wonderful people ([emoji key](https://allcontributors.org/doc
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/raizo07"><img src="https://avatars.githubusercontent.com/u/81079370?v=4?s=100" width="100px;" alt="Wolf"/><br /><sub><b>Wolf</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/issues?q=author%3Araizo07" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://soetandev.netlify.app/"><img src="https://avatars.githubusercontent.com/u/17912134?v=4?s=100" width="100px;" alt="Emmanuel Soetan"/><br /><sub><b>Emmanuel Soetan</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=Shoetan" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/manlikeHB"><img src="https://avatars.githubusercontent.com/u/109147010?v=4?s=100" width="100px;" alt="Yusuf Habib"/><br /><sub><b>Yusuf Habib</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=manlikeHB" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/lindsaymoralesb"><img src="https://avatars.githubusercontent.com/u/87027508?v=4?s=100" width="100px;" alt="Lindsay Morales"/><br /><sub><b>Lindsay Morales</b></sub></a><br /><a href="https://github.com/carbonable-labs/carbon-protocol-v3/commits?author=lindsaymoralesb" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

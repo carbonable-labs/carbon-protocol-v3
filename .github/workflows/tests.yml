@@ -1,0 +1,36 @@
+name: Run Tests
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.5.4"
+      
+      - name: Setup snfoundry
+        uses: foundry-rs/setup-snfoundry@v3
+        with:
+          starknet-foundry-version: "0.18.0"
+          
+      - name: Run Cairo tests
+        id: cairo_tests
+        run: bash scripts/run_tests.sh
+      
+      - name: Commit and push changes to README
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "Update passed tests count and badge in README"
+          git push
