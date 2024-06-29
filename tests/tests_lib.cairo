@@ -255,6 +255,36 @@ fn buy_utils(minter_address: ContractAddress, erc20_address: ContractAddress, sh
     minter.public_buy(amount_to_buy, false);
 }
 
+/// Utility function to buy a share of the total supply.
+/// The share is calculated as a percentage of the total supply. We use share instead of amount
+/// to make it easier to determine the expected values, but in practice the amount is used.
+fn buy_utils_test(owner_address: ContractAddress, caller_address: ContractAddress, minter_address: ContractAddress, share: u256) {
+    // [Prank] Use caller (usually user) as caller for the Minter contract
+    start_prank(CheatTarget::One(minter_address), caller_address);
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let erc20_address: ContractAddress = minter.get_payment_token_address();
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+
+    let amount_to_buy = share_to_buy_amount(minter_address, share);
+    // [Prank] Use owner as caller for the ERC20 contract
+    start_prank(CheatTarget::One(erc20_address), owner_address);    // Owner holds initial supply
+    erc20.transfer(caller_address, amount_to_buy);
+    
+    // [Prank] Use caller address (usually user) as caller for the ERC20 contract
+    start_prank(CheatTarget::One(erc20_address), caller_address);
+    erc20.approve(minter_address, amount_to_buy);
+    
+    // [Prank] Use Minter as caller for the ERC20 contract
+    start_prank(CheatTarget::One(erc20_address), minter_address);
+    // [Prank] Use caller (usually user) as caller for the Minter contract
+    start_prank(CheatTarget::One(minter_address), caller_address);
+    minter.public_buy(amount_to_buy, false);
+
+    stop_prank(CheatTarget::One(erc20_address));
+    stop_prank(CheatTarget::One(minter_address));
+}
+
+
 ///
 /// Tests functions to be called by the test runner
 /// 
@@ -280,36 +310,37 @@ fn perform_fuzzed_transfer(
     }
 
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
-    let (project_address, minter_address, erc20_address, _) = fuzzing_setup(supply);
+    let (project_address, minter_address, _, _) = fuzzing_setup(supply);
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     // Setup Roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    project_contract.grant_minter_role(owner_address);
-
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    project_contract.grant_minter_role(minter_address);
+    stop_prank(CheatTarget::One(project_address));
 
     assert(absorber.is_setup(), 'Error during setup');
 
-    buy_utils(minter_address, erc20_address, share);
+    buy_utils_test(owner_address, user_address, minter_address, share);
 
-    let initial_balance = project_contract.balance_of(owner_address, 2025);
+    start_prank(CheatTarget::One(project_address), user_address);
+
+    let initial_balance = project_contract.balance_of(user_address, 2025);
     let amount = percentage_of_balance_to_send * initial_balance / 10_000;
     project_contract
-        .safe_transfer_from(owner_address, receiver_address, 2025, amount.into(), array![].span());
+        .safe_transfer_from(user_address, receiver_address, 2025, amount.into(), array![].span());
 
-    let balance_owner = project_contract.balance_of(owner_address, 2025);
+    let balance_owner = project_contract.balance_of(user_address, 2025);
     assert(equals_with_error(balance_owner, initial_balance - amount, 10), 'Error balance owner 1');
     let balance_receiver = project_contract.balance_of(receiver_address, 2025);
     assert(equals_with_error(balance_receiver, amount, 10), 'Error balance receiver 1');
 
     start_prank(CheatTarget::One(project_address), receiver_address);
     project_contract
-        .safe_transfer_from(receiver_address, owner_address, 2025, amount.into(), array![].span());
+        .safe_transfer_from(receiver_address, user_address, 2025, amount.into(), array![].span());
 
-    let balance_owner = project_contract.balance_of(owner_address, 2025);
+    let balance_owner = project_contract.balance_of(user_address, 2025);
     assert(equals_with_error(balance_owner, initial_balance, 10), 'Error balance owner 2');
     let balance_receiver = project_contract.balance_of(receiver_address, 2025);
     assert(equals_with_error(balance_receiver, 0, 10), 'Error balance receiver 2');
