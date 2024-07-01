@@ -1,6 +1,25 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
+trait IERC721<TContractState> {
+    fn get_name(self: @TContractState) -> felt252;
+    fn get_symbol(self: @TContractState) -> felt252;
+    fn get_token_uri(self: @TContractState, token_id: u256) -> felt252;
+    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
+    fn owner_of(self: @TContractState, token_id: u256) -> ContractAddress;
+    fn get_approved(self: @TContractState, token_id: u256) -> ContractAddress;
+    fn is_approved_for_all(
+        self: @TContractState, owner: ContractAddress, operator: ContractAddress
+    ) -> bool;
+    fn approve(ref self: TContractState, to: ContractAddress, token_id: u256);
+    fn set_approval_for_all(ref self: TContractState, operator: ContractAddress, approved: bool);
+    fn transfer_from(
+        ref self: TContractState, from: ContractAddress, to: ContractAddress, token_id: u256
+    );
+    fn mint(ref self: TContractState, to: ContractAddress, token_id: u256);
+}
+
+#[starknet::interface]
 trait IExternal<ContractState> {
     fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256);
     fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256);
@@ -51,6 +70,7 @@ mod Project {
     use carbon_v3::components::absorber::interface::ICarbonCreditsHandlerDispatcher;
     use core::traits::Into;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
+    use super::{IERC721Dispatcher, IERC721DispatcherTrait};
 
     // Ownable
     use openzeppelin::access::ownable::OwnableComponent;
@@ -131,6 +151,8 @@ mod Project {
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
         erc4906: ERC4906Component::Storage,
+        erc721_address: ContractAddress,
+        has_minted_nft: bool
     }
 
     #[event]
@@ -187,6 +209,12 @@ mod Project {
             // [Check] Only Minter can mint
             let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
             assert(isMinter, 'Only Minter can mint');
+            let has_minted_nft: bool = self.has_minted_nft.read();
+            if has_minted_nft != true {
+                let erc721 = IERC721Dispatcher { contract_address: self.erc721_address.read() };
+                erc721.mint(to, token_id);
+                self.has_minted_nft.write(true);
+            }
             self.erc1155.mint(to, token_id, value);
         }
 
