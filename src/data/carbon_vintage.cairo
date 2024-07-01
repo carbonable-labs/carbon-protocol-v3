@@ -97,7 +97,6 @@ mod Test {
         assert_eq!(
             res, "CarbonVintage(vintage: 2024, supply: 1000000000, failed: 10000, status: Audited)"
         );
-        println!("{}", carbon_vintage);
     }
 
     // CarbonVintageType tests

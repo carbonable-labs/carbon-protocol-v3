@@ -81,35 +81,6 @@ struct Contracts {
 // Tests
 //
 
-// set_project_carbon
-
-#[test]
-fn test_set_project_carbon() {
-    let (project_address, mut spy) = deploy_project();
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    // [Prank] Use owner as caller to Project contract
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    start_prank(CheatTarget::One(project_address), owner_address);
-    // [Assert] project_carbon set correctly
-    project.set_project_carbon(PROJECT_CARBON.into());
-    let fetched_value = project.get_project_carbon();
-    assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
-    spy
-        .assert_emitted(
-            @array![
-                (
-                    project_address,
-                    AbsorberComponent::Event::ProjectValueUpdate(
-                        AbsorberComponent::ProjectValueUpdate { value: PROJECT_CARBON.into() }
-                    )
-                )
-            ]
-        );
-    // found events are removed from the spy after assertion, so the length should be 0
-    assert(spy.events.len() == 0, 'number of events should be 0');
-}
-
-
 // is_public_sale_open
 
 #[test]
@@ -151,10 +122,10 @@ fn test_set_public_sale_open_with_owner_role() {
     minter.set_public_sale_open(true);
 }
 
-// is_public_buy
+// public_buy
 
 #[test]
-fn test_is_public_buy() {
+fn test_public_buy() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = deploy_project();
@@ -540,12 +511,10 @@ fn test_is_sold_out() {
 
     // Test after buying all the remaining money
     let remaining_money_after_buying_all = minter.get_available_money_amount();
-    println!("gets remaining money");
     assert(remaining_money_after_buying_all == 0, 'remaining money wrong');
 
     // Verify that the contract is sold out after buying all the money
     let is_sold_out_after = minter.is_sold_out();
-    println!("gets sold out");
     assert(is_sold_out_after, 'should be sold out');
 }
 

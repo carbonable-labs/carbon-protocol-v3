@@ -823,6 +823,17 @@ fn test_update_vintage_status_invalid() {
     cc_handler.update_vintage_status(token_id, invalid_status);
 }
 
+#[test]
+#[should_panic(expected: 'Caller is not owner')]
+fn test_update_vintage_status_without_owner_role() {
+    let (project_address, _) = deploy_project();
+    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let token_id: u64 = 2024;
+    let new_status: u8 = 2;
+    start_prank(CheatTarget::One(project_address), contract_address_const::<'USER'>());
+    cc_handler.update_vintage_status(token_id, new_status);
+}
+
 // #[test]  todo, what do we expect here?
 // fn test_update_vintage_status_non_existent_token_id() {
 //     let (project_address, _) = default_setup_and_deploy();
