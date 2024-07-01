@@ -24,7 +24,7 @@
 
 ## About
  
-[![Tests](https://img.shields.io/badge/Tests-79%20passed-brightgreen)](README.md)
+[![Tests](https://img.shields.io/badge/Tests-108%20passed-brightgreen)](README.md)
 
 Carbon Protocol V3 is a cutting-edge, open-source tool designed for the tokenization, trading, and management of carbon credits on Starknet.
 
