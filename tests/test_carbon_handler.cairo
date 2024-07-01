@@ -823,6 +823,17 @@ fn test_update_vintage_status_invalid() {
     cc_handler.update_vintage_status(token_id, invalid_status);
 }
 
+#[test]
+#[should_panic(expected: 'Caller is not owner')]
+fn test_update_vintage_status_without_owner_role() {
+    let (project_address, _) = deploy_project();
+    let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let token_id: u64 = 2024;
+    let new_status: u8 = 2;
+    start_prank(CheatTarget::One(project_address), contract_address_const::<'USER'>());
+    cc_handler.update_vintage_status(token_id, new_status);
+}
+
 // #[test]  todo, what do we expect here?
 // fn test_update_vintage_status_non_existent_token_id() {
 //     let (project_address, _) = default_setup_and_deploy();
@@ -837,6 +848,7 @@ fn test_update_vintage_status_invalid() {
 #[test]
 fn test_rebase_half_supply() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
@@ -845,9 +857,7 @@ fn test_rebase_half_supply() {
     let project = IProjectDispatcher { contract_address: project_address };
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
-    // [Prank] Use owner as caller to Minter, ERC20 and Project contracts
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    // [Prank] Use owner as caller to Project contract
     start_prank(CheatTarget::One(project_address), owner_address);
     // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
@@ -858,7 +868,7 @@ fn test_rebase_half_supply() {
 
     let share = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%
 
-    buy_utils(minter_address, erc20_address, share);
+    buy_utils(owner_address, user_address, minter_address, share);
 
     let cc_vintage_years: Span<u256> = cc_handler.get_vintage_years();
 
@@ -871,7 +881,11 @@ fn test_rebase_half_supply() {
         let old_vintage_supply = cc_handler.get_carbon_vintage(*cc_vintage_years.at(index)).supply;
         let old_cc_balance = project.balance_of(owner_address, *cc_vintage_years.at(index));
         // rebase
+        // [Prank] use owner to rebase rebase_vintage
+        start_prank(CheatTarget::One(project_address), owner_address);
         absorber.rebase_vintage(*cc_vintage_years.at(index), old_vintage_supply / 2);
+        // [Prank] stop prank on absorber contract
+        stop_prank(CheatTarget::One(project_address));
         let new_vintage_supply = cc_handler.get_carbon_vintage(*cc_vintage_years.at(index)).supply;
         let new_cc_balance = project.balance_of(owner_address, *cc_vintage_years.at(index));
         let failed_tokens = cc_handler.get_carbon_vintage(*cc_vintage_years.at(index)).failed;

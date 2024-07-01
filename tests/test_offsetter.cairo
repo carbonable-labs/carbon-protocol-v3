@@ -84,13 +84,13 @@ struct Contracts {
 
 #[test]
 fn test_offsetter_init() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
 
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     // [Prank] Use owner as caller to Offsetter contract
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
     // [Assert] contract is empty
     let carbon_pending = offsetter.get_carbon_retired(2025);
     assert(carbon_pending == 0, 'carbon pending should be 0');
@@ -104,6 +104,7 @@ fn test_offsetter_init() {
 #[test]
 fn test_offsetter_retire_carbon_credits() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
     let (erc20_address, _) = deploy_erc20();
@@ -111,29 +112,27 @@ fn test_offsetter_retire_carbon_credits() {
 
     // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter contract the Minter role
     project.grant_minter_role(minter_address);
     // [Effect] Grant Offsetter contract the Offsetter role
     project.grant_offsetter_role(offsetter_address);
+    // [Prank] Stop prank on Project contract
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
-    buy_utils(minter_address, erc20_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    let initial_balance = project.balance_of(owner_address, 2025);
+    buy_utils(owner_address, user_address, minter_address, share);
+    let initial_balance = project.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] try to retire carbon credits
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
@@ -142,7 +141,7 @@ fn test_offsetter_retire_carbon_credits() {
     let carbon_retired = offsetter.get_carbon_retired(2025);
     assert(carbon_retired == 100000, 'Carbon retired is wrong');
 
-    let final_balance = project.balance_of(owner_address, 2025);
+    let final_balance = project.balance_of(user_address, 2025);
     assert(final_balance == initial_balance - 100000, 'Balance is wrong');
 }
 
@@ -150,6 +149,7 @@ fn test_offsetter_retire_carbon_credits() {
 #[should_panic(expected: 'Vintage status is not audited')]
 fn test_offsetter_wrong_status() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
     let (erc20_address, _) = deploy_erc20();
@@ -157,23 +157,20 @@ fn test_offsetter_wrong_status() {
 
     // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter contract the Minter role
     project.grant_minter_role(minter_address);
     // [Effect] Grant Offsetter contract the Offsetter role
     project.grant_offsetter_role(offsetter_address);
+    // [Prank] Stop prank on Project contract
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] setup a batch of carbon credits
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33%
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
-    buy_utils(minter_address, erc20_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+
+    buy_utils(owner_address, user_address, minter_address, share);
 
     // [Check] Vintage status is not audited
     let cc_handler = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
@@ -189,6 +186,7 @@ fn test_offsetter_wrong_status() {
 #[should_panic(expected: 'Not own enough carbon credits')]
 fn test_retire_carbon_credits_insufficient_credits() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
     let (erc20_address, _) = deploy_erc20();
@@ -196,38 +194,37 @@ fn test_retire_carbon_credits_insufficient_credits() {
 
     // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let project_contract = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter role to Minter contract
     project_contract.grant_minter_role(minter_address);
     // [Effect] Grant Offsetter role to Offsetter contract
     project_contract.grant_offsetter_role(offsetter_address);
+    // [Prank] Stop prank on Project contract
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
-    buy_utils(minter_address, erc20_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    buy_utils(owner_address, user_address, minter_address, share);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] try to retire carbon credits
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
-    let balance_owner = project_contract.balance_of(owner_address, 2025);
-    offsetter.retire_carbon_credits(2025, balance_owner + 1);
+    let user_balance = project_contract.balance_of(user_address, 2025);
+    offsetter.retire_carbon_credits(2025, user_balance + 1);
 }
 
 #[test]
 fn test_retire_carbon_credits_exact_balance() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
     let (erc20_address, _) = deploy_erc20();
@@ -235,44 +232,45 @@ fn test_retire_carbon_credits_exact_balance() {
 
     // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let project_contract = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter role to Minter contract
     project_contract.grant_minter_role(minter_address);
     // [Effect] Grant Offsetter role to Offsetter contract
     project_contract.grant_offsetter_role(offsetter_address);
+    // [Prank] Stop prank on Project contract
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
-    buy_utils(minter_address, erc20_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    let balance_owner = project_contract.balance_of(owner_address, 2025);
+
+    buy_utils(owner_address, user_address, minter_address, share);
+
+    let user_balance = project_contract.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] try to retire carbon credits
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
-    offsetter.retire_carbon_credits(2025, balance_owner);
+    offsetter.retire_carbon_credits(2025, user_balance);
 
     let carbon_retired = offsetter.get_carbon_retired(2025);
-    assert(carbon_retired == balance_owner, 'Carbon retired is wrong');
+    assert(carbon_retired == user_balance, 'Carbon retired is wrong');
 
-    let balance_owner_after = project_contract.balance_of(owner_address, 2025);
-    assert(balance_owner_after == 0, 'Balance is wrong');
+    let user_balance_after = project_contract.balance_of(user_address, 2025);
+    assert(user_balance_after == 0, 'Balance is wrong');
 }
 
 #[test]
 fn test_retire_carbon_credits_multiple_retirements() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
     let (erc20_address, _) = deploy_erc20();
@@ -280,29 +278,29 @@ fn test_retire_carbon_credits_multiple_retirements() {
 
     // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
     // [Effect] Grant Offsetter role to Offsetter contract
     project.grant_offsetter_role(offsetter_address);
+    // [Prank] Stop prank on Project contract
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
-    buy_utils(minter_address, erc20_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    let balance_initial = project.balance_of(owner_address, 2025);
+
+    buy_utils(owner_address, user_address, minter_address, share);
+
+    let balance_initial = project.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] retire carbon credits multiple times
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
@@ -313,7 +311,7 @@ fn test_retire_carbon_credits_multiple_retirements() {
     let carbon_retired = offsetter.get_carbon_retired(2025);
     assert(carbon_retired == 100000, 'Error retired carbon credits');
 
-    let balance_final = project.balance_of(owner_address, 2025);
+    let balance_final = project.balance_of(user_address, 2025);
     assert(balance_final == balance_initial - 100000, 'Error balance');
 }
 
@@ -322,6 +320,7 @@ fn test_retire_carbon_credits_multiple_retirements() {
 #[test]
 fn test_retire_list_carbon_credits_valid_inputs() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
     let (erc20_address, _) = deploy_erc20();
@@ -329,31 +328,31 @@ fn test_retire_list_carbon_credits_valid_inputs() {
 
     // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
     // [Effect] Grant Offsetter role to Offsetter contract
     project.grant_offsetter_role(offsetter_address);
+    // [Prank] Stop prank on Project contract
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
-    buy_utils(minter_address, erc20_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    let balance_initial_2025 = project.balance_of(owner_address, 2025);
-    let balance_initial_2026 = project.balance_of(owner_address, 2026);
+
+    buy_utils(owner_address, user_address, minter_address, share);
+
+    let balance_initial_2025 = project.balance_of(user_address, 2025);
+    let balance_initial_2026 = project.balance_of(user_address, 2026);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
     carbon_credits.update_vintage_status(2026, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] retire list of carbon credits
     let vintages: Span<u256> = array![2025.into(), 2026.into()].span();
@@ -367,8 +366,8 @@ fn test_retire_list_carbon_credits_valid_inputs() {
     assert(carbon_retired_2025 == 50000, 'Carbon retired value error');
     assert(carbon_retired_2026 == 50000, 'Carbon retired value error');
 
-    let balance_final_2025 = project.balance_of(owner_address, 2025);
-    let balance_final_2026 = project.balance_of(owner_address, 2026);
+    let balance_final_2025 = project.balance_of(user_address, 2025);
+    let balance_final_2026 = project.balance_of(user_address, 2026);
     assert(balance_final_2025 == balance_initial_2025 - 50000, 'Balance error');
     assert(balance_final_2026 == balance_initial_2026 - 50000, 'Balance error');
 }
@@ -376,12 +375,12 @@ fn test_retire_list_carbon_credits_valid_inputs() {
 #[test]
 #[should_panic(expected: ('Inputs cannot be empty',))]
 fn test_retire_list_carbon_credits_empty_inputs() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
 
-    // [Prank] Use owner as caller to Offsetter contract
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    // [Prank] Use user as caller to Offsetter contract
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     // [Effect] try to retire with empty inputs
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
@@ -391,12 +390,12 @@ fn test_retire_list_carbon_credits_empty_inputs() {
 #[test]
 #[should_panic(expected: 'Vintages and Values mismatch')]
 fn test_retire_list_carbon_credits_mismatched_lengths() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
 
     // [Prank] Use owner as caller to Offsetter contract
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     // [Effect] try to retire with mismatched lengths
     let vintages: Span<u256> = array![2025, 2026].span();
@@ -409,6 +408,7 @@ fn test_retire_list_carbon_credits_mismatched_lengths() {
 #[should_panic(expected: ('Vintage status is not audited',))]
 fn test_retire_list_carbon_credits_partial_valid_inputs() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
     let (erc20_address, _) = deploy_erc20();
@@ -416,27 +416,26 @@ fn test_retire_list_carbon_credits_partial_valid_inputs() {
 
     // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
     // [Effect] Grant Offsetter role to Offsetter contract
     project.grant_offsetter_role(offsetter_address);
+    // [Prank] Stop prank on Project contract
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    // [Prank] Simulate production flow, Minter calls project address
-    start_prank(CheatTarget::One(project_address), minter_address);
-    buy_utils(minter_address, erc20_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+
+    buy_utils(owner_address, user_address, minter_address, share);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
     // Do not update 2026 to keep it invalid
 
     // [Effect] retire list of carbon credits
@@ -449,6 +448,7 @@ fn test_retire_list_carbon_credits_partial_valid_inputs() {
 #[test]
 fn test_retire_list_carbon_credits_multiple_same_vintage() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
     let (erc20_address, _) = deploy_erc20();
@@ -456,29 +456,29 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
 
     // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
-    start_prank(CheatTarget::One(minter_address), owner_address);
-    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
     // [Effect] Grant Offsetter role to Offsetter contract
     project.grant_offsetter_role(offsetter_address);
+    // [Prank] Stop prank on Project contract
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] setup a batch of carbon credits
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    // [Prank] Simulate production flow, Minter calls project address
-    start_prank(CheatTarget::One(project_address), minter_address);
-    buy_utils(minter_address, erc20_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    let initial_balance = project.balance_of(owner_address, 2025);
+
+    buy_utils(owner_address, user_address, minter_address, share);
+
+    let initial_balance = project.balance_of(user_address, 2025);
 
     // [Effect] update Vintage status
+    start_prank(CheatTarget::One(project_address), owner_address);
     carbon_credits.update_vintage_status(2025, CarbonVintageType::Audited.into());
+    stop_prank(CheatTarget::One(project_address));
 
     // [Effect] retire list of carbon credits with multiple same vintage
     let vintages: Span<u256> = array![2025.into(), 2025.into()].span();
@@ -490,19 +490,19 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
     let carbon_retired = offsetter.get_carbon_retired(2025.into());
     assert(carbon_retired == 100000, 'Error Carbon retired');
 
-    let balance_final = project.balance_of(owner_address, 2025);
+    let balance_final = project.balance_of(user_address, 2025);
     assert(balance_final == initial_balance - 100000, 'Error balance');
 }
 /// get_pending_retirement
 
 #[test]
 fn test_get_pending_retirement_no_pending() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
 
     // [Prank] Use owner as caller to Offsetter contract
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     let vintage: u256 = 2025.into();
@@ -516,12 +516,12 @@ fn test_get_pending_retirement_no_pending() {
 
 #[test]
 fn test_get_carbon_retired_no_retired() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (offsetter_address, _) = deploy_offsetter(project_address);
 
     // [Prank] Use owner as caller to Offsetter contract
-    start_prank(CheatTarget::One(offsetter_address), owner_address);
+    start_prank(CheatTarget::One(offsetter_address), user_address);
 
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     let vintage: u256 = 2025.into();

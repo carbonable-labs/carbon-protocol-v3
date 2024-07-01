@@ -246,6 +246,11 @@ mod AbsorberComponent {
         fn rebase_vintage(
             ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u64
         ) {
+            // [Check] Caller is owner
+            let caller_address = get_caller_address();
+            let isOwner = self.get_contract().has_role(OWNER_ROLE, caller_address);
+            assert(isOwner, 'Caller is not owner');
+
             let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read(token_id);
             let old_supply = vintage.supply;
 
@@ -261,7 +266,10 @@ mod AbsorberComponent {
 
     #[embeddable_as(CarbonCreditsHandlerImpl)]
     impl CarbonCreditsHandler<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
+        TContractState,
+        +HasComponent<TContractState>,
+        +Drop<TContractState>,
+        +IAccessControl<TContractState>
     > of ICarbonCreditsHandler<ComponentState<TContractState>> {
         fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<CarbonVintage> {
             let mut vintages = ArrayTrait::<CarbonVintage>::new();
@@ -307,6 +315,11 @@ mod AbsorberComponent {
         fn update_vintage_status(
             ref self: ComponentState<TContractState>, token_id: u64, status: u8
         ) {
+            // [Check] Caller is owner
+            let caller_address = get_caller_address();
+            let isOwner = self.get_contract().has_role(OWNER_ROLE, caller_address);
+            assert(isOwner, 'Caller is not owner');
+
             let new_status: CarbonVintageType = self.__u8_into_CarbonVintageType(status);
             let mut vintage: CarbonVintage = self.Absorber_vintage_cc.read(token_id.into());
             vintage.status = new_status;
