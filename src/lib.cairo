@@ -14,6 +14,7 @@ mod contracts {
     mod project;
     mod minter;
     mod offsetter;
+    mod erc721;
 }
 
 mod mock {

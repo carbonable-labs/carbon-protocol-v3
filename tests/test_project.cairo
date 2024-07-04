@@ -34,8 +34,10 @@ use erc4906::erc4906_component::ERC4906Component::{Event, MetadataUpdate, BatchM
 
 use carbon_v3::contracts::project::{
     Project, IExternalDispatcher as IProjectDispatcher,
-    IExternalDispatcherTrait as IProjectDispatcherTrait
+    IExternalDispatcherTrait as IProjectDispatcherTrait,
 };
+
+use carbon_v3::contracts::project::{IERC721Dispatcher, IERC721DispatcherTrait};
 
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
@@ -44,7 +46,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use super::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
     default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_erc20,
-    deploy_minter, deploy_offsetter, share_to_buy_amount
+    deploy_erc721, deploy_minter, deploy_offsetter, share_to_buy_amount
 };
 
 #[test]
@@ -72,9 +74,11 @@ fn test_project_mint() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (erc20_address, _) = deploy_erc20();
+    let (erc721_address,) = deploy_erc721(project_address);
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
     let absorber = IAbsorberDispatcher { contract_address: project_address };
     let carbon_credits = ICarbonCreditsHandlerDispatcher { contract_address: project_address };
+    let erc721_contract = IERC721Dispatcher { contract_address: erc721_address };
 
     // [Prank] Use owner as caller to Project contract
     start_prank(CheatTarget::One(project_address), owner_address);
@@ -90,13 +94,31 @@ fn test_project_mint() {
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
 
-    project_contract.mint(owner_address, 2025, share);
+    // Initially, NFT does not have an owner
+    let initial_nft_owner: ContractAddress = erc721_contract.owner_of(2025);
+    assert_eq!(initial_nft_owner.into(), 0);
+
+    project_contract.mint(owner_address, 2025, share, erc721_address);
+
+    // NFT now have an owner after mint
+    let final_nft_owner: ContractAddress = erc721_contract.owner_of(2025);
+    assert_eq!(final_nft_owner, owner_address.into());
 
     let supply_vintage_2025 = carbon_credits.get_carbon_vintage(2025).supply;
     let expected_balance = supply_vintage_2025.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(owner_address, 2025);
 
     assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
+
+    // Try to mint NFT for the second time
+    let initial_nft_owner: ContractAddress = erc721_contract.owner_of(2026);
+    assert_eq!(initial_nft_owner.into(), 0);
+
+    project_contract.mint(owner_address, 2026, share, erc721_address);
+
+    // Cannot mint NFT for the second time
+    let final_nft_owner: ContractAddress = erc721_contract.owner_of(2026);
+    assert_eq!(final_nft_owner.into(), 0);
 }
 
 #[test]
@@ -105,6 +127,7 @@ fn test_project_mint_without_minter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let (erc20_address, _) = deploy_erc20();
+    let (erc721_address,) = deploy_erc721(project_address);
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
     let absorber = IAbsorberDispatcher { contract_address: project_address };
 
@@ -116,7 +139,7 @@ fn test_project_mint_without_minter_role() {
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
 
-    project_contract.mint(owner_address, 2025, share);
+    project_contract.mint(owner_address, 2025, share, erc721_address);
 }
 
 #[test]

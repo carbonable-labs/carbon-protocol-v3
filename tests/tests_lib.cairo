@@ -209,6 +209,18 @@ fn deploy_erc20() -> (ContractAddress, EventSpy) {
     (contract_address, spy)
 }
 
+/// Deploy erc721 contract.
+fn deploy_erc721(project_contract_address: ContractAddress) -> (ContractAddress,) {
+    let contract = snf::declare('ERC721');
+    let mut calldata: Array<felt252> = array![];
+    calldata.append('MY NFT');
+    calldata.append('MNFT');
+    calldata.append(project_contract_address.into());
+    let contract_address = contract.deploy(@calldata).unwrap();
+
+    (contract_address,)
+}
+
 fn fuzzing_setup(cc_supply: u64) -> (ContractAddress, ContractAddress, ContractAddress, EventSpy) {
     let (project_address, spy) = deploy_project();
     let (erc20_address, _) = deploy_erc20();

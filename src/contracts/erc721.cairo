@@ -26,7 +26,8 @@ mod ERC721 {
     ////////////////////////////////
     use starknet::{ContractAddress, get_caller_address};
     use core::traits::TryInto;
-    use core::num::traits::zero::Zero;
+    // use core::num::traits::zero::Zero;
+    use core::Zeroable;
 
     ////////////////////////////////
     // storage variables
@@ -194,7 +195,7 @@ mod ERC721 {
         fn mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
             let caller = get_caller_address();
             let owner = self.owner.read();
-            assert(caller == owner, 'ERC721: caller not owner')
+            assert(caller == owner, 'ERC721: caller not owner');
             self._mint(to, token_id);
         }
     }
@@ -241,7 +242,7 @@ mod ERC721 {
             assert(to.is_non_zero(), 'ERC721: transfer to 0 address');
 
             // remove previously made approvals
-            self.token_approvals.write(token_id, Zero::zero());
+            self.token_approvals.write(token_id, Zeroable::zero());
 
             // increase balance of to address, decrease balance of from address
             self.balances.write(from, self.balances.read(from) - 1.into());
@@ -271,7 +272,7 @@ mod ERC721 {
             self.owners.write(token_id, to);
 
             // emit Transfer event
-            self.emit(Transfer { from: Zero::zero(), to: to, token_id: token_id });
+            self.emit(Transfer { from: Zeroable::zero(), to: to, token_id: token_id });
         }
 
         ////////////////////////////////
@@ -281,16 +282,16 @@ mod ERC721 {
             let owner = self.owner_of(token_id);
 
             // Clear approvals
-            self.token_approvals.write(token_id, Zero::zero());
+            self.token_approvals.write(token_id, Zeroable::zero());
 
             // Decrease owner balance
             let owner_balance = self.balances.read(owner);
             self.balances.write(owner, owner_balance - 1.into());
 
             // Delete owner
-            self.owners.write(token_id, Zero::zero());
+            self.owners.write(token_id, Zeroable::zero());
             // emit the Transfer event
-            self.emit(Transfer { from: owner, to: Zero::zero(), token_id: token_id });
+            self.emit(Transfer { from: owner, to: Zeroable::zero(), token_id: token_id });
         }
     }
 }

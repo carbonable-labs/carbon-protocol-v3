@@ -21,7 +21,13 @@ trait IERC721<TContractState> {
 
 #[starknet::interface]
 trait IExternal<ContractState> {
-    fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256);
+    fn mint(
+        ref self: ContractState,
+        to: ContractAddress,
+        token_id: u256,
+        value: u256,
+        erc721_address: ContractAddress
+    );
     fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
         ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
@@ -205,13 +211,19 @@ mod Project {
     // Externals
     #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
-        fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+        fn mint(
+            ref self: ContractState,
+            to: ContractAddress,
+            token_id: u256,
+            value: u256,
+            erc721_address: ContractAddress
+        ) {
             // [Check] Only Minter can mint
             let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
             assert(isMinter, 'Only Minter can mint');
             let has_minted_nft: bool = self.has_minted_nft.read();
             if has_minted_nft != true {
-                let erc721 = IERC721Dispatcher { contract_address: self.erc721_address.read() };
+                let erc721 = IERC721Dispatcher { contract_address: erc721_address };
                 erc721.mint(to, token_id);
                 self.has_minted_nft.write(true);
             }
