@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 #[starknet::contract]
 mod Offsetter {
-    use starknet::{get_caller_address, ContractAddress, ClassHash};
+    use starknet::{ContractAddress, ClassHash};
 
     // Ownable
     use openzeppelin::access::ownable::OwnableComponent;
