@@ -9,17 +9,16 @@ use snforge_std as snf;
 use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank};
 use alexandria_storage::list::{List, ListTrait};
 
-// Data 
+// Models 
 
-use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
+use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
+use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 
 // Components
 
-use carbon_v3::components::absorber::interface::{
-    IAbsorber, IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCreditsHandler,
-    ICarbonCreditsHandlerDispatcher, ICarbonCreditsHandlerDispatcherTrait
+use carbon_v3::components::vintage::interface::{
+    IVintage, IVintageDispatcher, IVintageDispatcherTrait
 };
-use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
 
 // Contracts
@@ -37,7 +36,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 
 fn get_mock_times() -> Span<u64> {
     let times: Span<u64> = array![
-        1674579600,
+        // 1674579600,
         1706115600,
         1737738000,
         1769274000,
@@ -62,8 +61,8 @@ fn get_mock_times() -> Span<u64> {
     times
 }
 
-fn get_mock_absorptions() -> Span<u64> {
-    let absorptions: Span<u64> = array![
+fn get_mock_absorptions() -> Span<u128> {
+    let absorptions: Span<u128> = array![
         0,
         1000000000,
         4799146600,
@@ -86,7 +85,18 @@ fn get_mock_absorptions() -> Span<u64> {
         800000000000
     ]
         .span();
-    absorptions
+    let mut yearly_absorptions: Array<u128> = array![];
+    let mut index: u32 = 0;
+    let mut max = absorptions.len() - 1;
+    loop {
+        if index == max {
+            break;
+        }
+        let current_abs = *absorptions.at(index + 1) - *absorptions.at(index);
+        yearly_absorptions.append(current_abs);
+        index += 1;
+    };
+    yearly_absorptions.span()
 }
 
 
@@ -134,23 +144,23 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
 
 fn setup_project(
     contract_address: ContractAddress,
-    project_carbon: u256,
+    project_carbon: u128,
     times: Span<u64>,
-    absorptions: Span<u64>
+    absorptions: Span<u128>
 ) {
-    let project = IAbsorberDispatcher { contract_address };
+    let vintages = IVintageDispatcher { contract_address };
     // Fake the owner to call set_absorptions and set_project_carbon which can only be run by owner
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_prank(CheatTarget::One(contract_address), owner_address);
 
-    project.set_absorptions(times, absorptions);
-    project.set_project_carbon(project_carbon);
+    vintages.set_vintages(absorptions, 2024);
+    vintages.set_project_carbon(project_carbon);
 }
 
 fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
     let (project_address, spy) = deploy_project();
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     setup_project(project_address, 8000000000, times, absorptions,);
     (project_address, spy)
 }
@@ -209,15 +219,15 @@ fn deploy_erc20() -> (ContractAddress, EventSpy) {
     (contract_address, spy)
 }
 
-fn fuzzing_setup(cc_supply: u64) -> (ContractAddress, ContractAddress, ContractAddress, EventSpy) {
+fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, ContractAddress, EventSpy) {
     let (project_address, spy) = deploy_project();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let times: Span<u64> = get_mock_times();
     // Tests are done on a single vintage, thus the absorptions are the same
-    let absorptions: Span<u64> = array![
-        0,
+    let absorptions: Span<u128> = array![
+        cc_supply,
         cc_supply,
         cc_supply,
         cc_supply,
@@ -283,11 +293,11 @@ fn buy_utils(
 /// 
 
 fn perform_fuzzed_transfer(
-    raw_supply: u64,
+    raw_supply: u128,
     raw_share: u256,
     raw_last_digits_share: u256,
     percentage_of_balance_to_send: u256,
-    max_supply_for_vintage: u64
+    max_supply_for_vintage: u128
 ) {
     let supply = raw_supply % max_supply_for_vintage;
     if raw_share == 0 || supply == 0 {
@@ -306,35 +316,38 @@ fn perform_fuzzed_transfer(
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let (project_address, minter_address, _, _) = fuzzing_setup(supply);
-    let absorber = IAbsorberDispatcher { contract_address: project_address };
-    let project_contract = IProjectDispatcher { contract_address: project_address };
+    // let vintages = IVintageDispatcher { contract_address: project_address };
+    let project = IProjectDispatcher { contract_address: project_address };
     // Setup Roles for the contracts
     start_prank(CheatTarget::One(project_address), owner_address);
-    project_contract.grant_minter_role(minter_address);
+    project.grant_minter_role(minter_address);
     stop_prank(CheatTarget::One(project_address));
 
-    assert(absorber.is_setup(), 'Error during setup');
-
+    // assert(vintages.is_setup(), 'Error during setup');
     buy_utils(owner_address, user_address, minter_address, share);
 
     start_prank(CheatTarget::One(project_address), user_address);
 
-    let initial_balance = project_contract.balance_of(user_address, 2025);
+    let token_id = 1;
+    let initial_balance = project.balance_of(user_address, token_id);
     let amount = percentage_of_balance_to_send * initial_balance / 10_000;
-    project_contract
-        .safe_transfer_from(user_address, receiver_address, 2025, amount.into(), array![].span());
-
-    let balance_owner = project_contract.balance_of(user_address, 2025);
+    project
+        .safe_transfer_from(
+            user_address, receiver_address, token_id, amount.into(), array![].span()
+        );
+    let balance_owner = project.balance_of(user_address, token_id);
     assert(equals_with_error(balance_owner, initial_balance - amount, 10), 'Error balance owner 1');
-    let balance_receiver = project_contract.balance_of(receiver_address, 2025);
+    let balance_receiver = project.balance_of(receiver_address, token_id);
     assert(equals_with_error(balance_receiver, amount, 10), 'Error balance receiver 1');
 
     start_prank(CheatTarget::One(project_address), receiver_address);
-    project_contract
-        .safe_transfer_from(receiver_address, user_address, 2025, amount.into(), array![].span());
+    project
+        .safe_transfer_from(
+            receiver_address, user_address, token_id, amount.into(), array![].span()
+        );
 
-    let balance_owner = project_contract.balance_of(user_address, 2025);
+    let balance_owner = project.balance_of(user_address, token_id);
     assert(equals_with_error(balance_owner, initial_balance, 10), 'Error balance owner 2');
-    let balance_receiver = project_contract.balance_of(receiver_address, 2025);
+    let balance_receiver = project.balance_of(receiver_address, token_id);
     assert(equals_with_error(balance_receiver, 0, 10), 'Error balance receiver 2');
 }

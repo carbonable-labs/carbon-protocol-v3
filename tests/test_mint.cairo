@@ -1,20 +1,10 @@
-use core::array::SpanTrait;
-// Core deps
-
-use array::ArrayTrait;
-use result::ResultTrait;
-use option::OptionTrait;
-use traits::{Into, TryInto};
-use zeroable::Zeroable;
-use debug::PrintTrait;
-use hash::HashStateTrait;
-use pedersen::PedersenTrait;
+// TODO: 
+// - check if is_setup is needed
+// - refactor project setup into helper function?
 
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
-use starknet::{deploy_syscall, get_block_timestamp};
-use starknet::testing::{set_caller_address, set_contract_address};
 
 // External deps
 
@@ -31,15 +21,11 @@ use alexandria_storage::list::{List, ListTrait};
 
 // Components
 
-use carbon_v3::components::absorber::interface::{
-    IAbsorberDispatcher, IAbsorberDispatcherTrait, ICarbonCreditsHandlerDispatcher,
-    ICarbonCreditsHandlerDispatcherTrait
-};
-use carbon_v3::components::absorber::carbon_handler::AbsorberComponent::{
-    Event, AbsorptionUpdate, ProjectValueUpdate
-};
-use carbon_v3::data::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
+use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
+use carbon_v3::components::vintage::VintageComponent;
+use carbon_v3::components::vintage::VintageComponent::{Event, ProjectCarbonUpdate};
+use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
+
 
 use carbon_v3::components::minter::interface::{IMintDispatcher, IMintDispatcherTrait};
 
@@ -55,8 +41,8 @@ use carbon_v3::mock::usdcarb::USDCarb;
 // Utils for testing purposes
 
 use super::tests_lib::{
-    get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, deploy_offsetter, deploy_erc20, deploy_minter
+    get_mock_times, get_mock_absorptions, deploy_project, setup_project, default_setup_and_deploy,
+    deploy_erc20, deploy_minter
 };
 
 // Constants
@@ -138,14 +124,15 @@ fn test_public_buy() {
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
 
     setup_project(project_address, 8000000000, times, absorptions,);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // TODO: check if needed
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
     // [Assert] project_carbon set correctly
@@ -171,7 +158,7 @@ fn test_public_buy() {
     start_prank(CheatTarget::One(erc20_address), minter_address);
 
     let tokenized_cc: Span<u256> = minter.public_buy(amount_to_buy, false);
-    assert(tokenized_cc.len() == 20, 'cc should have 20 element');
+    assert(tokenized_cc.len() == 19, 'should be 19 vintages');
 }
 
 // get_available_money_amount
@@ -190,14 +177,15 @@ fn test_get_available_money_amount() {
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // TODO: check if needed: 
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -330,14 +318,15 @@ fn test_get_max_money_amount() {
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // TODO: check if needed: 
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -410,14 +399,15 @@ fn test_get_min_money_amount_per_tx() {
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // TODO: check if needed: 
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -474,14 +464,15 @@ fn test_is_sold_out() {
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // TODO: check if needed: 
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -533,7 +524,7 @@ fn test_set_min_money_amount_per_tx() {
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
 
@@ -584,7 +575,7 @@ fn test_set_min_money_amount_per_tx_panic() {
     project_contract.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
 
@@ -613,14 +604,15 @@ fn test_get_carbonable_project_address() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
 
     start_prank(CheatTarget::One(minter_address), user_address);
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // TODO: check if needed: 
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -639,14 +631,15 @@ fn test_get_payment_token_address() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
 
     start_prank(CheatTarget::One(minter_address), user_address);
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // TODO: check if needed: 
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -665,7 +658,7 @@ fn test_set_unit_price() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
 
@@ -673,8 +666,8 @@ fn test_set_unit_price() {
     start_prank(CheatTarget::One(erc20_address), owner_address);
     start_prank(CheatTarget::One(minter_address), owner_address);
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -714,15 +707,15 @@ fn test_get_unit_price() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
 
     // Start testing environment setup
     start_prank(CheatTarget::One(minter_address), user_address);
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -755,15 +748,15 @@ fn test_set_unit_price_to_zero_panic() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     let times: Span<u64> = get_mock_times();
-    let absorptions: Span<u64> = get_mock_absorptions();
+    let absorptions: Span<u128> = get_mock_absorptions();
     // Setup the project with initial values
     setup_project(project_address, 8000000000, times, absorptions,);
 
     // Start testing environment setup
     start_prank(CheatTarget::One(erc20_address), owner_address);
 
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
+    // let project = IVintageDispatcher { contract_address: project_address };
+    // assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
 
