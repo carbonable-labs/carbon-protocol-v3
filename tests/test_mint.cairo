@@ -56,12 +56,13 @@ use carbon_v3::mock::usdcarb::USDCarb;
 
 use super::tests_lib::{
     get_mock_times, get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, deploy_offsetter, deploy_erc20, deploy_minter
+    default_setup_and_deploy, deploy_offsetter, deploy_erc20, deploy_minter, buy_utils
 };
 
 // Constants
 
 const PROJECT_CARBON: u256 = 42;
+const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
 
 // Signers
 
@@ -133,9 +134,9 @@ fn test_public_buy() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
     // [Prank] Use owner as caller to Project contract
     start_prank(CheatTarget::One(project_address), owner_address);
-    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let project = IProjectDispatcher { contract_address: project_address };
     // [Effect] Grant Minter role to Minter contract
-    project_contract.grant_minter_role(minter_address);
+    project.grant_minter_role(minter_address);
 
     let times: Span<u64> = get_mock_times();
     let absorptions: Span<u64> = get_mock_absorptions();
@@ -143,9 +144,6 @@ fn test_public_buy() {
     setup_project(project_address, 8000000000, times, absorptions,);
     // [Prank] Stop prank on Project contract
     stop_prank(CheatTarget::One(project_address));
-
-    let project = IAbsorberDispatcher { contract_address: project_address };
-    assert(project.is_setup(), 'Error during setup');
 
     let minter = IMintDispatcher { contract_address: minter_address };
     // [Assert] project_carbon set correctly
@@ -774,4 +772,138 @@ fn test_set_unit_price_to_zero_panic() {
     // Set the unit price to 0 and it should panic
     let new_unit_price: u256 = 0;
     minter.set_unit_price(new_unit_price);
+}
+
+#[test]
+fn test_withdraw() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+    // Setup the project with initial values
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    start_prank(CheatTarget::One(project_address), owner_address);
+    project.grant_minter_role(minter_address);
+
+    start_prank(CheatTarget::One(project_address), minter_address);
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(owner_address, owner_address, minter_address, share);
+    start_prank(CheatTarget::One(erc20_address), user_address);
+    buy_utils(owner_address, user_address, minter_address, share);
+
+    let balance_owner_before_withdraw = erc20.balance_of(owner_address);
+
+    let balance_to_withdraw = erc20.balance_of(minter_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    minter.withdraw();
+
+    let balance_owner_after = erc20.balance_of(owner_address);
+    assert(
+        balance_owner_after == balance_owner_before_withdraw + balance_to_withdraw,
+        'balance should be the same'
+    );
+}
+
+#[test]
+#[should_panic(expected: 'Caller is not the owner')]
+fn test_withdraw_without_owner_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let (project_address, _) = deploy_project();
+    let (erc20_address, _) = deploy_erc20();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+    // Setup the project with initial values
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    start_prank(CheatTarget::One(erc20_address), owner_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    let minter = IMintDispatcher { contract_address: minter_address };
+    start_prank(CheatTarget::One(project_address), owner_address);
+    project.grant_minter_role(minter_address);
+
+    start_prank(CheatTarget::One(project_address), minter_address);
+    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
+    buy_utils(owner_address, owner_address, minter_address, share);
+    start_prank(CheatTarget::One(erc20_address), user_address);
+    buy_utils(owner_address, user_address, minter_address, share);
+
+    minter.withdraw();
+}
+
+#[test]
+fn test_retrieve_amount() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let (project_address, _) = deploy_project();
+    // Deploy erc20 used for the minter, and a second erc20 that isn't used
+    let contract = snf::declare('USDCarb');
+    let mut calldata: Array<felt252> = array![user_address.into(), user_address.into()];
+    let erc20_address = contract.deploy(@calldata).unwrap();
+    calldata = array![user_address.into(), user_address.into()];
+    let second_erc20_address = contract.deploy(@calldata).unwrap();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+    // Setup the project with initial values
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    start_prank(CheatTarget::One(second_erc20_address), user_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let second_er20 = IERC20Dispatcher { contract_address: second_erc20_address };
+
+    // Transfering incorrect token to minter
+    second_er20.transfer(minter_address, 1000);
+    start_prank(CheatTarget::One(second_erc20_address), minter_address);
+    minter.retrieve_amount(second_erc20_address, owner_address, 1000);
+    let balance_after = second_er20.balance_of(owner_address);
+    assert(balance_after == 1000, 'balance should be the same');
+}
+
+#[test]
+#[should_panic(expected: 'Caller is not the owner')]
+fn test_retrieve_amount_without_owner_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let (project_address, _) = deploy_project();
+    // Deploy erc20 used for the minter, and a second erc20 that isn't used
+    let contract = snf::declare('USDCarb');
+    let mut calldata: Array<felt252> = array![user_address.into(), user_address.into()];
+    let erc20_address = contract.deploy(@calldata).unwrap();
+    calldata = array![user_address.into(), user_address.into()];
+    let second_erc20_address = contract.deploy(@calldata).unwrap();
+    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+
+    let times: Span<u64> = get_mock_times();
+    let absorptions: Span<u64> = get_mock_absorptions();
+    // Setup the project with initial values
+    setup_project(project_address, 8000000000, times, absorptions,);
+
+    start_prank(CheatTarget::One(second_erc20_address), user_address);
+    start_prank(CheatTarget::One(minter_address), owner_address);
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let second_er20 = IERC20Dispatcher { contract_address: second_erc20_address };
+
+    // Transfering incorrect token to minter
+    second_er20.transfer(minter_address, 1000);
+    start_prank(CheatTarget::One(minter_address), user_address);
+    start_prank(CheatTarget::One(second_erc20_address), minter_address);
+    minter.retrieve_amount(second_erc20_address, user_address, 1000);
 }
