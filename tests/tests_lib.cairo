@@ -6,7 +6,8 @@ use starknet::{ContractAddress, contract_address_const};
 
 use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
-use snforge_std::{CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank};
+use snforge_std::{ContractClassTrait, EventSpy, spy_events, EventSpyTrait,
+    EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address};
 use alexandria_storage::list::{List, ListTrait};
 
 // Models 
@@ -125,7 +126,7 @@ fn share_to_buy_amount(minter_address: ContractAddress, share: u256) -> u256 {
 /// 
 
 fn deploy_project() -> (ContractAddress, EventSpy) {
-    let contract = snf::declare('Project');
+    let contract = snf::declare("Project").expect('Declaration failed');
     let uri = 'uri';
     let starting_year: u64 = 2024;
     let number_of_years: u64 = 20;
@@ -135,9 +136,8 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
         starting_year.into(),
         number_of_years.into()
     ];
-    let contract_address = contract.deploy(@calldata).unwrap();
-
-    let mut spy = snf::spy_events(SpyOn::One(contract_address));
+    let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
+    let mut spy = spy_events();
 
     (contract_address, spy)
 }
@@ -151,7 +151,7 @@ fn setup_project(
     let vintages = IVintageDispatcher { contract_address };
     // Fake the owner to call set_absorptions and set_project_carbon which can only be run by owner
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    start_prank(CheatTarget::One(contract_address), owner_address);
+    start_cheat_caller_address(contract_address, owner_address);
 
     vintages.set_vintages(absorptions, 2024);
     vintages.set_project_carbon(project_carbon);
@@ -167,15 +167,15 @@ fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
 
 /// Deploys the offsetter contract.
 fn deploy_offsetter(project_address: ContractAddress) -> (ContractAddress, EventSpy) {
-    let contract = snf::declare('Offsetter');
+    let contract = snf::declare("Offsetter").expect('Declaration failed');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
     calldata.append(project_address.into());
     calldata.append(owner.into());
 
-    let contract_address = contract.deploy(@calldata).unwrap();
+    let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
 
-    let mut spy = snf::spy_events(SpyOn::One(contract_address));
+    let mut spy = spy_events();
 
     (contract_address, spy)
 }
@@ -184,7 +184,7 @@ fn deploy_offsetter(project_address: ContractAddress) -> (ContractAddress, Event
 fn deploy_minter(
     project_address: ContractAddress, payment_address: ContractAddress
 ) -> (ContractAddress, EventSpy) {
-    let contract = snf::declare('Minter');
+    let contract = snf::declare("Minter").expect('Declaration failed');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let public_sale: bool = true;
     let max_value: felt252 = 8000000000;
@@ -200,21 +200,21 @@ fn deploy_minter(
         owner.into()
     ];
 
-    let contract_address = contract.deploy(@calldata).unwrap();
-    let mut spy = snf::spy_events(SpyOn::One(contract_address));
+    let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
+    let mut spy = spy_events();
     (contract_address, spy)
 }
 
 /// Deploy erc20 contract.
 fn deploy_erc20() -> (ContractAddress, EventSpy) {
-    let contract = snf::declare('USDCarb');
+    let contract = snf::declare("USDCarb").expect('Declaration failed');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
     calldata.append(owner.into());
     calldata.append(owner.into());
-    let contract_address = contract.deploy(@calldata).unwrap();
+    let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
 
-    let mut spy = snf::spy_events(SpyOn::One(contract_address));
+    let mut spy = spy_events();
 
     (contract_address, spy)
 }
@@ -263,28 +263,28 @@ fn buy_utils(
     share: u256
 ) {
     // [Prank] Use caller (usually user) as caller for the Minter contract
-    start_prank(CheatTarget::One(minter_address), caller_address);
+    start_cheat_caller_address(minter_address, caller_address);
     let minter = IMintDispatcher { contract_address: minter_address };
     let erc20_address: ContractAddress = minter.get_payment_token_address();
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
 
     let amount_to_buy = share_to_buy_amount(minter_address, share);
     // [Prank] Use owner as caller for the ERC20 contract
-    start_prank(CheatTarget::One(erc20_address), owner_address); // Owner holds initial supply
+    start_cheat_caller_address(erc20_address, owner_address);   // Owner holds initial supply
     erc20.transfer(caller_address, amount_to_buy);
 
     // [Prank] Use caller address (usually user) as caller for the ERC20 contract
-    start_prank(CheatTarget::One(erc20_address), caller_address);
+    start_cheat_caller_address(erc20_address, caller_address);
     erc20.approve(minter_address, amount_to_buy);
 
     // [Prank] Use Minter as caller for the ERC20 contract
-    start_prank(CheatTarget::One(erc20_address), minter_address);
+    start_cheat_caller_address(erc20_address, minter_address);
     // [Prank] Use caller (usually user) as caller for the Minter contract
-    start_prank(CheatTarget::One(minter_address), caller_address);
+    start_cheat_caller_address(minter_address, caller_address);
     minter.public_buy(amount_to_buy, false);
 
-    stop_prank(CheatTarget::One(erc20_address));
-    stop_prank(CheatTarget::One(minter_address));
+    stop_cheat_caller_address(minter_address);
+    stop_cheat_caller_address(erc20_address);
 }
 
 
@@ -319,14 +319,14 @@ fn perform_fuzzed_transfer(
     // let vintages = IVintageDispatcher { contract_address: project_address };
     let project = IProjectDispatcher { contract_address: project_address };
     // Setup Roles for the contracts
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_cheat_caller_address(project_address, owner_address);
     project.grant_minter_role(minter_address);
-    stop_prank(CheatTarget::One(project_address));
+    start_cheat_caller_address(project_address, minter_address);
 
     // assert(vintages.is_setup(), 'Error during setup');
     buy_utils(owner_address, user_address, minter_address, share);
 
-    start_prank(CheatTarget::One(project_address), user_address);
+    start_cheat_caller_address(project_address, user_address);
 
     let token_id = 1;
     let initial_balance = project.balance_of(user_address, token_id);
@@ -340,7 +340,7 @@ fn perform_fuzzed_transfer(
     let balance_receiver = project.balance_of(receiver_address, token_id);
     assert(equals_with_error(balance_receiver, amount, 10), 'Error balance receiver 1');
 
-    start_prank(CheatTarget::One(project_address), receiver_address);
+    start_cheat_caller_address(project_address, receiver_address);
     project
         .safe_transfer_from(
             receiver_address, user_address, token_id, amount.into(), array![].span()
