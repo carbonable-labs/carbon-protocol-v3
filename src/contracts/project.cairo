@@ -48,8 +48,7 @@ trait IExternal<ContractState> {
 
 #[starknet::contract]
 mod Project {
-    use carbon_v3::components::absorber::interface::ICarbonCreditsHandlerDispatcher;
-    use core::traits::Into;
+    use carbon_v3::components::vintage::interface::IVintageDispatcher;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
 
     // Ownable
@@ -61,7 +60,7 @@ mod Project {
     // ERC1155
     use carbon_v3::components::erc1155::ERC1155Component;
     // Absorber
-    use carbon_v3::components::absorber::carbon_handler::AbsorberComponent;
+    use carbon_v3::components::vintage::VintageComponent;
     // Access Control - RBAC
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     // ERC4906
@@ -71,7 +70,7 @@ mod Project {
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
-    component!(path: AbsorberComponent, storage: absorber, event: AbsorberEvent);
+    component!(path: VintageComponent, storage: vintage, event: VintageEvent);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
     component!(path: ERC4906Component, storage: erc4906, event: ERC4906Event);
 
@@ -88,10 +87,7 @@ mod Project {
     impl OwnableCamelOnlyImpl =
         OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
-    impl AbsorberImpl = AbsorberComponent::AbsorberImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl CarbonCreditsHandlerImpl =
-        AbsorberComponent::CarbonCreditsHandlerImpl<ContractState>;
+    impl VintageImpl = VintageComponent::VintageImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     // Access Control
@@ -103,7 +99,7 @@ mod Project {
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
-    impl AbsorberInternalImpl = AbsorberComponent::InternalImpl<ContractState>;
+    impl VintageInternalImpl = VintageComponent::InternalImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
     impl ERC4906InternalImpl = ERC4906Component::ERC4906HelperInternal<ContractState>;
 
@@ -126,7 +122,7 @@ mod Project {
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
-        absorber: AbsorberComponent::Storage,
+        vintage: VintageComponent::Storage,
         #[substorage(v0)]
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
@@ -145,7 +141,7 @@ mod Project {
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
-        AbsorberEvent: AbsorberComponent::Event,
+        VintageEvent: VintageComponent::Event,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
         #[flat]
@@ -163,8 +159,8 @@ mod Project {
         ref self: ContractState,
         base_uri: felt252,
         owner: ContractAddress,
-        starting_year: u64,
-        number_of_years: u64
+        starting_year: u32,
+        number_of_years: u32
     ) {
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(OWNER_ROLE, owner);
@@ -174,7 +170,7 @@ mod Project {
         let base_uri_bytearray: ByteArray = format!("{}", base_uri);
         self.erc1155.initializer(base_uri_bytearray);
         self.ownable.initializer(owner);
-        self.absorber.initializer(starting_year, number_of_years);
+        self.vintage.initializer(starting_year, number_of_years);
 
         self.src5.register_interface(OLD_IERC1155_ID);
         self.src5.register_interface(IERC165_BACKWARD_COMPATIBLE_ID);
@@ -194,7 +190,7 @@ mod Project {
             // [Check] Only Offsetter can offset
             let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
             assert(isOffseter, 'Only Offsetter can offset');
-            let share_value = self.absorber.cc_to_share(value, token_id);
+            let share_value = self.vintage.cc_to_share(value, token_id);
             self.erc1155.burn(from, token_id, share_value);
         }
 
@@ -222,19 +218,15 @@ mod Project {
         }
 
         fn set_uri(ref self: ContractState, uri: ByteArray) {
+            // TODO: use own Metadata impl
             self.erc1155.set_base_uri(uri);
 
-            // get all vintage years 
-            let cc_vintage_years: Span<u256> = self.absorber.get_vintage_years();
-            let from_vintage_year = *cc_vintage_years.at(0);
-            let to_vintage_year = *cc_vintage_years.at(cc_vintage_years.len() - 1);
+            let num_vintages = self.vintage.get_num_vintages();
 
             /// Emit BatchMetadataUpdate event
             self
                 .erc4906
-                ._emit_batch_metadata_update(
-                    fromTokenId: from_vintage_year, toTokenId: to_vintage_year
-                );
+                ._emit_batch_metadata_update(fromTokenId: 0, toTokenId: num_vintages.into());
         }
 
         fn get_uri(self: @ContractState, token_id: u256) -> ByteArray {
@@ -243,7 +235,7 @@ mod Project {
         }
 
         fn decimals(self: @ContractState) -> u8 {
-            self.absorber.get_cc_decimals()
+            self.vintage.get_cc_decimals()
         }
 
         fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool {
@@ -308,7 +300,7 @@ mod Project {
             value: u256,
             data: Span<felt252>
         ) {
-            let share_value = self.absorber.cc_to_share(value, token_id);
+            let share_value = self.vintage.cc_to_share(value, token_id);
             self.erc1155.safe_transfer_from(from, to, token_id, share_value, data);
         }
 
@@ -340,7 +332,7 @@ mod Project {
     impl InternalImpl of InternalTrait {
         fn _balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
             let share = self.erc1155.balance_of(account, token_id);
-            self.absorber.share_to_cc(share, token_id)
+            self.vintage.share_to_cc(share, token_id)
         }
     }
 }

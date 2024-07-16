@@ -3,12 +3,12 @@ use core::fmt::{Display, Formatter, Error};
 /// Struct for orders.
 #[derive(Copy, Drop, Debug, starknet::Store, Serde, PartialEq, Default)]
 struct CarbonVintage {
-    /// The vintage of the Carbon Credit, which is also the token_id.
-    vintage: u256,
+    /// The year of the vintage
+    year: u32,
     /// The total supply of Carbon Credit for this vintage.
-    supply: u64,
+    supply: u128,
     /// The total amount of Carbon Credit that failed during audits.
-    failed: u64,
+    failed: u128,
     /// The status of the Carbon Credit of this Vintage. 
     status: CarbonVintageType,
 }
@@ -16,8 +16,8 @@ struct CarbonVintage {
 impl CarbonVintageDisplay of Display<CarbonVintage> {
     fn fmt(self: @CarbonVintage, ref f: Formatter) -> Result<(), Error> {
         let str: ByteArray = format!(
-            "CarbonVintage(vintage: {}, supply: {}, failed: {}, status: {})",
-            self.vintage,
+            "CarbonVintage(year: {}, supply: {}, failed: {}, status: {})",
+            self.year,
             self.supply,
             self.failed,
             self.status
@@ -55,6 +55,19 @@ impl CarbonVintageTypeInto of Into<CarbonVintageType, u8> {
     }
 }
 
+impl U8TryIntoCarbon of TryInto<u8, CarbonVintageType> {
+    fn try_into(self: u8) -> Option<CarbonVintageType> {
+        match self {
+            0 => Option::Some(CarbonVintageType::Unset),
+            1 => Option::Some(CarbonVintageType::Projected),
+            2 => Option::Some(CarbonVintageType::Confirmed),
+            3 => Option::Some(CarbonVintageType::Audited),
+            _ => Option::None,
+        }
+    }
+}
+
+
 impl CarbonVintageTypeDisplay of Display<CarbonVintageType> {
     fn fmt(self: @CarbonVintageType, ref f: Formatter) -> Result<(), Error> {
         let str: ByteArray = match self {
@@ -78,7 +91,7 @@ mod Test {
     #[test]
     fn test_carbon_vintage_default() {
         let carbon_vintage: CarbonVintage = Default::default();
-        assert_eq!(carbon_vintage.vintage, 0);
+        assert_eq!(carbon_vintage.year, 0);
         assert_eq!(carbon_vintage.supply, 0);
         assert_eq!(carbon_vintage.failed, 0);
         assert_eq!(carbon_vintage.status, CarbonVintageType::Unset);
@@ -88,14 +101,14 @@ mod Test {
     fn test_carbon_vintage_display() {
         let carbon_vintage: CarbonVintage = Default::default();
         let res = format!("{}", carbon_vintage);
-        assert_eq!(res, "CarbonVintage(vintage: 0, supply: 0, failed: 0, status: Unset)");
+        assert_eq!(res, "CarbonVintage(year: 0, supply: 0, failed: 0, status: Unset)");
 
-        let carbon_vintage: CarbonVintage = CarbonVintage {
-            vintage: 2024, supply: 1000000000, failed: 10000, status: CarbonVintageType::Audited
+        let carbon_vintage = CarbonVintage {
+            year: 2024, supply: 1000000000, failed: 10000, status: CarbonVintageType::Audited
         };
         let res = format!("{}", carbon_vintage);
         assert_eq!(
-            res, "CarbonVintage(vintage: 2024, supply: 1000000000, failed: 10000, status: Audited)"
+            res, "CarbonVintage(year: 2024, supply: 1000000000, failed: 10000, status: Audited)"
         );
     }
 
