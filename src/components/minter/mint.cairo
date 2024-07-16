@@ -205,6 +205,14 @@ mod MintComponent {
             recipient: ContractAddress,
             amount: u256
         ) {
+            let project_address = self.Mint_carbonable_project_address.read();
+            let project = IProjectDispatcher { contract_address: project_address };
+            let caller_address = get_caller_address();
+            assert(!caller_address.is_zero(), 'Invalid caller');
+            // [Check] Caller is owner
+            let isOwner = project.only_owner(caller_address);
+            assert(isOwner, 'Caller is not the owner');
+
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let success = erc20.transfer(recipient, amount);
             assert(success, 'Transfer failed');
