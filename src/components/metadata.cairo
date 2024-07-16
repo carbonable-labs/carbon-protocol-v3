@@ -62,10 +62,10 @@ mod TestMetadataComponent {
 
     #[test]
     fn test_metadata() {
-        let class = declare('TestContract');
-        let metadata_class = declare('TestMetadata');
+        let class = declare("TestContract").expect('Declaration failed');
+        let metadata_class = declare("TestMetadata").expect('Declaration failed');
 
-        let contract_address = class.deploy(@array![]).unwrap();
+        let (contract_address, _) = class.deploy(@array![]).expect('Deployment failed');
         let dispatcher = IMetadataHandlerDispatcher { contract_address };
 
         dispatcher.set_uri(metadata_class.class_hash);

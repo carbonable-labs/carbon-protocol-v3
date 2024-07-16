@@ -21,7 +21,7 @@ jobs:
       - name: Setup snfoundry
         uses: foundry-rs/setup-snfoundry@v3
         with:
-          starknet-foundry-version: "0.18.0"
+          starknet-foundry-version: "0.26.0"
           
       - name: Run Cairo tests
         id: cairo_tests
