@@ -290,7 +290,7 @@ fn test_set_vintages() {
         index += 1;
     };
 
-    // [Assert] cc_vintages set to default values for non-set absorptions
+    // [Assert] cc_vintages set to default values for non-set yearly_absorptions
     loop {
         if index == cc_vintages.len() {
             break;

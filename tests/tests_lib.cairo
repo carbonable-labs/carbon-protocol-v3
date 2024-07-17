@@ -117,20 +117,22 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
     (contract_address, spy)
 }
 
-fn setup_project(contract_address: ContractAddress, project_carbon: u128, absorptions: Span<u128>) {
+fn setup_project(
+    contract_address: ContractAddress, project_carbon: u128, yearly_absorptions: Span<u128>
+) {
     let vintages = IVintageDispatcher { contract_address };
     // Fake the owner to call set_absorptions and set_project_carbon which can only be run by owner
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_cheat_caller_address(contract_address, owner_address);
 
-    vintages.set_vintages(absorptions, 2024);
+    vintages.set_vintages(yearly_absorptions, 2024);
     vintages.set_project_carbon(project_carbon);
 }
 
 fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
     let (project_address, spy) = deploy_project();
-    let absorptions: Span<u128> = get_mock_absorptions();
-    setup_project(project_address, 8000000000, absorptions);
+    let yearly_absorptions: Span<u128> = get_mock_absorptions();
+    setup_project(project_address, 8000000000, yearly_absorptions);
     (project_address, spy)
 }
 
@@ -194,7 +196,7 @@ fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, Contract
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
     // Tests are done on a single vintage, thus the absorptions are the same
-    let absorptions: Span<u128> = array![
+    let yearly_absorptions: Span<u128> = array![
         cc_supply,
         cc_supply,
         cc_supply,
@@ -217,7 +219,7 @@ fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, Contract
         cc_supply
     ]
         .span();
-    setup_project(project_address, 8000000000, absorptions);
+    setup_project(project_address, 8000000000, yearly_absorptions);
     (project_address, minter_address, erc20_address, spy)
 }
 

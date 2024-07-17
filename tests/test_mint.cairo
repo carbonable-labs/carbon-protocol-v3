@@ -121,10 +121,10 @@ fn test_public_buy() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
     project_contract.grant_minter_role(minter_address);
 
-    let absorptions: Span<u128> = get_mock_absorptions();
+    let yearly_absorptions: Span<u128> = get_mock_absorptions();
     let project_carbon: u128 = 8000000000;
 
-    setup_project(project_address, project_carbon, absorptions);
+    setup_project(project_address, project_carbon, yearly_absorptions);
     stop_cheat_caller_address(project_address);
     let minter = IMintDispatcher { contract_address: minter_address };
 
@@ -159,9 +159,9 @@ fn test_get_available_money_amount() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
     project_contract.grant_minter_role(minter_address);
 
-    let absorptions: Span<u128> = get_mock_absorptions();
+    let yearly_absorptions: Span<u128> = get_mock_absorptions();
 
-    setup_project(project_address, 8000000000, absorptions);
+    setup_project(project_address, 8000000000, yearly_absorptions);
     stop_cheat_caller_address(project_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
