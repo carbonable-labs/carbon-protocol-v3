@@ -1,13 +1,15 @@
 name: Run Tests
 on:
   pull_request:
-    types:
-      - closed
+    branches:
+      - main
+  push:
+    branches:
+      - main
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
 
     steps:
       - name: Checkout repository
@@ -16,7 +18,7 @@ jobs:
       - name: Setup Scarb
         uses: software-mansion/setup-scarb@v1
         with:
-          scarb-version: "2.5.4"
+          scarb-version: "2.6.0"
       
       - name: Setup snfoundry
         uses: foundry-rs/setup-snfoundry@v3
