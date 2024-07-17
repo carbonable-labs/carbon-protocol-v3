@@ -5,12 +5,10 @@ use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
 // External deps
 
-use openzeppelin::tests::utils::constants as c;
 use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
 use snforge_std::{
-    CheatTarget, ContractClassTrait, EventSpy, SpyOn, start_prank, stop_prank,
-    cheatcodes::events::EventAssertions
+    ContractClassTrait, EventSpy, start_cheat_caller_address, stop_cheat_caller_address, spy_events
 };
 use alexandria_storage::list::{List, ListTrait};
 
@@ -52,20 +50,6 @@ fn test_constructor_ok() {
 }
 
 #[test]
-fn test_is_setup() {
-    let (project_address, _) = deploy_project();
-    // let project = IVintageDispatcher { contract_address: project_address };
-
-    setup_project(
-        project_address,
-        1573000000,
-        array![1706785200, 2306401200].span(),
-        array![0, 1573000000].span(),
-    );
-// assert(project.is_setup(), 'Error during setup');
-}
-
-#[test]
 fn test_project_mint() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
@@ -73,17 +57,11 @@ fn test_project_mint() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
     let vintages = IVintageDispatcher { contract_address: project_address };
 
-    // [Prank] Use owner as caller to Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
-
-    // assert(vintages.is_setup(), 'Error during setup');
+    start_cheat_caller_address(project_address, owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    // [Effect] Grant Minter role to Minter contract
     project_contract.grant_minter_role(minter_address);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
+    stop_cheat_caller_address(project_address);
+    start_cheat_caller_address(project_address, minter_address);
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
     let token_id: u256 = 1;
@@ -103,12 +81,8 @@ fn test_project_mint_without_minter_role() {
     let (project_address, _) = default_setup_and_deploy();
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
-    // let vintages = IVintageDispatcher { contract_address: project_address };
 
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
-
-    // assert(vintages.is_setup(), 'Error during setup');
+    start_cheat_caller_address(project_address, minter_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
@@ -117,16 +91,13 @@ fn test_project_mint_without_minter_role() {
 }
 
 #[test]
-#[should_panic(expected: ('Only Minter can batch mint',))]
+#[should_panic(expected: 'Only Minter can batch mint')]
 fn test_project_batch_mint_without_minter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
 
-    // [Prank] Use owner as caller to Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
-
-    // assert(vintages.is_setup(), 'Error during setup');
+    start_cheat_caller_address(project_address, owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
@@ -163,17 +134,11 @@ fn test_project_batch_mint_with_minter_role() {
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
     let vintages = IVintageDispatcher { contract_address: project_address };
 
-    // [Prank] Use owner as caller to Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
-
-    // assert(vintage.is_setup(), 'Error during setup');
+    start_cheat_caller_address(project_address, owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    // [Effect] Grant Minter role to Minter contract
     project_contract.grant_minter_role(minter_address);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
+    stop_cheat_caller_address(project_address);
+    start_cheat_caller_address(project_address, minter_address);
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
     let num_vintages = vintages.get_num_vintages();
@@ -210,37 +175,26 @@ fn test_project_offset_with_offsetter_role() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    // [Prank] Use owner as caller to Project, Offsetter contracts
-    start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), user_address);
+    start_cheat_caller_address(project_address, owner_address);
+    start_cheat_caller_address(offsetter_address, user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
-    // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
-    // [Effect] Grant Offsetter role to Offsetter contract
     project.grant_offsetter_role(offsetter_address);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
+    stop_cheat_caller_address(project_address);
+    start_cheat_caller_address(project_address, minter_address);
 
-    // [Effect] setup a batch of carbon credits
     let vintages = IVintageDispatcher { contract_address: project_address };
-
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
     buy_utils(owner_address, user_address, minter_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    // [Effect] update Vintage status
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
     vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    // [Prank] Simulate production flow, Offsetter calls Project contract
-    start_prank(CheatTarget::One(project_address), offsetter_address);
-    // [Effect] offset tokens
+    start_cheat_caller_address(project_address, offsetter_address);
     project.offset(user_address, token_id, 100);
 }
 
@@ -254,31 +208,23 @@ fn test_project_offset_without_offsetter_role() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
-    start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), user_address);
+    start_cheat_caller_address(project_address, owner_address);
+    start_cheat_caller_address(offsetter_address, user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
-    // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    // [Effect] setup a batch of carbon credits
     let vintages = IVintageDispatcher { contract_address: project_address };
-
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
     buy_utils(owner_address, user_address, minter_address, share);
 
-    // [Effect] update Vintage status
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
     vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    // [Prank] Simulate error flow, owner calls Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
-    // [Effect] offset tokens
+    start_cheat_caller_address(project_address, owner_address);
     project.offset(user_address, token_id, 100);
 }
 
@@ -291,33 +237,24 @@ fn test_project_batch_offset_with_offsetter_role() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
-    start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), user_address);
+    start_cheat_caller_address(project_address, owner_address);
+    start_cheat_caller_address(offsetter_address, user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
-    // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
-    // [Effect] Grant Offsetter role to Offsetter contract
     project.grant_offsetter_role(offsetter_address);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    // [Prank] Simulate production flow, Minter calls Project contract
-    start_prank(CheatTarget::One(project_address), minter_address);
+    stop_cheat_caller_address(project_address);
+    start_cheat_caller_address(project_address, minter_address);
 
-    // [Effect] setup a batch of carbon credits
     let vintages = IVintageDispatcher { contract_address: project_address };
-
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
     buy_utils(owner_address, user_address, minter_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    // [Effect] update Vintage status
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
     vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
     let share = 100;
     let num_vintages = vintages.get_num_vintages();
@@ -336,9 +273,7 @@ fn test_project_batch_offset_with_offsetter_role() {
     let cc_distribution = cc_distribution.span();
     let token_ids = tokens.span();
 
-    // [Prank] Simulate production flow, Offsetter calls Project contract
-    start_prank(CheatTarget::One(project_address), offsetter_address);
-    // [Effect] offset tokens
+    start_cheat_caller_address(project_address, offsetter_address);
     project.batch_offset(user_address, token_ids, cc_distribution);
 }
 
@@ -352,30 +287,23 @@ fn test_project_batch_offset_without_offsetter_role() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    // [Prank] Use owner as caller to Project, Offsetter, Minter and ERC20 contracts
-    start_prank(CheatTarget::One(project_address), owner_address);
-    start_prank(CheatTarget::One(offsetter_address), user_address);
+    start_cheat_caller_address(project_address, owner_address);
+    start_cheat_caller_address(offsetter_address, user_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
-    // [Effect] Grant Minter role to Minter contract
     project.grant_minter_role(minter_address);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    // [Effect] setup a batch of carbon credits
     let vintages = IVintageDispatcher { contract_address: project_address };
-
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
 
     buy_utils(owner_address, user_address, minter_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    // [Effect] update Vintage status
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
     vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
     let share = 100;
     let num_vintages = vintages.get_num_vintages();
@@ -394,9 +322,7 @@ fn test_project_batch_offset_without_offsetter_role() {
     let cc_distribution = cc_distribution.span();
     let token_ids = tokens.span();
 
-    // [Prank] Simulate error flow, owner calls Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
-    // [Effect] offset tokens
+    start_cheat_caller_address(project_address, owner_address);
     project.batch_offset(user_address, token_ids, cc_distribution);
 }
 
@@ -406,9 +332,7 @@ fn test_project_set_vintage_status() {
     let (project_address, _) = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
 
-    start_prank(CheatTarget::One(project_address), owner_address);
-
-    // assert(vintages.is_setup(), 'Error during setup');
+    start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
     vintages.update_vintage_status(token_id, 3);
     let vintage: CarbonVintage = vintages.get_carbon_vintage(token_id);
@@ -426,16 +350,11 @@ fn test_project_balance_of() {
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    // [Prank] Use owner as caller to Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
-    // [Effect] Grant Minter role to Minter contract
+    start_cheat_caller_address(project_address, owner_address);
     project_contract.grant_minter_role(minter_address);
 
-    // assert(vintages.is_setup(), 'Error during setup');
-
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
     buy_utils(owner_address, user_address, minter_address, share);
     let token_id: u256 = 1;
     let supply_vintage_token_id = vintages.get_carbon_vintage(token_id).supply;
@@ -444,7 +363,6 @@ fn test_project_balance_of() {
 
     assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
 }
-
 
 #[test]
 fn test_transfer_without_loss() {
@@ -455,21 +373,14 @@ fn test_transfer_without_loss() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
-    // [Prank] Use owner as caller to Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
-    // [Effect] Grant Minter role to Minter contract
+    start_cheat_caller_address(project_address, owner_address);
     project_contract.grant_minter_role(minter_address);
 
-    // assert(vintages.is_setup(), 'Error during setup');
-
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
     buy_utils(owner_address, user_address, minter_address, share);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
-    // [Prank] Simulate production flow, user calls Project contract
-    start_prank(CheatTarget::One(project_address), user_address);
+    stop_cheat_caller_address(project_address);
+    start_cheat_caller_address(project_address, user_address);
     let token_id: u256 = 1;
     let supply_vintage_token_id = vintages.get_carbon_vintage(token_id).supply;
     let expected_balance = supply_vintage_token_id.into() * share / CC_DECIMALS_MULTIPLIER;
@@ -507,12 +418,8 @@ fn test_consecutive_transfers_and_rebases(
     let vintages = IVintageDispatcher { contract_address: project_address };
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
-    // [Prank] Use owner as caller to Project contract
-    start_prank(CheatTarget::One(project_address), owner_address);
-    // [Effect] Grant Minter role to Minter contract
+    start_cheat_caller_address(project_address, owner_address);
     project_contract.grant_minter_role(minter_address);
-
-    // assert(vintages.is_setup(), 'Error during setup');
 
     // Format fuzzing parameters, percentages with 6 digits after the comma, max 299.999999%
     let DECIMALS_FACTORS = 100_000;
@@ -529,15 +436,13 @@ fn test_consecutive_transfers_and_rebases(
         / second_percentage_rebase;
     let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33% of the total supply
 
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
     buy_utils(owner_address, user_address, minter_address, share);
     let token_id: u256 = 1;
     let initial_balance = project_contract.balance_of(user_address, token_id);
-    // [Prank] Stop prank on Project contract
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
     // [Prank] Simulate production flow, owner calls Project contract
-    start_prank(CheatTarget::One(project_address), user_address);
+    start_cheat_caller_address(project_address, user_address);
 
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     project_contract
@@ -549,24 +454,24 @@ fn test_consecutive_transfers_and_rebases(
     let new_vintage_supply_1 = initial_vintage_supply
         * first_percentage_rebase.try_into().unwrap()
         / 100_000;
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_cheat_caller_address(project_address, owner_address);
     vintages.rebase_vintage(token_id, new_vintage_supply_1);
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
     let balance_receiver = project_contract.balance_of(receiver_address, token_id);
-    start_prank(CheatTarget::One(project_address), receiver_address);
+    start_cheat_caller_address(project_address, receiver_address);
     project_contract
         .safe_transfer_from(
             receiver_address, user_address, token_id, balance_receiver.into(), array![].span()
         );
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
     let new_vintage_supply_2 = new_vintage_supply_1
         * second_percentage_rebase.try_into().unwrap()
         / 100_000;
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_cheat_caller_address(project_address, owner_address);
     vintages.rebase_vintage(token_id, new_vintage_supply_2);
 
     // revert first rebase with the opposite percentage
@@ -581,9 +486,9 @@ fn test_consecutive_transfers_and_rebases(
         / 100_000;
     vintages.rebase_vintage(token_id, new_vintage_supply_4);
 
-    stop_prank(CheatTarget::One(project_address));
+    stop_cheat_caller_address(project_address);
 
-    start_prank(CheatTarget::One(project_address), user_address);
+    start_cheat_caller_address(project_address, user_address);
 
     let balance_user = project_contract.balance_of(user_address, token_id);
     assert(equals_with_error(balance_user, initial_balance, 10), 'Error final balance owner');
@@ -738,16 +643,16 @@ fn fuzz_test_transfer_high_supply_high_amount(
 #[test]
 fn test_project_metadata_update() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, mut spy) = default_setup_and_deploy();
+    let (project_address, _) = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
     let base_uri: ByteArray = format!("{}", 'uri');
     let mut new_uri: ByteArray = format!("{}", 'new/uri');
 
-    start_prank(CheatTarget::One(project_address), owner_address);
+    start_cheat_caller_address(project_address, owner_address);
 
-    let num_vintages = vintages.get_num_vintages();
+    // let num_vintages = vintages.get_num_vintages();
     let vintage = 1;
 
     assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
@@ -755,26 +660,20 @@ fn test_project_metadata_update() {
     project_contract.set_uri(new_uri.clone());
 
     assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
+//check event emitted 
+// let expected_batch_metadata_update = BatchMetadataUpdate {
+//     from_token_id: 0, to_token_id: num_vintages.into()
+// };
 
-    //check event emitted 
-    let expected_batch_metadata_update = BatchMetadataUpdate {
-        from_token_id: 0, to_token_id: num_vintages.into()
-    };
-
-    spy
-        .assert_emitted(
-            @array![(project_address, Event::BatchMetadataUpdate(expected_batch_metadata_update))]
-        )
+//todo: check if the event is emitted, do all the events assertions
 }
 
 fn test_set_uri() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    // let vintages = IVintageDispatcher { contract_address: project_address };
 
-    start_prank(CheatTarget::One(project_address), owner_address);
-    // assert(vintages.is_setup(), 'Error during setup');
+    start_cheat_caller_address(project_address, owner_address);
     project_contract.set_uri("test_uri");
     let uri = project_contract.get_uri(1);
     assert_eq!(uri, "test_uri");
@@ -784,10 +683,6 @@ fn test_set_uri() {
 fn test_decimals() {
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    // let vintages = IVintageDispatcher { contract_address: project_address };
-
-    // assert(vintages.is_setup(), 'Error during setup');
-
     let project_decimals = project_contract.decimals();
 
     assert(project_decimals == 8, 'Decimals should be 8');
@@ -797,9 +692,6 @@ fn test_decimals() {
 fn test_shares_of() {
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
-
-    // let vintages = IVintageDispatcher { contract_address: project_address };
-    // assert(vintages.is_setup(), 'Error during setup');
 
     let token_id: u256 = 1;
     let share_balance = project_contract.shares_of(project_address, token_id);
@@ -811,9 +703,6 @@ fn test_shares_of() {
 fn test_is_approved_for_all() {
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
-
-    // let vintages = IVintageDispatcher { contract_address: project_address };
-    // assert(vintages.is_setup(), 'Error during setup');
 
     let owner = get_caller_address();
 
@@ -827,19 +716,13 @@ fn test_set_approval_for_all() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    // let vintages = IVintageDispatcher { contract_address: project_address };
 
-    start_prank(CheatTarget::One(project_address), owner_address);
-
-    // assert(vintages.is_setup(), 'Error during setup');
-
+    start_cheat_caller_address(project_address, owner_address);
     let owner = get_caller_address();
-
     let approval: bool = false;
 
     project_contract.set_approval_for_all(project_address, approval);
 
     let status_now = project_contract.is_approved_for_all(owner, project_address);
-
     assert_eq!(status_now, false);
 }

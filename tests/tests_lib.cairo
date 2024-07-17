@@ -6,8 +6,10 @@ use starknet::{ContractAddress, contract_address_const};
 
 use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
-use snforge_std::{ContractClassTrait, EventSpy, spy_events, EventSpyTrait,
-    EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{
+    ContractClassTrait, EventSpy, spy_events, EventSpyTrait, EventSpyAssertionsTrait,
+    start_cheat_caller_address, stop_cheat_caller_address
+};
 use alexandria_storage::list::{List, ListTrait};
 
 // Models 
@@ -34,33 +36,6 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 ///
 /// Mock Data
 ///
-
-fn get_mock_times() -> Span<u64> {
-    let times: Span<u64> = array![
-        // 1674579600,
-        1706115600,
-        1737738000,
-        1769274000,
-        1800810000,
-        1832346000,
-        1863968400,
-        1895504400,
-        1927040400,
-        1958576400,
-        1990198800,
-        2021734800,
-        2053270800,
-        2084806800,
-        2116429200,
-        2147965200,
-        2179501200,
-        2211037200,
-        2242659600,
-        2274195600
-    ]
-        .span();
-    times
-}
 
 fn get_mock_absorptions() -> Span<u128> {
     let absorptions: Span<u128> = array![
@@ -142,12 +117,7 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
     (contract_address, spy)
 }
 
-fn setup_project(
-    contract_address: ContractAddress,
-    project_carbon: u128,
-    times: Span<u64>,
-    absorptions: Span<u128>
-) {
+fn setup_project(contract_address: ContractAddress, project_carbon: u128, absorptions: Span<u128>) {
     let vintages = IVintageDispatcher { contract_address };
     // Fake the owner to call set_absorptions and set_project_carbon which can only be run by owner
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
@@ -159,9 +129,8 @@ fn setup_project(
 
 fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
     let (project_address, spy) = deploy_project();
-    let times: Span<u64> = get_mock_times();
     let absorptions: Span<u128> = get_mock_absorptions();
-    setup_project(project_address, 8000000000, times, absorptions,);
+    setup_project(project_address, 8000000000, absorptions);
     (project_address, spy)
 }
 
@@ -224,7 +193,6 @@ fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, Contract
     let (erc20_address, _) = deploy_erc20();
     let (minter_address, _) = deploy_minter(project_address, erc20_address);
 
-    let times: Span<u64> = get_mock_times();
     // Tests are done on a single vintage, thus the absorptions are the same
     let absorptions: Span<u128> = array![
         cc_supply,
@@ -249,7 +217,7 @@ fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, Contract
         cc_supply
     ]
         .span();
-    setup_project(project_address, 8000000000, times, absorptions,);
+    setup_project(project_address, 8000000000, absorptions);
     (project_address, minter_address, erc20_address, spy)
 }
 
@@ -270,7 +238,7 @@ fn buy_utils(
 
     let amount_to_buy = share_to_buy_amount(minter_address, share);
     // [Prank] Use owner as caller for the ERC20 contract
-    start_cheat_caller_address(erc20_address, owner_address);   // Owner holds initial supply
+    start_cheat_caller_address(erc20_address, owner_address); // Owner holds initial supply
     erc20.transfer(caller_address, amount_to_buy);
 
     // [Prank] Use caller address (usually user) as caller for the ERC20 contract
@@ -316,14 +284,12 @@ fn perform_fuzzed_transfer(
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let (project_address, minter_address, _, _) = fuzzing_setup(supply);
-    // let vintages = IVintageDispatcher { contract_address: project_address };
     let project = IProjectDispatcher { contract_address: project_address };
     // Setup Roles for the contracts
     start_cheat_caller_address(project_address, owner_address);
     project.grant_minter_role(minter_address);
     start_cheat_caller_address(project_address, minter_address);
 
-    // assert(vintages.is_setup(), 'Error during setup');
     buy_utils(owner_address, user_address, minter_address, share);
 
     start_cheat_caller_address(project_address, user_address);
