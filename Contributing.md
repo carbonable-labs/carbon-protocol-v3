@@ -23,16 +23,16 @@ If you have an idea for a new feature, please submit a feature request using the
 
 #### Requirements
 
-- [Scarb](https://docs.swmansion.com/scarb/): *v2.5.4*
-- [Starknet Foundry](https://foundry-rs.github.io/starknet-foundry/index.html) *v0.18.0*
+- [Scarb](https://docs.swmansion.com/scarb/): *v2.6.0*
+- [Starknet Foundry](https://foundry-rs.github.io/starknet-foundry/index.html) *v0.26.0*
 
 We recommend installing dependencies using [asdf](https://asdf-vm.com/):
 
 ```bash
 asdf plugin add scarb
-asdf install scarb 2.5.4
+asdf install scarb 2.6.0
 asdf plugin add starknet-foundry
-asdf install starknet-foundry 0.18.0
+asdf install starknet-foundry 0.26.0
 ```
 
 #### Compile
