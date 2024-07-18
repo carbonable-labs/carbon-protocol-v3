@@ -134,7 +134,9 @@ mod VintageComponent {
             let mut vintage: CarbonVintage = self.Vintage_vintages.read(token_id);
             let old_supply = vintage.supply;
 
-            assert(new_cc_supply != old_supply, 'New supply same as old supply');
+            if (new_cc_supply == old_supply) {
+                return ();
+            }
 
             // Negative rebase, failed carbon credits
             if new_cc_supply < old_supply {
