@@ -118,6 +118,12 @@ mod VintageComponent {
             self.Vintage_vintages.read(token_id)
         }
 
+        fn get_initial_cc_supply(self: @ComponentState<TContractState>, token_id: u256) -> u128 {
+            self.get_carbon_vintage(token_id).supply
+                + self.get_carbon_vintage(token_id).failed
+                - self.get_carbon_vintage(token_id).created
+        }
+
 
         fn rebase_vintage(
             ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u128
@@ -128,10 +134,18 @@ mod VintageComponent {
             let mut vintage: CarbonVintage = self.Vintage_vintages.read(token_id);
             let old_supply = vintage.supply;
 
+            assert(new_cc_supply != old_supply, 'New supply same as old supply');
+
+            // Negative rebase, failed carbon credits
             if new_cc_supply < old_supply {
                 let diff = old_supply - new_cc_supply;
                 vintage.supply = new_cc_supply;
                 vintage.failed = vintage.failed + diff;
+            } // Positive rebase, created carbon credits
+            else {
+                let diff = new_cc_supply - old_supply;
+                vintage.supply = new_cc_supply;
+                vintage.created = vintage.created + diff;
             }
             vintage.supply = new_cc_supply;
             self.Vintage_vintages.write(token_id, vintage);
@@ -188,6 +202,7 @@ mod VintageComponent {
                     year: (start_year + index).into(),
                     supply: supply,
                     failed: 0,
+                    created: 0,
                     status: CarbonVintageType::Projected,
                 };
                 self.Vintage_vintages.write(index.into(), vintage);
@@ -215,7 +230,11 @@ mod VintageComponent {
                     break ();
                 }
                 let vintage: CarbonVintage = CarbonVintage {
-                    year: index.into(), supply: 0, failed: 0, status: CarbonVintageType::Projected,
+                    year: index.into(),
+                    supply: 0,
+                    failed: 0,
+                    created: 0,
+                    status: CarbonVintageType::Projected,
                 };
                 // [Effect] Store values
                 self.Vintage_vintages.write(index.into(), vintage);

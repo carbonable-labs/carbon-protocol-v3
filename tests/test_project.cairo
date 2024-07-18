@@ -644,7 +644,6 @@ fn fuzz_test_transfer_high_supply_high_amount(
 fn test_project_metadata_update() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
     let base_uri: ByteArray = format!("{}", 'uri');
