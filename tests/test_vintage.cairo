@@ -284,6 +284,7 @@ fn test_set_vintages() {
             year: (starting_year + index.into()),
             supply: *yearly_absorptions.at(index),
             failed: 0,
+            created: 0,
             status: CarbonVintageType::Projected,
         };
         assert(*vintage == expected__cc_vintage, 'vintage not set correctly');
@@ -300,6 +301,7 @@ fn test_set_vintages() {
             year: (starting_year.into() + index.into()),
             supply: 0,
             failed: 0,
+            created: 0,
             status: CarbonVintageType::Unset,
         };
         assert(*vintage == expected__cc_vintage, 'vintage not set correctly');
@@ -336,6 +338,45 @@ fn test_get_carbon_vintage() {
         assert(vintage == *expected_vintage, 'Vintage not fetched correctly');
         index += 1;
     };
+}
+
+/// get_initial_cc_supply
+#[test]
+fn test_get_initial_cc_supply() {
+    let (project_address, _) = default_setup_and_deploy();
+    let vintages = IVintageDispatcher { contract_address: project_address };
+
+    // initial supply should be equal to supply before any rebases
+    let cc_vintages = vintages.get_cc_vintages();
+    let mut index = 0;
+    loop {
+        if index == cc_vintages.len() {
+            break;
+        }
+        let token_id: u256 = index.into();
+        let vintage = vintages.get_carbon_vintage(token_id);
+        let initial_supply = vintages.get_initial_cc_supply(token_id);
+        assert(initial_supply == vintage.supply, 'Initial supply error');
+        index += 1;
+    };
+
+    // Do one positive rebase and check if initial supply is correct
+    let token_id: u256 = 1;
+    let initial_supply = vintages.get_carbon_vintage(token_id).supply;
+    let diff = 50000;
+    let new_cc_supply: u128 = initial_supply + diff;
+    vintages.rebase_vintage(token_id, new_cc_supply);
+    let fetched_initial_supply = vintages.get_initial_cc_supply(token_id);
+    assert(vintages.get_carbon_vintage(token_id).created == diff, 'Created field error');
+    assert(fetched_initial_supply == initial_supply, 'Initial supply error');
+
+    // Do one negative rebase and check if initial supply is correct
+    let new_cc_supply: u128 = new_cc_supply - diff;
+    vintages.rebase_vintage(token_id, new_cc_supply);
+    let fetched_initial_supply = vintages.get_initial_cc_supply(token_id);
+    assert(fetched_initial_supply == initial_supply, 'Initial supply error');
+    let diff = initial_supply - new_cc_supply + vintages.get_carbon_vintage(token_id).created;
+    assert(vintages.get_carbon_vintage(token_id).failed == diff, 'Failed field error');
 }
 
 #[test]
