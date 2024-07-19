@@ -148,6 +148,16 @@ mod Project {
         ERC4906Event: ERC4906Component::Event,
     }
 
+    #[derive(Drop, starknet::Event)]
+struct MinterRoleGranted {
+    account: ContractAddress,
+}
+
+#[derive(Drop, starknet::Event)]
+struct MinterRoleRevoked {
+    account: ContractAddress,
+}
+
     mod Errors {
         const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';
         const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: no equal array length';

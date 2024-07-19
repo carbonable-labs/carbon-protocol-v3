@@ -46,35 +46,65 @@ mod MintComponent {
         SoldOut: SoldOut,
         Buy: Buy,
         MintCanceled: MintCanceled,
+        UnitPriceUpdated: UnitPriceUpdated,
+        Withdraw: Withdraw,
+        AmountRetrieved: AmountRetrieved,
+        MinMoneyAmountPerTxUpdated: MinMoneyAmountPerTxUpdated,
     }
 
     #[derive(Drop, starknet::Event)]
     struct PublicSaleOpen {
-        time: u64
+        old_value: bool,
+        new_value: bool
     }
 
     #[derive(Drop, starknet::Event)]
     struct PublicSaleClose {
-        time: u64
+        old_value: bool,
+        new_value: bool
     }
 
     #[derive(Drop, starknet::Event)]
-    struct SoldOut {
-        time: u64
-    }
+    struct SoldOut {}
 
     #[derive(Drop, starknet::Event)]
     struct Buy {
         #[key]
         address: ContractAddress,
+        money_amount: u256,
         vintages: Span<u256>,
-        shares: u256,
     }
 
     #[derive(Drop, starknet::Event)]
     struct MintCanceled {
-        is_canceled: bool,
-        time: u64
+        old_value: bool,
+        is_canceled: bool
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct UnitPriceUpdated {
+        old_price: u256,
+        new_price: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct Withdraw {
+        recipient: ContractAddress,
+        amount: u256,
+    }
+
+
+    #[derive(Drop, starknet::Event)]
+    struct AmountRetrieved {
+        token_address: ContractAddress,
+        recipient: ContractAddress,
+        amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct MinMoneyAmountPerTxUpdated {
+        old_amount: u256,
+        new_amount: u256,
     }
 
     mod Errors {
@@ -125,14 +155,10 @@ mod MintComponent {
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
-            // [Effect] Cancel the mint
+            let old_value: bool = self.Mint_cancel.read();
             self.Mint_cancel.write(should_cancel);
 
-            // Get the current timestamp
-            let current_time = get_block_timestamp();
-
-            // [Event] Emit cancel event
-            self.emit(MintCanceled { is_canceled: should_cancel, time: current_time });
+            self.emit(MintCanceled { old_value: old_value, is_canceled: should_cancel });
         }
 
         fn is_canceled(self: @ComponentState<TContractState>) -> bool {
@@ -149,15 +175,15 @@ mod MintComponent {
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
-            // [Effect] Update storage
+            let old_value = self.Mint_public_sale_open.read();
             self.Mint_public_sale_open.write(public_sale_open);
 
             // [Event] Emit event
             let current_time = get_block_timestamp();
             if public_sale_open {
-                self.emit(PublicSaleOpen { time: current_time });
+                self.emit(PublicSaleOpen { old_value: old_value, new_value: public_sale_open });
             } else {
-                self.emit(PublicSaleClose { time: current_time });
+                self.emit(PublicSaleClose { old_value: old_value, new_value: public_sale_open });
             };
         }
 
@@ -175,8 +201,11 @@ mod MintComponent {
 
             // [Check] Value not null
             assert(unit_price > 0, 'Invalid unit price');
-            // [Effect] Store value
+
+            let old_price = self.Mint_unit_price.read();
             self.Mint_unit_price.write(unit_price);
+
+            self.emit(UnitPriceUpdated { old_price: old_price, new_price: unit_price });
         }
 
         fn withdraw(ref self: ComponentState<TContractState>) {
@@ -197,6 +226,8 @@ mod MintComponent {
             // [Interaction] Transfer tokens
             let success = erc20.transfer(caller_address, balance);
             assert(success, 'Transfer failed');
+
+            self.emit(Withdraw { recipient: caller_address, amount: balance });
         }
 
         fn retrieve_amount(
@@ -216,6 +247,13 @@ mod MintComponent {
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let success = erc20.transfer(recipient, amount);
             assert(success, 'Transfer failed');
+
+            self
+                .emit(
+                    AmountRetrieved {
+                        token_address: token_address, recipient: recipient, amount: amount
+                    }
+                );
         }
 
         fn public_buy(
@@ -248,8 +286,15 @@ mod MintComponent {
                 max_money_amount_per_tx >= min_money_amount_per_tx,
                 'Invalid min money amount per tx'
             );
-            // [Effect] Store value
+
+            let old_amount = self.Mint_min_money_amount_per_tx.read();
             self.Mint_min_money_amount_per_tx.write(min_money_amount_per_tx);
+            self
+                .emit(
+                    MinMoneyAmountPerTxUpdated {
+                        old_amount: old_amount, new_amount: min_money_amount_per_tx,
+                    }
+                );
         }
 
         fn get_max_money_amount(self: @ComponentState<TContractState>) -> u256 {
@@ -347,16 +392,18 @@ mod MintComponent {
             let current_time = get_block_timestamp();
             self
                 .emit(
-                    Event::Buy(Buy { address: caller_address, vintages: token_ids, shares: share })
+                    Event::Buy(Buy { address: caller_address, money_amount: money_amount, vintages: token_ids})
                 );
 
-            // [Effect] Close the sale if sold out
             if self.is_sold_out() {
-                // [Effect] Close public sale
                 self.Mint_public_sale_open.write(false);
-
-                // [Event] Emit sold out event
-                self.emit(Event::SoldOut(SoldOut { time: current_time }));
+                self
+                    .emit(
+                        Event::PublicSaleClose(
+                            PublicSaleClose { old_value: true, new_value: false }
+                        )
+                    );
+                self.emit(Event::SoldOut(SoldOut {}));
             };
 
             // [Return] cc shares

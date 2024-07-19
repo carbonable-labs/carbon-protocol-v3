@@ -43,6 +43,7 @@ mod OffsetComponent {
     enum Event {
         RequestedRetirement: RequestedRetirement,
         Retired: Retired,
+        PendingRetirementRemoved: PendingRetirementRemoved,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -53,7 +54,8 @@ mod OffsetComponent {
         project: ContractAddress,
         #[key]
         vintage: u256,
-        amount: u256,
+        old_amount: u256,
+        new_amount: u256
     }
 
     #[derive(Drop, starknet::Event)]
@@ -64,8 +66,19 @@ mod OffsetComponent {
         project: ContractAddress,
         #[key]
         vintage: u256,
-        amount: u256,
+        old_amount: u256,
+        new_amount: u256
     }
+
+    #[derive(Drop, starknet::Event)]
+struct PendingRetirementRemoved {
+    #[key]
+    from: ContractAddress,
+    #[key]
+    vintage: u256,
+    old_amount: u256,
+    new_amount: u256
+}
 
     mod Errors {
         const INVALID_VINTAGE_STATUS: felt252 = 'vintage status is not audited';
@@ -174,7 +187,8 @@ mod OffsetComponent {
                         from: from,
                         project: self.Offsetter_carbonable_project_address.read(),
                         vintage: vintage,
-                        amount: amount
+                        old_amount: current_pending_retirement,
+                        new_amount: new_pending_retirement
                     }
                 );
         }
@@ -191,6 +205,15 @@ mod OffsetComponent {
             assert(current_pending_retirement >= amount, 'Not enough pending retirement');
             let new_pending_retirement = current_pending_retirement - amount;
             self.Offsetter_carbon_pending_retirement.write((vintage, from), new_pending_retirement);
+
+            self.emit(
+                PendingRetirementRemoved {
+                    from: from,
+                    vintage: vintage,
+                    old_amount: current_pending_retirement,
+                    new_amount: new_pending_retirement
+                }
+            );
         }
 
         fn _offset_carbon_credit(
@@ -218,7 +241,8 @@ mod OffsetComponent {
                         from: from,
                         project: self.Offsetter_carbonable_project_address.read(),
                         vintage: vintage,
-                        amount: amount
+                        old_amount: current_retirement,
+                        new_amount: new_retirement
                     }
                 );
         }
