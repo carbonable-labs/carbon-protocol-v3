@@ -91,11 +91,10 @@ struct PendingRetirementRemoved {
         fn retire_carbon_credits(
             ref self: ComponentState<TContractState>, vintage: u256, cc_value: u256
         ) { // TODO use token_id instead of vintage
-            // [Setup] Setup variable and contract interaction
             let caller_address: ContractAddress = get_caller_address();
             let project_address: ContractAddress = self.Offsetter_carbonable_project_address.read();
 
-            // [Check] Vintage have the right status
+            // [Check] Vintage got the right status
             let vintages = IVintageDispatcher { contract_address: project_address };
             let stored_vintage: CarbonVintage = vintages
                 .get_carbon_vintage(vintage.try_into().expect('Invalid vintage year'));
@@ -103,14 +102,12 @@ struct PendingRetirementRemoved {
                 stored_vintage.status == CarbonVintageType::Audited, 'Vintage status is not audited'
             );
 
-            // [Check] caller owns the carbon credits for the vintage
             let erc1155 = IERC1155Dispatcher { contract_address: project_address };
             let caller_balance = erc1155.balance_of(caller_address, vintage);
             assert(caller_balance >= cc_value, 'Not own enough carbon credits');
-            // [Effect] Add pending retirement
+            
             self._add_pending_retirement(caller_address, vintage, cc_value);
 
-            // [Effect] Offset carbon credits
             self._offset_carbon_credit(caller_address, vintage, cc_value);
         }
 
@@ -164,7 +161,6 @@ struct PendingRetirementRemoved {
         fn initializer(
             ref self: ComponentState<TContractState>, carbonable_project_address: ContractAddress
         ) {
-            // [Effect] Update storage
             self.Offsetter_carbonable_project_address.write(carbonable_project_address);
         }
 
@@ -177,10 +173,10 @@ struct PendingRetirementRemoved {
             let current_pending_retirement = self
                 .Offsetter_carbon_pending_retirement
                 .read((vintage, from));
+
             let new_pending_retirement = current_pending_retirement + amount;
             self.Offsetter_carbon_pending_retirement.write((vintage, from), new_pending_retirement);
 
-            // [Event] Emit event
             self
                 .emit(
                     RequestedRetirement {
@@ -203,6 +199,7 @@ struct PendingRetirementRemoved {
                 .Offsetter_carbon_pending_retirement
                 .read((vintage, from));
             assert(current_pending_retirement >= amount, 'Not enough pending retirement');
+            
             let new_pending_retirement = current_pending_retirement - amount;
             self.Offsetter_carbon_pending_retirement.write((vintage, from), new_pending_retirement);
 
@@ -222,10 +219,8 @@ struct PendingRetirementRemoved {
             vintage: u256,
             amount: u256
         ) {
-            // [Effect] Remove pending retirement
             self._remove_pending_retirement(from, vintage, amount);
 
-            // [Effect] Update storage
             let project = IProjectDispatcher {
                 contract_address: self.Offsetter_carbonable_project_address.read()
             };
@@ -234,7 +229,6 @@ struct PendingRetirementRemoved {
             let new_retirement = current_retirement + amount;
             self.Offsetter_carbon_retired.write((vintage, from), new_retirement);
 
-            // [Event] Emit event
             self
                 .emit(
                     Retired {

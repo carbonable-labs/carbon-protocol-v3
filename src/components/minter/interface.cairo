@@ -21,6 +21,6 @@ trait IMint<TContractState> {
         recipient: ContractAddress,
         amount: u256
     );
-    fn public_buy(ref self: TContractState, money_amount: u256, force: bool) -> Span<u256>;
+    fn public_buy(ref self: TContractState, money_amount: u256);
     fn cancel_mint(ref self: TContractState, should_cancel: bool);
 }

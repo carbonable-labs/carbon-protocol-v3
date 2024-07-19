@@ -156,7 +156,6 @@ struct VintageSet {
         fn rebase_vintage(
             ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u128
         ) {
-            // [Check] Caller is owner
             self.assert_only_role(OWNER_ROLE);
 
             let mut vintage: CarbonVintage = self.Vintage_vintages.read(token_id);
@@ -191,7 +190,6 @@ struct VintageSet {
         fn update_vintage_status(
             ref self: ComponentState<TContractState>, token_id: u256, status: u8
         ) {
-            // [Check] Caller is owner
             self.assert_only_role(OWNER_ROLE);
 
             let new_status: CarbonVintageType = status.try_into().expect('Invalid status');
@@ -208,7 +206,6 @@ struct VintageSet {
         }
 
         fn set_project_carbon(ref self: ComponentState<TContractState>, new_carbon: u128) {
-            // [Check] Caller is owner
             self.assert_only_role(OWNER_ROLE);
 
             // [Check] Project carbon is not 0
@@ -225,10 +222,8 @@ struct VintageSet {
             yearly_absorptions: Span<u128>,
             start_year: u32
         ) {
-            // [Check] Caller is owner
             self.assert_only_role(OWNER_ROLE);
 
-            // [Check] Vintages length is not 0
             assert(yearly_absorptions.len() > 0, 'Vintages length is 0');
             let vintages_num = yearly_absorptions.len();
 
@@ -280,7 +275,7 @@ struct VintageSet {
                     created: 0,
                     status: CarbonVintageType::Projected,
                 };
-                // [Effect] Store values
+
                 self.Vintage_vintages.write(index.into(), vintage);
                 index += 1;
             };

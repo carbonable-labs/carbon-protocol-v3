@@ -148,10 +148,9 @@ mod MintComponent {
         fn cancel_mint(ref self: ComponentState<TContractState>, should_cancel: bool) {
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
-            // [Check] Caller is not zero
+
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
-            // [Check] Caller is owner
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
@@ -168,18 +167,15 @@ mod MintComponent {
         fn set_public_sale_open(ref self: ComponentState<TContractState>, public_sale_open: bool) {
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
-            // [Check] Caller is not zero
+
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
-            // [Check] Caller is owner
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
             let old_value = self.Mint_public_sale_open.read();
             self.Mint_public_sale_open.write(public_sale_open);
 
-            // [Event] Emit event
-            let current_time = get_block_timestamp();
             if public_sale_open {
                 self.emit(PublicSaleOpen { old_value: old_value, new_value: public_sale_open });
             } else {
@@ -191,15 +187,10 @@ mod MintComponent {
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
 
-            // [Check] Caller is not zero
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
-
-            // [Check] Caller is owner
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
-
-            // [Check] Value not null
             assert(unit_price > 0, 'Invalid unit price');
 
             let old_price = self.Mint_unit_price.read();
@@ -211,19 +202,17 @@ mod MintComponent {
         fn withdraw(ref self: ComponentState<TContractState>) {
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
-            // [Check] Caller is not zero
+
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
-            // [Check] Caller is owner
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
-            // [Compute] Balance to withdraw
+
             let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
             let balance = erc20.balance_of(contract_address);
 
-            // [Interaction] Transfer tokens
             let success = erc20.transfer(caller_address, balance);
             assert(success, 'Transfer failed');
 
@@ -238,9 +227,9 @@ mod MintComponent {
         ) {
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
+
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
-            // [Check] Caller is owner
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
@@ -256,14 +245,11 @@ mod MintComponent {
                 );
         }
 
-        fn public_buy(
-            ref self: ComponentState<TContractState>, money_amount: u256, force: bool
-        ) -> Span<u256> {
-            // [Check] Public sale is open
+        fn public_buy(ref self: ComponentState<TContractState>, money_amount: u256) {
             let public_sale_open = self.Mint_public_sale_open.read();
             assert(public_sale_open, 'Sale is closed');
-            // [Interaction] Buy
-            self._buy(money_amount, force)
+
+            self._buy(money_amount);
         }
 
         fn set_min_money_amount_per_tx(
@@ -272,15 +258,11 @@ mod MintComponent {
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
 
-            // [Check] Caller is not zero
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
-
-            // [Check] Caller is owner
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
-            // [Check] Value in range
             let max_money_amount_per_tx = self.Mint_max_money_amount.read();
             assert(
                 max_money_amount_per_tx >= min_money_amount_per_tx,
@@ -314,50 +296,36 @@ mod MintComponent {
             max_money_amount: u256,
             unit_price: u256,
         ) {
-            // [Check] Input consistency
             assert(unit_price > 0, 'Invalid unit price');
 
-            // [Effect] Update storage
             self.Mint_carbonable_project_address.write(carbonable_project_address);
-
-            // [Effect] Update storage
             self.Mint_payment_token_address.write(payment_token_address);
             self.Mint_unit_price.write(unit_price);
             self.Mint_remaining_money_amount.write(max_money_amount);
             self.Mint_max_money_amount.write(max_money_amount);
-
-            // [Effect] Use dedicated function to emit corresponding events
             self.Mint_public_sale_open.write(public_sale_open);
         }
 
-        fn _buy(
-            ref self: ComponentState<TContractState>, money_amount: u256, force: bool
-        ) -> Span<u256> {
-            // [Check] Value not null
+        fn _buy(ref self: ComponentState<TContractState>, money_amount: u256) {
             assert(money_amount > 0, 'Invalid amount of money');
 
-            // [Check] Caller is not zero
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
 
-            // [Check] Allowed value
             let min_money_amount_per_tx = self.Mint_min_money_amount_per_tx.read();
             assert(money_amount >= min_money_amount_per_tx, 'Value too low');
 
-            // [Check] Allowed enough remaining_money
             let remaining_money_amount = self.Mint_remaining_money_amount.read();
-
             assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
-            // [Interaction] Compute share of the amount of project
+
             let max_money_amount = self.Mint_max_money_amount.read();
             let share = money_amount * CC_DECIMALS_MULTIPLIER / max_money_amount;
 
-            // [Interaction] Compute the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
             let vintages = IVintageDispatcher { contract_address: project_address };
             let num_vintages: usize = vintages.get_num_vintages();
 
-            // Initially, share is the same for all the vintages
+            // User mints the same amount of tokens for all the vintages
             let mut cc_shares: Array<u256> = Default::default();
             let mut tokens: Array<u256> = Default::default();
             let mut index = 0;
@@ -372,24 +340,18 @@ mod MintComponent {
             let cc_shares = cc_shares.span();
             let token_ids = tokens.span();
 
-            // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let minter_address = get_contract_address();
 
             let success = erc20.transfer_from(caller_address, minter_address, money_amount);
-            // [Check] Transfer successful
             assert(success, 'Transfer failed');
 
-            // [Interaction] Update remaining money amount
             self.Mint_remaining_money_amount.write(remaining_money_amount - money_amount);
 
-            // [Interaction] Mint
             let project = IProjectDispatcher { contract_address: project_address };
             project.batch_mint(caller_address, token_ids, cc_shares);
 
-            // [Event] Emit event
-            let current_time = get_block_timestamp();
             self
                 .emit(
                     Event::Buy(Buy { address: caller_address, money_amount: money_amount, vintages: token_ids})
@@ -405,9 +367,6 @@ mod MintComponent {
                     );
                 self.emit(Event::SoldOut(SoldOut {}));
             };
-
-            // [Return] cc shares
-            cc_shares
         }
     }
 }
