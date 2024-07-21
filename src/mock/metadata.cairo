@@ -30,8 +30,9 @@ mod TestMetadata {
 
     #[abi(embed_v0)]
     impl MetadataProviderImpl of IMetadataDescriptor<ContractState> {
-        fn construct_uri(self: @ContractState, token_id: u256) -> ByteArray {
-            "bla bla bla"
+        fn construct_uri(self: @ContractState, token_id: u256) -> Span<felt252> {
+            array!['http://imgur.com/', 'o7a3j', '.png'].span()
+            
         }
     }
 }
