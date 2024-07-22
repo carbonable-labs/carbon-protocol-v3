@@ -16,7 +16,6 @@ node.json
 artifacts
 target
 Scarb.lock
-.tool-versions
 
 # nile
 127.0.0.1.*
