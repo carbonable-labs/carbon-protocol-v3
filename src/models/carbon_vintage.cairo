@@ -7,8 +7,10 @@ struct CarbonVintage {
     year: u32,
     /// The total supply of Carbon Credit for this vintage.
     supply: u128,
-    /// The total amount of Carbon Credit that failed during audits.
+    /// The total amount of Carbon Credit that was failed during audits.
     failed: u128,
+    /// The total amount of Carbon Credit that was created during audits.
+    created: u128,
     /// The status of the Carbon Credit of this Vintage. 
     status: CarbonVintageType,
 }
@@ -16,10 +18,11 @@ struct CarbonVintage {
 impl CarbonVintageDisplay of Display<CarbonVintage> {
     fn fmt(self: @CarbonVintage, ref f: Formatter) -> Result<(), Error> {
         let str: ByteArray = format!(
-            "CarbonVintage(year: {}, supply: {}, failed: {}, status: {})",
+            "CarbonVintage(year: {}, supply: {}, failed: {}, created: {}, status: {})",
             self.year,
             self.supply,
             self.failed,
+            self.created,
             self.status
         );
         f.buffer.append(@str);
@@ -94,6 +97,7 @@ mod Test {
         assert_eq!(carbon_vintage.year, 0);
         assert_eq!(carbon_vintage.supply, 0);
         assert_eq!(carbon_vintage.failed, 0);
+        assert_eq!(carbon_vintage.created, 0);
         assert_eq!(carbon_vintage.status, CarbonVintageType::Unset);
     }
 
@@ -101,14 +105,19 @@ mod Test {
     fn test_carbon_vintage_display() {
         let carbon_vintage: CarbonVintage = Default::default();
         let res = format!("{}", carbon_vintage);
-        assert_eq!(res, "CarbonVintage(year: 0, supply: 0, failed: 0, status: Unset)");
+        assert_eq!(res, "CarbonVintage(year: 0, supply: 0, failed: 0, created: 0, status: Unset)");
 
         let carbon_vintage = CarbonVintage {
-            year: 2024, supply: 1000000000, failed: 10000, status: CarbonVintageType::Audited
+            year: 2024,
+            supply: 1000000000,
+            failed: 10000,
+            created: 500,
+            status: CarbonVintageType::Audited
         };
         let res = format!("{}", carbon_vintage);
         assert_eq!(
-            res, "CarbonVintage(year: 2024, supply: 1000000000, failed: 10000, status: Audited)"
+            res,
+            "CarbonVintage(year: 2024, supply: 1000000000, failed: 10000, created: 500, status: Audited)"
         );
     }
 
