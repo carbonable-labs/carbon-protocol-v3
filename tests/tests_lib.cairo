@@ -104,9 +104,7 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
     let starting_year: u64 = 2024;
     let number_of_years: u64 = 20;
     let mut calldata: Array<felt252> = array![
-        contract_address_const::<'OWNER'>().into(),
-        starting_year.into(),
-        number_of_years.into()
+        contract_address_const::<'OWNER'>().into(), starting_year.into(), number_of_years.into()
     ];
     let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
     let mut spy = spy_events();
