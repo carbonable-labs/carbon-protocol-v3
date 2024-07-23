@@ -1,30 +1,33 @@
-use starknet::ContractAddress;
+use starknet::{ContractAddress, ClassHash};
 
 #[starknet::interface]
-trait IExternal<ContractState> {
-    fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256);
-    fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256);
+trait IExternal<TContractState> {
+    fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
+    fn offset(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
-        ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
+        ref self: TContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
     fn batch_offset(
-        ref self: ContractState, from: ContractAddress, token_ids: Span<u256>, values: Span<u256>
+        ref self: TContractState, from: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
-    fn set_uri(ref self: ContractState, uri: ByteArray);
-    fn get_uri(self: @ContractState, token_id: u256) -> ByteArray;
-    fn decimals(self: @ContractState) -> u8;
-    fn only_owner(self: @ContractState, caller_address: ContractAddress) -> bool;
-    fn grant_minter_role(ref self: ContractState, minter: ContractAddress);
-    fn revoke_minter_role(ref self: ContractState, account: ContractAddress);
-    fn grant_offsetter_role(ref self: ContractState, offsetter: ContractAddress);
-    fn revoke_offsetter_role(ref self: ContractState, account: ContractAddress);
-    fn balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn uri(self: @TContractState, token_id: u256) -> Span<felt252>;
+    fn get_provider(self: @TContractState) -> ContractAddress;
+    fn set_provider(ref self: TContractState, provider: ContractAddress);
+    fn get_uri(self: @TContractState) -> ClassHash;
+    fn set_uri(ref self: TContractState, class_hash: ClassHash);
+    fn decimals(self: @TContractState) -> u8;
+    fn only_owner(self: @TContractState, caller_address: ContractAddress) -> bool;
+    fn grant_minter_role(ref self: TContractState, minter: ContractAddress);
+    fn revoke_minter_role(ref self: TContractState, account: ContractAddress);
+    fn grant_offsetter_role(ref self: TContractState, offsetter: ContractAddress);
+    fn revoke_offsetter_role(ref self: TContractState, account: ContractAddress);
+    fn balance_of(self: @TContractState, account: ContractAddress, token_id: u256) -> u256;
     fn balance_of_batch(
-        self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
+        self: @TContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
     ) -> Span<u256>;
-    fn shares_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn shares_of(self: @TContractState, account: ContractAddress, token_id: u256) -> u256;
     fn safe_transfer_from(
-        ref self: ContractState,
+        ref self: TContractState,
         from: ContractAddress,
         to: ContractAddress,
         token_id: u256,
@@ -32,7 +35,7 @@ trait IExternal<ContractState> {
         data: Span<felt252>
     );
     fn safe_batch_transfer_from(
-        ref self: ContractState,
+        ref self: TContractState,
         from: ContractAddress,
         to: ContractAddress,
         token_ids: Span<u256>,
@@ -40,9 +43,9 @@ trait IExternal<ContractState> {
         data: Span<felt252>
     );
     fn is_approved_for_all(
-        self: @ContractState, owner: ContractAddress, operator: ContractAddress
+        self: @TContractState, owner: ContractAddress, operator: ContractAddress
     ) -> bool;
-    fn set_approval_for_all(ref self: ContractState, operator: ContractAddress, approved: bool);
+    fn set_approval_for_all(ref self: TContractState, operator: ContractAddress, approved: bool);
 }
 
 
@@ -59,8 +62,10 @@ mod Project {
     use openzeppelin::introspection::src5::SRC5Component;
     // ERC1155
     use carbon_v3::components::erc1155::ERC1155Component;
-    // Absorber
+    // Vintage
     use carbon_v3::components::vintage::VintageComponent;
+    // Metadata
+    use carbon_v3::components::metadata::MetadataComponent;
     // Access Control - RBAC
     use openzeppelin::access::accesscontrol::AccessControlComponent;
     // ERC4906
@@ -73,12 +78,13 @@ mod Project {
     component!(path: VintageComponent, storage: vintage, event: VintageEvent);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
     component!(path: ERC4906Component, storage: erc4906, event: ERC4906Event);
+    component!(path: MetadataComponent, storage: metadata, event: MetadataEvent);
 
     // ERC1155
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC1155MetadataURIImpl =
-        ERC1155Component::ERC1155MetadataURIImpl<ContractState>;
+    // #[abi(embed_v0)]
+    // impl ERC1155MetadataURIImpl =
+    //     ERC1155Component::ERC1155MetadataURIImpl<ContractState>;
     #[abi(embed_v0)]
     impl ERC1155Camel = ERC1155Component::ERC1155CamelImpl<ContractState>;
     #[abi(embed_v0)]
@@ -94,6 +100,8 @@ mod Project {
     #[abi(embed_v0)]
     impl AccessControlImpl =
         AccessControlComponent::AccessControlImpl<ContractState>;
+    // Metadata
+    impl CarbonV3MetadataImpl = MetadataComponent::CarbonV3MetadataImpl<ContractState>;
 
     impl ERC1155InternalImpl = ERC1155Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
@@ -127,6 +135,8 @@ mod Project {
         accesscontrol: AccessControlComponent::Storage,
         #[substorage(v0)]
         erc4906: ERC4906Component::Storage,
+        #[substorage(v0)]
+        metadata: MetadataComponent::Storage,
     }
 
     #[event]
@@ -146,6 +156,8 @@ mod Project {
         AccessControlEvent: AccessControlComponent::Event,
         #[flat]
         ERC4906Event: ERC4906Component::Event,
+        #[flat]
+        MetadataEvent: MetadataComponent::Event,
     }
 
     mod Errors {
@@ -156,19 +168,14 @@ mod Project {
     // Constructor
     #[constructor]
     fn constructor(
-        ref self: ContractState,
-        base_uri: felt252,
-        owner: ContractAddress,
-        starting_year: u32,
-        number_of_years: u32
+        ref self: ContractState, owner: ContractAddress, starting_year: u32, number_of_years: u32
     ) {
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(OWNER_ROLE, owner);
         self.accesscontrol._set_role_admin(MINTER_ROLE, OWNER_ROLE);
         self.accesscontrol._set_role_admin(OFFSETTER_ROLE, OWNER_ROLE);
         self.accesscontrol._set_role_admin(OWNER_ROLE, OWNER_ROLE);
-        let base_uri_bytearray: ByteArray = format!("{}", base_uri);
-        self.erc1155.initializer(base_uri_bytearray);
+        self.erc1155.initializer("");
         self.ownable.initializer(owner);
         self.vintage.initializer(starting_year, number_of_years);
 
@@ -217,9 +224,25 @@ mod Project {
             self.erc1155.batch_burn(from, token_ids, values);
         }
 
-        fn set_uri(ref self: ContractState, uri: ByteArray) {
-            // TODO: use own Metadata impl
-            self.erc1155.set_base_uri(uri);
+        fn uri(self: @ContractState, token_id: u256) -> Span<felt252> {
+            self.metadata.uri(token_id)
+        }
+
+        fn get_provider(self: @ContractState) -> ContractAddress {
+            self.metadata.get_provider()
+        }
+
+        fn set_provider(ref self: ContractState, provider: ContractAddress) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Caller is not owner");
+            self.metadata.set_provider(provider);
+        }
+
+        fn set_uri(ref self: ContractState, class_hash: ClassHash) {
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Caller is not owner");
+
+            self.metadata.set_uri(class_hash);
 
             let num_vintages = self.vintage.get_num_vintages();
 
@@ -229,9 +252,8 @@ mod Project {
                 ._emit_batch_metadata_update(fromTokenId: 0, toTokenId: num_vintages.into());
         }
 
-        fn get_uri(self: @ContractState, token_id: u256) -> ByteArray {
-            let uri_result: ByteArray = self.erc1155.uri(token_id);
-            uri_result
+        fn get_uri(self: @ContractState) -> ClassHash {
+            self.metadata.get_uri()
         }
 
         fn decimals(self: @ContractState) -> u8 {
