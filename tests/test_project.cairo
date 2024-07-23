@@ -1,7 +1,7 @@
 // TODO: use token_ids instead of years as vintage
 // Starknet deps
 
-use starknet::{ContractAddress, contract_address_const, get_caller_address};
+use starknet::{ContractAddress, contract_address_const, get_caller_address, ClassHash};
 
 // External deps
 
@@ -10,7 +10,6 @@ use snforge_std as snf;
 use snforge_std::{
     ContractClassTrait, EventSpy, start_cheat_caller_address, stop_cheat_caller_address, spy_events
 };
-use alexandria_storage::list::{List, ListTrait};
 
 // Models 
 
@@ -23,9 +22,7 @@ use carbon_v3::components::vintage::interface::{
     IVintage, IVintageDispatcher, IVintageDispatcherTrait
 };
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
-use carbon_v3::components::erc1155::interface::{
-    IERC1155MetadataURI, IERC1155MetadataURIDispatcher, IERC1155MetadataURIDispatcherTrait
-};
+use carbon_v3::components::metadata::{IMetadataHandlerDispatcher, IMetadataHandlerDispatcherTrait};
 use erc4906::erc4906_component::ERC4906Component::{Event, MetadataUpdate, BatchMetadataUpdate};
 
 // Contracts
@@ -645,20 +642,17 @@ fn test_project_metadata_update() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let (project_address, _) = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
-    let base_uri: ByteArray = format!("{}", 'uri');
-    let mut new_uri: ByteArray = format!("{}", 'new/uri');
+    let metadata = IMetadataHandlerDispatcher { contract_address: project_address };
+    let base_uri: ClassHash = 0.try_into().unwrap();
+    let mut new_uri: ClassHash = 'new/uri'.try_into().unwrap();
 
     start_cheat_caller_address(project_address, owner_address);
 
-    // let num_vintages = vintages.get_num_vintages();
-    let vintage = 1;
+    assert(metadata.get_uri() == base_uri, 'Wrong base token URI');
 
-    assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
+    project_contract.set_uri(new_uri);
 
-    project_contract.set_uri(new_uri.clone());
-
-    assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
+    assert(metadata.get_uri() == new_uri, 'Wrong updated token URI');
 //check event emitted 
 // let expected_batch_metadata_update = BatchMetadataUpdate {
 //     from_token_id: 0, to_token_id: num_vintages.into()
@@ -673,9 +667,9 @@ fn test_set_uri() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     start_cheat_caller_address(project_address, owner_address);
-    project_contract.set_uri("test_uri");
-    let uri = project_contract.get_uri(1);
-    assert_eq!(uri, "test_uri");
+    project_contract.set_uri('test_uri'.try_into().unwrap());
+    let uri = project_contract.get_uri();
+    assert_eq!(uri, 'test_uri'.try_into().unwrap());
 }
 
 #[test]
