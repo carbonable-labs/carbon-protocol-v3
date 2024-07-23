@@ -3,12 +3,10 @@ use starknet::{ClassHash, ContractAddress};
 #[starknet::interface]
 trait IMetadataHandler<TContractState> {
     fn uri(self: @TContractState, token_id: u256) -> Span<felt252>;
-    fn get_component_provider(self: @TContractState) -> ContractAddress;
-    fn set_component_provider(ref self: TContractState, provider: ContractAddress);
-    fn get_token_uri_implementation(self: @TContractState, token_id: u256) -> ClassHash;
-    fn set_token_uri_implementation(
-        ref self: TContractState, token_id: u256, class_hash: ClassHash
-    );
+    fn get_provider(self: @TContractState) -> ContractAddress;
+    fn set_provider(ref self: TContractState, provider: ContractAddress);
+    fn get_uri(self: @TContractState) -> ClassHash;
+    fn set_uri(ref self: TContractState, class_hash: ClassHash);
 }
 
 #[starknet::interface]
@@ -23,8 +21,8 @@ mod MetadataComponent {
 
     #[storage]
     struct Storage {
-        MetadataHandler_token_uri_implementation: LegacyMap<u256, ClassHash>,
-        MetadataHandler_component_provider: ContractAddress,
+        MetadataHandler_uri_implementation: ClassHash,
+        MetadataHandler_provider: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -44,34 +42,28 @@ mod MetadataComponent {
         TContractState, +HasComponent<TContractState>
     > of super::IMetadataHandler<ComponentState<TContractState>> {
         fn uri(self: @ComponentState<TContractState>, token_id: u256) -> Span<felt252> {
-            let class_hash = self.MetadataHandler_token_uri_implementation.read(token_id);
+            let class_hash = self.MetadataHandler_uri_implementation.read();
             let uri_lib = IMetadataDescriptorLibraryDispatcher { class_hash };
             uri_lib.construct_uri(token_id)
         }
 
-        fn set_token_uri_implementation(
-            ref self: ComponentState<TContractState>, token_id: u256, class_hash: ClassHash,
-        ) {
+        fn get_provider(self: @ComponentState<TContractState>) -> ContractAddress {
+            self.MetadataHandler_provider.read()
+        }
+
+        fn set_provider(ref self: ComponentState<TContractState>, provider: ContractAddress) {
+            self.MetadataHandler_provider.write(provider);
+        }
+
+        fn get_uri(self: @ComponentState<TContractState>,) -> ClassHash {
+            self.MetadataHandler_uri_implementation.read()
+        }
+
+        fn set_uri(ref self: ComponentState<TContractState>, class_hash: ClassHash,) {
             assert(!class_hash.is_zero(), 'URI class hash cannot be zero');
-            let old_class_hash = self.MetadataHandler_token_uri_implementation.read(token_id);
+            let old_class_hash = self.MetadataHandler_uri_implementation.read();
+            self.MetadataHandler_uri_implementation.write(class_hash);
             self.emit(MetadataUpgraded { old_class_hash, class_hash });
-            self.MetadataHandler_token_uri_implementation.write(token_id, class_hash);
-        }
-
-        fn get_component_provider(self: @ComponentState<TContractState>) -> ContractAddress {
-            self.MetadataHandler_component_provider.read()
-        }
-
-        fn set_component_provider(
-            ref self: ComponentState<TContractState>, provider: ContractAddress
-        ) {
-            self.MetadataHandler_component_provider.write(provider);
-        }
-
-        fn get_token_uri_implementation(
-            self: @ComponentState<TContractState>, token_id: u256
-        ) -> ClassHash {
-            self.MetadataHandler_token_uri_implementation.read(token_id)
         }
     }
 }
@@ -92,6 +84,7 @@ mod TestMetadataComponent {
         let (contract_address, _) = class.deploy(@array![]).expect('Deployment failed');
         let dispatcher = IMetadataHandlerDispatcher { contract_address };
 
-        dispatcher.set_token_uri_implementation(0_u256, metadata_class.class_hash);
+        dispatcher.set_uri(metadata_class.class_hash);
+        assert_eq!(dispatcher.get_uri(), metadata_class.class_hash);
     }
 }
