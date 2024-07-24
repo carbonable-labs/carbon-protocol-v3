@@ -4,7 +4,7 @@ use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
 // TODO: use token_ids instead of years as vintage
 // Starknet deps
 
-use starknet::{ContractAddress, contract_address_const, get_caller_address};
+use starknet::{ContractAddress, contract_address_const, get_caller_address, ClassHash};
 
 // External deps
 
@@ -14,7 +14,6 @@ use snforge_std as snf;
 use snforge_std::{
     ContractClassTrait, EventSpy, start_cheat_caller_address, stop_cheat_caller_address, spy_events
 };
-use alexandria_storage::list::{List, ListTrait};
 
 // Models 
 
@@ -27,9 +26,7 @@ use carbon_v3::components::vintage::interface::{
     IVintage, IVintageDispatcher, IVintageDispatcherTrait
 };
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
-use carbon_v3::components::erc1155::interface::{
-    IERC1155MetadataURI, IERC1155MetadataURIDispatcher, IERC1155MetadataURIDispatcherTrait
-};
+use carbon_v3::components::metadata::{IMetadataHandlerDispatcher, IMetadataHandlerDispatcherTrait};
 use erc4906::erc4906_component::ERC4906Component::{Event, MetadataUpdate, BatchMetadataUpdate};
 
 // Contracts
@@ -719,9 +716,9 @@ fn test_set_uri() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     start_cheat_caller_address(project_address, owner_address);
-    project_contract.set_uri("test_uri");
-    let uri = project_contract.get_uri(1);
-    assert_eq!(uri, "test_uri");
+    project_contract.set_uri('test_uri'.try_into().unwrap());
+    let uri = project_contract.get_uri();
+    assert_eq!(uri, 'test_uri'.try_into().unwrap());
 }
 
 #[test]

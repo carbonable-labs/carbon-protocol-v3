@@ -10,7 +10,6 @@ use snforge_std::{
     ContractClassTrait, EventSpy, spy_events, EventSpyTrait, EventSpyAssertionsTrait,
     start_cheat_caller_address, stop_cheat_caller_address
 };
-use alexandria_storage::list::{List, ListTrait};
 
 // Models 
 
@@ -102,14 +101,10 @@ fn share_to_buy_amount(minter_address: ContractAddress, share: u256) -> u256 {
 
 fn deploy_project() -> ContractAddress {
     let contract = snf::declare("Project").expect('Declaration failed');
-    let uri = 'uri';
     let starting_year: u64 = 2024;
     let number_of_years: u64 = 20;
     let mut calldata: Array<felt252> = array![
-        uri,
-        contract_address_const::<'OWNER'>().into(),
-        starting_year.into(),
-        number_of_years.into()
+        contract_address_const::<'OWNER'>().into(), starting_year.into(), number_of_years.into()
     ];
     let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
 

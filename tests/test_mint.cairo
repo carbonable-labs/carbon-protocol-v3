@@ -18,7 +18,6 @@ use snforge_std::{
     ContractClassTrait, test_address, spy_events, EventSpy, CheatSpan, start_cheat_caller_address,
     stop_cheat_caller_address
 };
-use alexandria_storage::list::{List, ListTrait};
 
 // Components
 

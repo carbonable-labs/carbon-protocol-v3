@@ -26,8 +26,6 @@ use snforge_std::{
     ContractClassTrait, test_address, spy_events, EventSpy, start_cheat_caller_address,
     stop_cheat_caller_address
 };
-use alexandria_storage::list::{List, ListTrait};
-
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
