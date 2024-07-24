@@ -100,7 +100,7 @@ fn share_to_buy_amount(minter_address: ContractAddress, share: u256) -> u256 {
 /// Deploy and setup functions
 /// 
 
-fn deploy_project() -> (ContractAddress, EventSpy) {
+fn deploy_project() -> ContractAddress {
     let contract = snf::declare("Project").expect('Declaration failed');
     let uri = 'uri';
     let starting_year: u64 = 2024;
@@ -112,9 +112,8 @@ fn deploy_project() -> (ContractAddress, EventSpy) {
         number_of_years.into()
     ];
     let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
-    let mut spy = spy_events();
 
-    (contract_address, spy)
+    contract_address
 }
 
 fn setup_project(
@@ -129,15 +128,15 @@ fn setup_project(
     vintages.set_project_carbon(project_carbon);
 }
 
-fn default_setup_and_deploy() -> (ContractAddress, EventSpy) {
-    let (project_address, spy) = deploy_project();
+fn default_setup_and_deploy() -> ContractAddress {
+    let project_address = deploy_project();
     let yearly_absorptions: Span<u128> = get_mock_absorptions();
     setup_project(project_address, 8000000000, yearly_absorptions);
-    (project_address, spy)
+    project_address
 }
 
 /// Deploys the offsetter contract.
-fn deploy_offsetter(project_address: ContractAddress) -> (ContractAddress, EventSpy) {
+fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
     let contract = snf::declare("Offsetter").expect('Declaration failed');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
@@ -146,15 +145,13 @@ fn deploy_offsetter(project_address: ContractAddress) -> (ContractAddress, Event
 
     let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
 
-    let mut spy = spy_events();
-
-    (contract_address, spy)
+    contract_address
 }
 
 /// Deploys a minter contract.
 fn deploy_minter(
     project_address: ContractAddress, payment_address: ContractAddress
-) -> (ContractAddress, EventSpy) {
+) -> ContractAddress {
     let contract = snf::declare("Minter").expect('Declaration failed');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let public_sale: bool = true;
@@ -172,12 +169,11 @@ fn deploy_minter(
     ];
 
     let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
-    let mut spy = spy_events();
-    (contract_address, spy)
+    contract_address
 }
 
 /// Deploy erc20 contract.
-fn deploy_erc20() -> (ContractAddress, EventSpy) {
+fn deploy_erc20() -> ContractAddress {
     let contract = snf::declare("USDCarb").expect('Declaration failed');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
@@ -185,15 +181,13 @@ fn deploy_erc20() -> (ContractAddress, EventSpy) {
     calldata.append(owner.into());
     let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
 
-    let mut spy = spy_events();
-
-    (contract_address, spy)
+    contract_address
 }
 
-fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, ContractAddress, EventSpy) {
-    let (project_address, spy) = deploy_project();
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, ContractAddress) {
+    let project_address = deploy_project();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     // Tests are done on a single vintage, thus the absorptions are the same
     let yearly_absorptions: Span<u128> = array![
@@ -220,7 +214,7 @@ fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, Contract
     ]
         .span();
     setup_project(project_address, 8000000000, yearly_absorptions);
-    (project_address, minter_address, erc20_address, spy)
+    (project_address, minter_address, erc20_address)
 }
 
 /// Utility function to buy a share of the total supply.
@@ -251,7 +245,7 @@ fn buy_utils(
     start_cheat_caller_address(erc20_address, minter_address);
     // [Prank] Use caller (usually user) as caller for the Minter contract
     start_cheat_caller_address(minter_address, caller_address);
-    minter.public_buy(amount_to_buy, false);
+    minter.public_buy(amount_to_buy);
 
     stop_cheat_caller_address(minter_address);
     stop_cheat_caller_address(erc20_address);
@@ -285,7 +279,7 @@ fn perform_fuzzed_transfer(
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
-    let (project_address, minter_address, _, _) = fuzzing_setup(supply);
+    let (project_address, minter_address, _) = fuzzing_setup(supply);
     let project = IProjectDispatcher { contract_address: project_address };
     // Setup Roles for the contracts
     start_cheat_caller_address(project_address, owner_address);
@@ -318,4 +312,19 @@ fn perform_fuzzed_transfer(
     assert(equals_with_error(balance_owner, initial_balance, 10), 'Error balance owner 2');
     let balance_receiver = project.balance_of(receiver_address, token_id);
     assert(equals_with_error(balance_receiver, 0, 10), 'Error balance receiver 2');
+}
+
+fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let num_vintages: usize = vintages.get_num_vintages();
+    let mut tokens: Array<u256> = Default::default();
+    let mut index = 0;
+    loop {
+        if index >= num_vintages {
+            break;
+        }
+        index += 1;
+        tokens.append(index.into())
+    };
+    tokens.span()
 }

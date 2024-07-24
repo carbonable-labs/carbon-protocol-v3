@@ -149,14 +149,14 @@ mod Project {
     }
 
     #[derive(Drop, starknet::Event)]
-struct MinterRoleGranted {
-    account: ContractAddress,
-}
+    struct MinterRoleGranted {
+        account: ContractAddress,
+    }
 
-#[derive(Drop, starknet::Event)]
-struct MinterRoleRevoked {
-    account: ContractAddress,
-}
+    #[derive(Drop, starknet::Event)]
+    struct MinterRoleRevoked {
+        account: ContractAddress,
+    }
 
     mod Errors {
         const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';

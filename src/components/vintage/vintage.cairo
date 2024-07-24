@@ -32,20 +32,20 @@ mod VintageComponent {
     }
 
     #[derive(Drop, PartialEq, starknet::Event)]
-struct VintageRebased {
-    #[key]
-    token_id: u256,
-    old_supply: u128,
-    new_supply: u128,
-}
+    struct VintageRebased {
+        #[key]
+        token_id: u256,
+        old_supply: u128,
+        new_supply: u128,
+    }
 
-#[derive(Drop, PartialEq, starknet::Event)]
-struct VintageStatusUpdated {
-    #[key]
-    token_id: u256,
-    old_status: CarbonVintageType,
-    new_status: CarbonVintageType,
-}
+    #[derive(Drop, PartialEq, starknet::Event)]
+    struct VintageStatusUpdated {
+        #[key]
+        token_id: u256,
+        old_status: CarbonVintageType,
+        new_status: CarbonVintageType,
+    }
 
     #[derive(Drop, PartialEq, starknet::Event)]
     struct ProjectCarbonUpdated {
@@ -63,12 +63,12 @@ struct VintageStatusUpdated {
     }
 
     #[derive(Drop, PartialEq, starknet::Event)]
-struct VintageSet {
-    #[key]
-    token_id: u256,
-    old_vintage: CarbonVintage,
-    new_vintage: CarbonVintage,
-}
+    struct VintageSet {
+        #[key]
+        token_id: u256,
+        old_vintage: CarbonVintage,
+        new_vintage: CarbonVintage,
+    }
 
     mod Errors {
         const INVALID_ARRAY_LENGTH: felt252 = 'Absorber: invalid array length';
@@ -179,11 +179,12 @@ struct VintageSet {
             vintage.supply = new_cc_supply;
             self.Vintage_vintages.write(token_id, vintage);
 
-            self.emit(VintageRebased {
-                token_id: token_id,
-                old_supply: old_supply,
-                new_supply: new_cc_supply,
-            });
+            self
+                .emit(
+                    VintageRebased {
+                        token_id: token_id, old_supply: old_supply, new_supply: new_cc_supply,
+                    }
+                );
         }
 
 
@@ -198,11 +199,12 @@ struct VintageSet {
             vintage.status = new_status;
             self.Vintage_vintages.write(token_id, vintage);
 
-            self.emit(VintageStatusUpdated {
-                token_id: token_id,
-                old_status: old_status,
-                new_status: new_status,
-            });
+            self
+                .emit(
+                    VintageStatusUpdated {
+                        token_id: token_id, old_status: old_status, new_status: new_status,
+                    }
+                );
         }
 
         fn set_project_carbon(ref self: ComponentState<TContractState>, new_carbon: u128) {
@@ -245,7 +247,12 @@ struct VintageSet {
                     status: CarbonVintageType::Projected,
                 };
                 self.Vintage_vintages.write(index.into(), vintage);
-                self.emit(VintageUpdate { token_id: index.into(), old_vintage: old_vintage, new_vintage: vintage});
+                self
+                    .emit(
+                        VintageUpdate {
+                            token_id: index.into(), old_vintage: old_vintage, new_vintage: vintage
+                        }
+                    );
                 index += 1;
             };
         }

@@ -176,11 +176,7 @@ mod MintComponent {
             let old_value = self.Mint_public_sale_open.read();
             self.Mint_public_sale_open.write(public_sale_open);
 
-            if public_sale_open {
-                self.emit(PublicSaleOpen { old_value: old_value, new_value: public_sale_open });
-            } else {
-                self.emit(PublicSaleClose { old_value: old_value, new_value: public_sale_open });
-            };
+            self.emit(PublicSaleOpen { old_value: old_value, new_value: public_sale_open });
         }
 
         fn set_unit_price(ref self: ComponentState<TContractState>, unit_price: u256) {
@@ -263,7 +259,7 @@ mod MintComponent {
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
-            let max_money_amount_per_tx = self.Mint_max_money_amount.read();
+            let max_money_amount_per_tx = self.get_max_money_amount();
             assert(
                 max_money_amount_per_tx >= min_money_amount_per_tx,
                 'Invalid min money amount per tx'
@@ -318,7 +314,7 @@ mod MintComponent {
             let remaining_money_amount = self.Mint_remaining_money_amount.read();
             assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
 
-            let max_money_amount = self.Mint_max_money_amount.read();
+            let max_money_amount = self.get_max_money_amount();
             let share = money_amount * CC_DECIMALS_MULTIPLIER / max_money_amount;
 
             let project_address = self.Mint_carbonable_project_address.read();
@@ -354,7 +350,11 @@ mod MintComponent {
 
             self
                 .emit(
-                    Event::Buy(Buy { address: caller_address, money_amount: money_amount, vintages: token_ids})
+                    Event::Buy(
+                        Buy {
+                            address: caller_address, money_amount: money_amount, vintages: token_ids
+                        }
+                    )
                 );
 
             if self.is_sold_out() {

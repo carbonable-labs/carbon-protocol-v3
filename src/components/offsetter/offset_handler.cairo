@@ -71,14 +71,14 @@ mod OffsetComponent {
     }
 
     #[derive(Drop, starknet::Event)]
-struct PendingRetirementRemoved {
-    #[key]
-    from: ContractAddress,
-    #[key]
-    vintage: u256,
-    old_amount: u256,
-    new_amount: u256
-}
+    struct PendingRetirementRemoved {
+        #[key]
+        from: ContractAddress,
+        #[key]
+        vintage: u256,
+        old_amount: u256,
+        new_amount: u256
+    }
 
     mod Errors {
         const INVALID_VINTAGE_STATUS: felt252 = 'vintage status is not audited';
@@ -105,7 +105,7 @@ struct PendingRetirementRemoved {
             let erc1155 = IERC1155Dispatcher { contract_address: project_address };
             let caller_balance = erc1155.balance_of(caller_address, vintage);
             assert(caller_balance >= cc_value, 'Not own enough carbon credits');
-            
+
             self._add_pending_retirement(caller_address, vintage, cc_value);
 
             self._offset_carbon_credit(caller_address, vintage, cc_value);
@@ -199,18 +199,19 @@ struct PendingRetirementRemoved {
                 .Offsetter_carbon_pending_retirement
                 .read((vintage, from));
             assert(current_pending_retirement >= amount, 'Not enough pending retirement');
-            
+
             let new_pending_retirement = current_pending_retirement - amount;
             self.Offsetter_carbon_pending_retirement.write((vintage, from), new_pending_retirement);
 
-            self.emit(
-                PendingRetirementRemoved {
-                    from: from,
-                    vintage: vintage,
-                    old_amount: current_pending_retirement,
-                    new_amount: new_pending_retirement
-                }
-            );
+            self
+                .emit(
+                    PendingRetirementRemoved {
+                        from: from,
+                        vintage: vintage,
+                        old_amount: current_pending_retirement,
+                        new_amount: new_pending_retirement
+                    }
+                );
         }
 
         fn _offset_carbon_credit(
