@@ -24,12 +24,31 @@ mod VintageComponent {
     #[event]
     #[derive(Drop, PartialEq, starknet::Event)]
     enum Event {
-        ProjectCarbonUpdate: ProjectCarbonUpdate,
+        ProjectCarbonUpdated: ProjectCarbonUpdated,
         VintageUpdate: VintageUpdate,
+        VintageRebased: VintageRebased,
+        VintageStatusUpdated: VintageStatusUpdated,
+        VintageSet: VintageSet,
     }
 
     #[derive(Drop, PartialEq, starknet::Event)]
-    struct ProjectCarbonUpdate {
+    struct VintageRebased {
+        #[key]
+        token_id: u256,
+        old_supply: u128,
+        new_supply: u128,
+    }
+
+    #[derive(Drop, PartialEq, starknet::Event)]
+    struct VintageStatusUpdated {
+        #[key]
+        token_id: u256,
+        old_status: CarbonVintageType,
+        new_status: CarbonVintageType,
+    }
+
+    #[derive(Drop, PartialEq, starknet::Event)]
+    struct ProjectCarbonUpdated {
         old_carbon: u128,
         new_carbon: u128,
     }
@@ -39,7 +58,16 @@ mod VintageComponent {
     struct VintageUpdate {
         #[key]
         token_id: u256,
-        vintage: CarbonVintage,
+        old_vintage: CarbonVintage,
+        new_vintage: CarbonVintage,
+    }
+
+    #[derive(Drop, PartialEq, starknet::Event)]
+    struct VintageSet {
+        #[key]
+        token_id: u256,
+        old_vintage: CarbonVintage,
+        new_vintage: CarbonVintage,
     }
 
     mod Errors {
@@ -128,7 +156,6 @@ mod VintageComponent {
         fn rebase_vintage(
             ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u128
         ) {
-            // [Check] Caller is owner
             self.assert_only_role(OWNER_ROLE);
 
             let mut vintage: CarbonVintage = self.Vintage_vintages.read(token_id);
@@ -151,23 +178,36 @@ mod VintageComponent {
             }
             vintage.supply = new_cc_supply;
             self.Vintage_vintages.write(token_id, vintage);
+
+            self
+                .emit(
+                    VintageRebased {
+                        token_id: token_id, old_supply: old_supply, new_supply: new_cc_supply,
+                    }
+                );
         }
 
 
         fn update_vintage_status(
             ref self: ComponentState<TContractState>, token_id: u256, status: u8
         ) {
-            // [Check] Caller is owner
             self.assert_only_role(OWNER_ROLE);
 
             let new_status: CarbonVintageType = status.try_into().expect('Invalid status');
             let mut vintage: CarbonVintage = self.Vintage_vintages.read(token_id);
+            let old_status = vintage.status;
             vintage.status = new_status;
             self.Vintage_vintages.write(token_id, vintage);
+
+            self
+                .emit(
+                    VintageStatusUpdated {
+                        token_id: token_id, old_status: old_status, new_status: new_status,
+                    }
+                );
         }
 
         fn set_project_carbon(ref self: ComponentState<TContractState>, new_carbon: u128) {
-            // [Check] Caller is owner
             self.assert_only_role(OWNER_ROLE);
 
             // [Check] Project carbon is not 0
@@ -176,7 +216,7 @@ mod VintageComponent {
             let old_carbon = self.Vintage_project_carbon.read();
             self.Vintage_project_carbon.write(new_carbon);
             // [Event] Emit event
-            self.emit(ProjectCarbonUpdate { old_carbon, new_carbon, });
+            self.emit(ProjectCarbonUpdated { old_carbon, new_carbon, });
         }
 
         fn set_vintages(
@@ -184,10 +224,8 @@ mod VintageComponent {
             yearly_absorptions: Span<u128>,
             start_year: u32
         ) {
-            // [Check] Caller is owner
             self.assert_only_role(OWNER_ROLE);
 
-            // [Check] Vintages length is not 0
             assert(yearly_absorptions.len() > 0, 'Vintages length is 0');
             let vintages_num = yearly_absorptions.len();
 
@@ -200,6 +238,7 @@ mod VintageComponent {
                 }
                 let supply = *yearly_absorptions.at(index);
 
+                let old_vintage = self.Vintage_vintages.read(index.into());
                 let vintage = CarbonVintage {
                     year: (start_year + index).into(),
                     supply: supply,
@@ -208,7 +247,12 @@ mod VintageComponent {
                     status: CarbonVintageType::Projected,
                 };
                 self.Vintage_vintages.write(index.into(), vintage);
-                self.emit(VintageUpdate { token_id: index.into(), vintage: vintage, });
+                self
+                    .emit(
+                        VintageUpdate {
+                            token_id: index.into(), old_vintage: old_vintage, new_vintage: vintage
+                        }
+                    );
                 index += 1;
             };
         }
@@ -238,7 +282,7 @@ mod VintageComponent {
                     created: 0,
                     status: CarbonVintageType::Projected,
                 };
-                // [Effect] Store values
+
                 self.Vintage_vintages.write(index.into(), vintage);
                 index += 1;
             };

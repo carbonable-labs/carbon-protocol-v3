@@ -29,7 +29,7 @@ use snforge_std::{
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-use carbon_v3::components::vintage::vintage::VintageComponent::{Event, ProjectCarbonUpdate};
+use carbon_v3::components::vintage::vintage::VintageComponent::{Event};
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::vintage::VintageComponent;
@@ -78,8 +78,8 @@ struct Contracts {
 #[test]
 fn test_offsetter_init() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
 
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     start_cheat_caller_address(offsetter_address, user_address);
@@ -97,10 +97,10 @@ fn test_offsetter_init() {
 fn test_offsetter_retire_carbon_credits() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
     let token_id: u256 = 1;
 
     start_cheat_caller_address(offsetter_address, user_address);
@@ -136,10 +136,10 @@ fn test_offsetter_retire_carbon_credits() {
 fn test_offsetter_wrong_status() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, owner_address);
@@ -168,10 +168,10 @@ fn test_offsetter_wrong_status() {
 fn test_retire_carbon_credits_insufficient_credits() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, owner_address);
@@ -199,10 +199,10 @@ fn test_retire_carbon_credits_insufficient_credits() {
 fn test_retire_carbon_credits_exact_balance() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, owner_address);
@@ -237,10 +237,10 @@ fn test_retire_carbon_credits_exact_balance() {
 fn test_retire_carbon_credits_multiple_retirements() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, owner_address);
@@ -277,10 +277,10 @@ fn test_retire_carbon_credits_multiple_retirements() {
 fn test_retire_list_carbon_credits_valid_inputs() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, owner_address);
@@ -323,8 +323,8 @@ fn test_retire_list_carbon_credits_valid_inputs() {
 #[should_panic(expected: 'Inputs cannot be empty')]
 fn test_retire_list_carbon_credits_empty_inputs() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
 
@@ -336,8 +336,8 @@ fn test_retire_list_carbon_credits_empty_inputs() {
 #[should_panic(expected: 'Vintages and Values mismatch')]
 fn test_retire_list_carbon_credits_mismatched_lengths() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
     let token_id: u256 = 1;
 
     start_cheat_caller_address(offsetter_address, user_address);
@@ -353,10 +353,10 @@ fn test_retire_list_carbon_credits_mismatched_lengths() {
 fn test_retire_list_carbon_credits_partial_valid_inputs() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, owner_address);
@@ -386,10 +386,10 @@ fn test_retire_list_carbon_credits_partial_valid_inputs() {
 fn test_retire_list_carbon_credits_multiple_same_vintage() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, owner_address);
@@ -426,8 +426,8 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
 #[test]
 fn test_get_pending_retirement_no_pending() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
@@ -443,8 +443,8 @@ fn test_get_pending_retirement_no_pending() {
 #[test]
 fn test_get_carbon_retired_no_retired() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
 
     start_cheat_caller_address(offsetter_address, user_address);
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };

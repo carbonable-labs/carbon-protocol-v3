@@ -8,7 +8,7 @@ trait IOffsetHandler<TContractState> {
 
     /// Retire carbon credits from the list of carbon credits.
     /// Behaviour is : 
-    /// - If one of the carbon values is not enough or vintage status is not righ, 
+    /// - If one of the carbon values is not enough or vintage status is not right, 
     /// the function will fail and no carbon will be retired and the function will revert.
     fn retire_list_carbon_credits(
         ref self: TContractState, vintages: Span<u256>, carbon_values: Span<u256>

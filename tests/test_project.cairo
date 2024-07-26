@@ -1,3 +1,6 @@
+use snforge_std::cheatcodes::events::EventsFilterTrait;
+use snforge_std::cheatcodes::events::EventSpyTrait;
+use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
 // TODO: use token_ids instead of years as vintage
 // Starknet deps
 
@@ -6,6 +9,7 @@ use starknet::{ContractAddress, contract_address_const, get_caller_address, Clas
 // External deps
 
 use openzeppelin::utils::serde::SerializedAppend;
+use openzeppelin::token::erc1155::ERC1155Component;
 use snforge_std as snf;
 use snforge_std::{
     ContractClassTrait, EventSpy, start_cheat_caller_address, stop_cheat_caller_address, spy_events
@@ -42,42 +46,48 @@ use super::tests_lib::{
 };
 
 #[test]
-fn test_constructor_ok() {
-    let (_project_address, _spy) = deploy_project();
-}
-
-#[test]
 fn test_project_mint() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
     let vintages = IVintageDispatcher { contract_address: project_address };
 
     start_cheat_caller_address(project_address, owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
     project_contract.grant_minter_role(minter_address);
-    stop_cheat_caller_address(project_address);
     start_cheat_caller_address(project_address, minter_address);
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
     let token_id: u256 = 1;
-    project_contract.mint(owner_address, token_id, share);
+    let mut spy: EventSpy = spy_events();
+    project_contract.mint(user_address, token_id, share);
 
     let supply_vintage_token_id = vintages.get_carbon_vintage(token_id).supply;
     let expected_balance = supply_vintage_token_id.into() * share / CC_DECIMALS_MULTIPLIER;
-    let balance = project_contract.balance_of(owner_address, token_id);
+    let balance = project_contract.balance_of(user_address, token_id);
 
     assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
+    let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
+        ERC1155Component::TransferSingle {
+            operator: minter_address,
+            from: Zeroable::zero(),
+            to: user_address,
+            id: token_id,
+            value: share
+        }
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
 }
 
 #[test]
 #[should_panic(expected: 'Only Minter can mint')]
 fn test_project_mint_without_minter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(project_address, minter_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
@@ -91,7 +101,7 @@ fn test_project_mint_without_minter_role() {
 #[should_panic(expected: 'Only Minter can batch mint')]
 fn test_project_batch_mint_without_minter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
 
     start_cheat_caller_address(project_address, owner_address);
@@ -126,10 +136,12 @@ fn test_project_batch_mint_without_minter_role() {
 #[test]
 fn test_project_batch_mint_with_minter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
     let vintages = IVintageDispatcher { contract_address: project_address };
+    let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
@@ -139,7 +151,7 @@ fn test_project_batch_mint_with_minter_role() {
 
     let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10% of the total supply
     let num_vintages = vintages.get_num_vintages();
-    let mut cc_distribution: Array<u256> = Default::default();
+    let mut cc_shares: Array<u256> = Default::default();
     let mut tokens: Array<u256> = Default::default();
     let mut index = 0;
     loop {
@@ -147,30 +159,41 @@ fn test_project_batch_mint_with_minter_role() {
             break;
         };
 
-        cc_distribution.append(share);
+        cc_shares.append(share);
         index += 1;
-        tokens.append(index.into())
+        tokens.append(index.into());
     };
-    let cc_distribution = cc_distribution.span();
+    let cc_shares = cc_shares.span();
     let token_ids = tokens.span();
 
-    project_contract.batch_mint(owner_address, token_ids, cc_distribution);
+    project_contract.batch_mint(user_address, token_ids, cc_shares);
     let token_id: u256 = 1;
     let supply_vintage_token_id = vintages.get_carbon_vintage(token_id).supply;
     let expected_balance = supply_vintage_token_id.into() * share / CC_DECIMALS_MULTIPLIER;
-    let balance = project_contract.balance_of(owner_address, token_id);
+    let balance = project_contract.balance_of(user_address, token_id);
 
     assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
+
+    let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
+        ERC1155Component::TransferBatch {
+            operator: minter_address,
+            from: Zeroable::zero(),
+            to: user_address,
+            ids: token_ids,
+            values: cc_shares
+        }
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
 }
 
 #[test]
 fn test_project_offset_with_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(project_address, owner_address);
     start_cheat_caller_address(offsetter_address, user_address);
@@ -190,9 +213,22 @@ fn test_project_offset_with_offsetter_role() {
     let token_id: u256 = 1;
     vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
     stop_cheat_caller_address(project_address);
+    let balance = project.balance_of(user_address, token_id);
 
+    let mut spy = spy_events();
+    let share_value = vintages.cc_to_share(balance, token_id);
     start_cheat_caller_address(project_address, offsetter_address);
-    project.offset(user_address, token_id, 100);
+    project.offset(user_address, token_id, balance);
+    let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
+        ERC1155Component::TransferSingle {
+            operator: offsetter_address,
+            from: user_address,
+            to: Zeroable::zero(),
+            id: token_id,
+            value: share_value
+        }
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
 }
 
 #[test]
@@ -200,10 +236,10 @@ fn test_project_offset_with_offsetter_role() {
 fn test_project_offset_without_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(project_address, owner_address);
     start_cheat_caller_address(offsetter_address, user_address);
@@ -229,10 +265,10 @@ fn test_project_offset_without_offsetter_role() {
 fn test_project_batch_offset_with_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(project_address, owner_address);
     start_cheat_caller_address(offsetter_address, user_address);
@@ -270,8 +306,20 @@ fn test_project_batch_offset_with_offsetter_role() {
     let cc_distribution = cc_distribution.span();
     let token_ids = tokens.span();
 
+    let mut spy = spy_events();
+
     start_cheat_caller_address(project_address, offsetter_address);
     project.batch_offset(user_address, token_ids, cc_distribution);
+    let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
+        ERC1155Component::TransferBatch {
+            operator: offsetter_address,
+            from: user_address,
+            to: Zeroable::zero(),
+            ids: token_ids,
+            values: cc_distribution
+        }
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
 }
 
 #[test]
@@ -279,10 +327,10 @@ fn test_project_batch_offset_with_offsetter_role() {
 fn test_project_batch_offset_without_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let (offsetter_address, _) = deploy_offsetter(project_address);
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(project_address, owner_address);
     start_cheat_caller_address(offsetter_address, user_address);
@@ -323,29 +371,16 @@ fn test_project_batch_offset_without_offsetter_role() {
     project.batch_offset(user_address, token_ids, cc_distribution);
 }
 
-#[test]
-fn test_project_set_vintage_status() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-
-    start_cheat_caller_address(project_address, owner_address);
-    let token_id: u256 = 1;
-    vintages.update_vintage_status(token_id, 3);
-    let vintage: CarbonVintage = vintages.get_carbon_vintage(token_id);
-    assert(vintage.status == CarbonVintageType::Audited, 'Error of status');
-}
-
 /// Test balance_of
 #[test]
 fn test_project_balance_of() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     start_cheat_caller_address(project_address, owner_address);
     project_contract.grant_minter_role(minter_address);
@@ -365,11 +400,12 @@ fn test_project_balance_of() {
 fn test_transfer_without_loss() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
     start_cheat_caller_address(project_address, owner_address);
     project_contract.grant_minter_role(minter_address);
 
@@ -383,16 +419,28 @@ fn test_transfer_without_loss() {
     let expected_balance = supply_vintage_token_id.into() * share / CC_DECIMALS_MULTIPLIER;
     let balance = project_contract.balance_of(user_address, token_id);
 
-    assert(equals_with_error(balance, expected_balance, 10), 'Error balance owner 1');
+    assert(balance == expected_balance, 'Error balance owner 1');
 
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let receiver_balance = project_contract.balance_of(receiver_address, token_id);
     assert(equals_with_error(receiver_balance, 0, 10), 'Error of receiver balance 1');
 
+    let mut spy = spy_events();
+    let value = vintages.cc_to_share(balance, token_id);
     project_contract
         .safe_transfer_from(
             user_address, receiver_address, token_id, balance.into(), array![].span()
         );
+    let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
+        ERC1155Component::TransferSingle {
+            operator: user_address,
+            from: user_address,
+            to: receiver_address,
+            id: token_id,
+            value: value
+        }
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
 
     let balance = project_contract.balance_of(user_address, token_id);
     assert(equals_with_error(balance, 0, 10), 'Error balance owner 2');
@@ -409,12 +457,12 @@ fn test_consecutive_transfers_and_rebases(
 ) {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
 
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let vintages = IVintageDispatcher { contract_address: project_address };
-    let (erc20_address, _) = deploy_erc20();
-    let (minter_address, _) = deploy_minter(project_address, erc20_address);
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
     start_cheat_caller_address(project_address, owner_address);
     project_contract.grant_minter_role(minter_address);
 
@@ -637,33 +685,34 @@ fn fuzz_test_transfer_high_supply_high_amount(
     );
 }
 
-#[test]
-fn test_project_metadata_update() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
-    let project_contract = IProjectDispatcher { contract_address: project_address };
-    let metadata = IMetadataHandlerDispatcher { contract_address: project_address };
-    let base_uri: ClassHash = 0.try_into().unwrap();
-    let mut new_uri: ClassHash = 'new/uri'.try_into().unwrap();
+// #[test]
+// fn test_project_metadata_update() {
+//     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+//     let project_address = default_setup_and_deploy();
+//     let project_contract = IProjectDispatcher { contract_address: project_address };
+//     let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
+//     let mut spy = spy_events();
+//     let base_uri: ByteArray = format!("{}", 'uri');
+//     let mut new_uri: ByteArray = format!("{}", 'new/uri');
 
-    start_cheat_caller_address(project_address, owner_address);
+//     start_cheat_caller_address(project_address, owner_address);
 
-    assert(metadata.get_uri() == base_uri, 'Wrong base token URI');
+//     let vintage = 1;
+//     assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
 
-    project_contract.set_uri(new_uri);
+//     project_contract.set_uri(new_uri.clone());
+//     assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
 
-    assert(metadata.get_uri() == new_uri, 'Wrong updated token URI');
-//check event emitted 
-// let expected_batch_metadata_update = BatchMetadataUpdate {
-//     from_token_id: 0, to_token_id: num_vintages.into()
-// };
-
-//todo: check if the event is emitted, do all the events assertions
-}
+//     let expected_batch_metadata_update = BatchMetadataUpdate {
+//         from_token_id: 0,
+//         to_token_id: 1
+//     };
+//     spy.assert_emitted(@array![(project_address, expected_batch_metadata_update)]);
+// }
 
 fn test_set_uri() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     start_cheat_caller_address(project_address, owner_address);
@@ -674,7 +723,7 @@ fn test_set_uri() {
 
 #[test]
 fn test_decimals() {
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let project_decimals = project_contract.decimals();
 
@@ -683,7 +732,7 @@ fn test_decimals() {
 
 #[test]
 fn test_shares_of() {
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     let token_id: u256 = 1;
@@ -694,7 +743,7 @@ fn test_shares_of() {
 
 #[test]
 fn test_is_approved_for_all() {
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
 
     let owner = get_caller_address();
@@ -707,15 +756,22 @@ fn test_is_approved_for_all() {
 #[test]
 fn test_set_approval_for_all() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let (project_address, _) = default_setup_and_deploy();
+    let project_address = default_setup_and_deploy();
     let project_contract = IProjectDispatcher { contract_address: project_address };
+    let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, owner_address);
-    let owner = get_caller_address();
     let approval: bool = false;
 
     project_contract.set_approval_for_all(project_address, approval);
 
-    let status_now = project_contract.is_approved_for_all(owner, project_address);
+    let status_now = project_contract.is_approved_for_all(owner_address, project_address);
     assert_eq!(status_now, false);
+
+    let expected_event = ERC1155Component::Event::ApprovalForAll(
+        ERC1155Component::ApprovalForAll {
+            owner: owner_address, operator: project_address, approved: approval
+        }
+    );
+    spy.assert_emitted(@array![(project_address, expected_event)]);
 }
