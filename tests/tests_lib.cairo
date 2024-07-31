@@ -38,26 +38,46 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 
 fn get_mock_absorptions() -> Span<u128> {
     let absorptions: Span<u128> = array![
+        // 0,
+        // 1000000000,
+        // 4799146600,
+        // 8882860500,
+        // 11843814000,
+        // 37092250700,
+        // 62340687400,
+        // 87589124100,
+        // 112837560800,
+        // 138085997600,
+        // 207617572100,
+        // 277149146600,
+        // 346680721200,
+        // 416212295700,
+        // 485743870300,
+        // 555275444800,
+        // 624807019300,
+        // 694338593900,
+        // 763870168400,
+        // 800000000000
         0,
-        1000000000,
-        4799146600,
-        8882860500,
-        11843814000,
-        37092250700,
-        62340687400,
-        87589124100,
-        112837560800,
-        138085997600,
-        207617572100,
-        277149146600,
-        346680721200,
-        416212295700,
-        485743870300,
-        555275444800,
-        624807019300,
-        694338593900,
-        763870168400,
-        800000000000
+        1000000000000000000000000,
+        2000000000000000000000000,
+        3000000000000000000000000,
+        4000000000000000000000000,
+        5000000000000000000000000,
+        6000000000000000000000000,
+        7000000000000000000000000,
+        8000000000000000000000000,
+        9000000000000000000000000,
+        10000000000000000000000000,
+        11000000000000000000000000,
+        12000000000000000000000000,
+        13000000000000000000000000,
+        14000000000000000000000000,
+        15000000000000000000000000,
+        16000000000000000000000000,
+        17000000000000000000000000,
+        18000000000000000000000000,
+        19000000000000000000000000
     ]
         .span();
     let mut yearly_absorptions: Array<u128> = array![];
@@ -89,9 +109,9 @@ fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
 }
 
 // testing with shares is easier to determine the expected values instead of amount in dollars
-fn share_to_buy_amount(minter_address: ContractAddress, share: u256) -> u256 {
-    let minter = IMintDispatcher { contract_address: minter_address };
-    let max_money_amount = minter.get_max_money_amount();
+fn share_to_buy_amount(project_address: ContractAddress, share: u256) -> u256 {
+    let project = IProjectDispatcher { contract_address: project_address };
+    let max_money_amount = project.get_max_money_amount();
     share * max_money_amount / CC_DECIMALS_MULTIPLIER
 }
 
@@ -106,7 +126,7 @@ fn deploy_project() -> ContractAddress {
     let mut calldata: Array<felt252> = array![
         contract_address_const::<'OWNER'>().into(), starting_year.into(), number_of_years.into()
     ];
-    let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
+    let (contract_address, _) = contract.deploy(@calldata).expect('Project deployment failed');
 
     contract_address
 }
@@ -115,7 +135,7 @@ fn setup_project(
     contract_address: ContractAddress, project_carbon: u128, yearly_absorptions: Span<u128>
 ) {
     let vintages = IVintageDispatcher { contract_address };
-    // Fake the owner to call set_absorptions and set_project_carbon which can only be run by owner
+    // Fake the owner to call set_vintages and set_project_carbon which can only be run by owner
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_cheat_caller_address(contract_address, owner_address);
 
@@ -138,7 +158,7 @@ fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
     calldata.append(project_address.into());
     calldata.append(owner.into());
 
-    let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
+    let (contract_address, _) = contract.deploy(@calldata).expect('Offsetter deployment failed');
 
     contract_address
 }
@@ -163,7 +183,7 @@ fn deploy_minter(
         owner.into()
     ];
 
-    let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
+    let (contract_address, _) = contract.deploy(@calldata).expect('Minter deployment failed');
     contract_address
 }
 
@@ -174,7 +194,7 @@ fn deploy_erc20() -> ContractAddress {
     let mut calldata: Array<felt252> = array![];
     calldata.append(owner.into());
     calldata.append(owner.into());
-    let (contract_address, _) = contract.deploy(@calldata).expect('Deployment failed');
+    let (contract_address, _) = contract.deploy(@calldata).expect('Erc20 deployment failed');
 
     contract_address
 }
@@ -219,7 +239,7 @@ fn buy_utils(
     owner_address: ContractAddress,
     caller_address: ContractAddress,
     minter_address: ContractAddress,
-    share: u256
+    total_cc_amount: u256
 ) {
     // [Prank] Use caller (usually user) as caller for the Minter contract
     start_cheat_caller_address(minter_address, caller_address);
@@ -227,20 +247,22 @@ fn buy_utils(
     let erc20_address: ContractAddress = minter.get_payment_token_address();
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
 
-    let amount_to_buy = share_to_buy_amount(minter_address, share);
+    // If user wants to buy 1 carbon credit, the input should be 1*CC_DECIMALS_MULTIPLIER
+    let money_to_buy = total_cc_amount * minter.get_unit_price() / CC_DECIMALS_MULTIPLIER;
+
     // [Prank] Use owner as caller for the ERC20 contract
     start_cheat_caller_address(erc20_address, owner_address); // Owner holds initial supply
-    erc20.transfer(caller_address, amount_to_buy);
+    erc20.transfer(caller_address, money_to_buy);
 
     // [Prank] Use caller address (usually user) as caller for the ERC20 contract
     start_cheat_caller_address(erc20_address, caller_address);
-    erc20.approve(minter_address, amount_to_buy);
+    erc20.approve(minter_address, money_to_buy);
 
     // [Prank] Use Minter as caller for the ERC20 contract
     start_cheat_caller_address(erc20_address, minter_address);
     // [Prank] Use caller (usually user) as caller for the Minter contract
     start_cheat_caller_address(minter_address, caller_address);
-    minter.public_buy(amount_to_buy);
+    minter.public_buy(total_cc_amount);
 
     stop_cheat_caller_address(minter_address);
     stop_cheat_caller_address(erc20_address);
@@ -322,4 +344,24 @@ fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
         tokens.append(index.into())
     };
     tokens.span()
+}
+
+fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAddress) -> u256 {
+    let project = IProjectDispatcher { contract_address: project_address };
+    let vintage = IVintageDispatcher { contract_address: project_address };
+    let num_vintages: usize = vintage.get_num_vintages();
+    let mut total_balance: u256 = 0;
+
+    let mut index = 0;
+    loop {
+        if index >= num_vintages {
+            break;
+        }
+        let balance = project.balance_of(user_address, index.into());
+        println!("Balance for vintage {}: {}", index, balance);
+        println!("vintage: {}", vintage.get_carbon_vintage(index.into()));
+        total_balance += balance;
+        index += 1;
+    };
+    total_balance
 }

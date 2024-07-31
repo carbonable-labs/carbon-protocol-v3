@@ -152,6 +152,21 @@ mod VintageComponent {
                 - self.get_carbon_vintage(token_id).created
         }
 
+        fn get_initial_project_cc_supply(self: @ComponentState<TContractState>) -> u128 {
+            let mut project_supply: u128 = 0;
+            let n = self.Vintage_vintages_len.read();
+            let mut index = 0;
+            loop {
+                if index >= n {
+                    break ();
+                }
+                let initial_vintage_supply = self.get_initial_cc_supply(index.into());
+                project_supply += initial_vintage_supply;
+                index += 1;
+            };
+            project_supply
+        }
+
 
         fn rebase_vintage(
             ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u128

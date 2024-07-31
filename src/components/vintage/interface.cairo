@@ -20,8 +20,11 @@ trait IVintage<TContractState> {
     /// Returns the vintage details with the given token_id.
     fn get_carbon_vintage(self: @TContractState, token_id: u256) -> CarbonVintage;
 
-    // Get the initial supply of carbon credits for a vintage, before any rebases
+    /// Get the initial supply of carbon credits for a vintage, before any rebases
     fn get_initial_cc_supply(self: @TContractState, token_id: u256) -> u128;
+
+    /// Get the initial supply of carbon credits for a project, before any rebases
+    fn get_initial_project_cc_supply(self: @TContractState) -> u128;
 
     /// Get number of decimal for total supply to have a carbon credit
     fn get_cc_decimals(self: @TContractState) -> u8;

@@ -13,6 +13,8 @@ trait IExternal<TContractState> {
     fn uri(self: @TContractState, token_id: u256) -> Span<felt252>;
     fn get_provider(self: @TContractState) -> ContractAddress;
     fn set_provider(ref self: TContractState, provider: ContractAddress);
+    fn set_max_money_amount(ref self: TContractState, max_money_amount: u256);
+    fn get_max_money_amount(self: @TContractState) -> u256;
     fn get_uri(self: @TContractState) -> ClassHash;
     fn set_uri(ref self: TContractState, class_hash: ClassHash);
     fn decimals(self: @TContractState) -> u8;
@@ -114,7 +116,7 @@ mod Project {
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
     const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
-    const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
+    use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
     const MINTER_ROLE: felt252 = selector!("Minter");
     const OFFSETTER_ROLE: felt252 = selector!("Offsetter");
     const OWNER_ROLE: felt252 = selector!("Owner");
@@ -137,6 +139,7 @@ mod Project {
         erc4906: ERC4906Component::Storage,
         #[substorage(v0)]
         metadata: MetadataComponent::Storage,
+        Mint_max_money_amount: u256,
     }
 
     #[event]
@@ -248,6 +251,17 @@ mod Project {
             self.metadata.set_provider(provider);
         }
 
+        fn set_max_money_amount(ref self: ContractState, max_money_amount: u256) {
+            // TODO: possible only while public sale is open
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Caller is not owner");
+            self.Mint_max_money_amount.write(max_money_amount);
+        }
+
+        fn get_max_money_amount(self: @ContractState) -> u256 {
+            self.Mint_max_money_amount.read()
+        }
+
         fn set_uri(ref self: ContractState, class_hash: ClassHash) {
             let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
             assert!(isOwner, "Caller is not owner");
@@ -321,7 +335,17 @@ mod Project {
         }
 
         fn shares_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            self.erc1155.ERC1155_balances.read((token_id, account))
+            let amount_cc_bought = self
+                .erc1155
+                .ERC1155_balances
+                .read((token_id, account)); // expressed in CC_DECIMALS_MULTIPLIER
+            let initial_project_supply = self.vintage.get_initial_project_cc_supply();
+            println!(
+                "amount_cc_bought: {}, initial_project_supply: {}",
+                amount_cc_bought,
+                initial_project_supply
+            );
+            amount_cc_bought / initial_project_supply.into()
         }
 
         fn safe_transfer_from(
@@ -363,8 +387,14 @@ mod Project {
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn _balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            let share = self.erc1155.balance_of(account, token_id);
-            self.vintage.share_to_cc(share, token_id)
+            let share = self.shares_of(account, token_id);
+            let supply_vintage: u256 = self.vintage.get_carbon_vintage(token_id).supply.into();
+            println!("share: {}, supply_vintage: {}", share, supply_vintage);
+            share * supply_vintage
+        // let invested_amount = self.erc1155.balance_of(account, token_id);
+        // let max_money_amount = self.Mint_max_money_amount.read();
+        // let share = invested_amount * CC_DECIMALS_MULTIPLIER / max_money_amount;
+        // self.vintage.share_to_cc(share, token_id)
         }
     }
 }

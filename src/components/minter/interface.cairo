@@ -6,7 +6,6 @@ trait IMint<TContractState> {
     fn get_payment_token_address(self: @TContractState) -> ContractAddress;
     fn get_unit_price(self: @TContractState) -> u256;
     fn get_available_money_amount(self: @TContractState) -> u256;
-    fn get_max_money_amount(self: @TContractState) -> u256;
     fn get_min_money_amount_per_tx(self: @TContractState) -> u256;
     fn is_public_sale_open(self: @TContractState) -> bool;
     fn is_sold_out(self: @TContractState) -> bool;
@@ -21,6 +20,6 @@ trait IMint<TContractState> {
         recipient: ContractAddress,
         amount: u256
     );
-    fn public_buy(ref self: TContractState, money_amount: u256);
+    fn public_buy(ref self: TContractState, cc_amount: u256);
     fn cancel_mint(ref self: TContractState, should_cancel: bool);
 }

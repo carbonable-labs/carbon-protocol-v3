@@ -29,7 +29,7 @@ mod OffsetComponent {
 
     // Constants
 
-    const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
+    use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 
     #[storage]
     struct Storage {
