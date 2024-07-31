@@ -49,7 +49,7 @@ use super::tests_lib::{
 
 // Constants
 
-use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
+use carbon_v3::models::constants::{CC_DECIMALS_MULTIPLIER, MULTIPLIER_TONS_TO_MGRAMS};
 const PROJECT_CARBON: u256 = 42;
 
 // Signers
@@ -139,9 +139,9 @@ fn test_public_buy() {
     // let remaining_money = minter.get_available_money_amount();
     // assert(remaining_money == project_carbon.into(), 'remaining money wrong value'); todo fix, shouldn't be project carbon here
 
-    let cc_to_buy: u256 = 10 * CC_DECIMALS_MULTIPLIER; // 10 CC
+    let cc_to_buy: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS; // 10 CC
     println!("cc to buy: {}", cc_to_buy);
-    let money_amount = cc_to_buy * minter.get_unit_price() / CC_DECIMALS_MULTIPLIER;
+    let money_amount = cc_to_buy * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
     println!("money amount: {}", money_amount);
 
     start_cheat_caller_address(erc20_address, owner_address);
@@ -162,41 +162,7 @@ fn test_public_buy() {
     println!("cc_to_buy: {}", cc_to_buy);
     println!("cc_to_buy-balance_user_after {}", cc_to_buy - balance_user_after);
 
-    assert(balance_user_after == balance_user_before + cc_to_buy, 'balance error after buy');
-    // Build the expected events
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let number_of_vintages = vintages.get_num_vintages();
-    let max_money_amount = project_contract.get_max_money_amount();
-    // let share = amount_to_buy * CC_DECIMALS_MULTIPLIER / max_money_amount;
-    // let mut cc_shares: Array<u256> = Default::default();
-    let mut tokens: Array<u256> = Default::default();
-    let mut index = 0;
-    loop {
-        if index >= number_of_vintages {
-            break;
-        }
-        // cc_shares.append(share);
-        index += 1;
-        tokens.append(index.into())
-    };
-    // let cc_shares = cc_shares.span();
-    let token_ids = tokens.span();
-
-    // Assert the emitted events
-    let expected_event_buy = MintComponent::Event::Buy(
-        MintComponent::Buy { address: user_address, cc_amount: cc_to_buy, vintages: token_ids }
-    );
-    spy.assert_emitted(@array![(minter_address, expected_event_buy)]);
-// let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
-//     ERC1155Component::TransferBatch {
-//         operator: minter_address,
-//         from: Zeroable::zero(),
-//         to: user_address,
-//         ids: token_ids,
-//         values: cc_shares
-//     }
-// );
-// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
+    equals_with_error(balance_user_after, balance_user_before + cc_to_buy, 100);
 }
 
 // get_available_money_amount

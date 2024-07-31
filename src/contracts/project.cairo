@@ -338,14 +338,14 @@ mod Project {
             let amount_cc_bought = self
                 .erc1155
                 .ERC1155_balances
-                .read((token_id, account)); // expressed in CC_DECIMALS_MULTIPLIER
+                .read((token_id, account)); // expressed in grams
             let initial_project_supply = self.vintage.get_initial_project_cc_supply();
             println!(
                 "amount_cc_bought: {}, initial_project_supply: {}",
                 amount_cc_bought,
                 initial_project_supply
             );
-            amount_cc_bought / initial_project_supply.into()
+            (amount_cc_bought * CC_DECIMALS_MULTIPLIER) / initial_project_supply.into()
         }
 
         fn safe_transfer_from(
@@ -390,7 +390,7 @@ mod Project {
             let share = self.shares_of(account, token_id);
             let supply_vintage: u256 = self.vintage.get_carbon_vintage(token_id).supply.into();
             println!("share: {}, supply_vintage: {}", share, supply_vintage);
-            share * supply_vintage
+            share * supply_vintage / CC_DECIMALS_MULTIPLIER
         // let invested_amount = self.erc1155.balance_of(account, token_id);
         // let max_money_amount = self.Mint_max_money_amount.read();
         // let share = invested_amount * CC_DECIMALS_MULTIPLIER / max_money_amount;

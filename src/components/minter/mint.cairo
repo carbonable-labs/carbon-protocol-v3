@@ -23,7 +23,7 @@ mod MintComponent {
 
     // Constants
 
-    use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
+    use carbon_v3::models::constants::{CC_DECIMALS_MULTIPLIER, MULTIPLIER_TONS_TO_MGRAMS};
 
     #[storage]
     struct Storage {
@@ -304,14 +304,13 @@ mod MintComponent {
             assert(!caller_address.is_zero(), 'Invalid caller');
 
             let unit_price = self.Mint_unit_price.read();
-            // If user wants to buy 1 carbon credit, the input should be 1*CC_DECIMALS_MULTIPLIER
-            let money_amount = cc_amount * unit_price / CC_DECIMALS_MULTIPLIER;
+            // If user wants to buy 1 carbon credit, the input should be 1*MULTIPLIER_TONS_TO_MGRAMS
+            let money_amount = cc_amount * unit_price / MULTIPLIER_TONS_TO_MGRAMS;
             println!("money_amount: {}", money_amount);
             println!("cc_amount: {}", cc_amount);
 
             let min_money_amount_per_tx = self.Mint_min_money_amount_per_tx.read();
             assert(money_amount >= min_money_amount_per_tx, 'Value too low');
-
             let remaining_money_amount = self.Mint_remaining_money_amount.read();
             assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
 
@@ -331,7 +330,6 @@ mod MintComponent {
                 tokens_ids.append(index.into());
                 index += 1;
             };
-
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20Dispatcher { contract_address: token_address };

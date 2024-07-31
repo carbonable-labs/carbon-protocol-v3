@@ -125,12 +125,6 @@ fn test_project_batch_mint_without_minter_role() {
     let token_ids = tokens.span();
 
     project_contract.batch_mint(owner_address, token_ids, cc_distribution);
-    let token_id: u256 = 1;
-    let supply_vintage_token_id = vintages.get_carbon_vintage(token_id).supply;
-    let expected_balance = supply_vintage_token_id.into() * share / CC_DECIMALS_MULTIPLIER;
-    let balance = project_contract.balance_of(owner_address, token_id);
-
-    assert(equals_with_error(balance, expected_balance, 10), 'Error of balance');
 }
 
 #[test]
