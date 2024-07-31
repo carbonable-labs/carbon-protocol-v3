@@ -35,8 +35,8 @@ mod VintageComponent {
     struct VintageRebased {
         #[key]
         token_id: u256,
-        old_supply: u128,
-        new_supply: u128,
+        old_supply: u256,
+        new_supply: u256,
     }
 
     #[derive(Drop, PartialEq, starknet::Event)]
@@ -146,14 +146,14 @@ mod VintageComponent {
             self.Vintage_vintages.read(token_id)
         }
 
-        fn get_initial_cc_supply(self: @ComponentState<TContractState>, token_id: u256) -> u128 {
+        fn get_initial_cc_supply(self: @ComponentState<TContractState>, token_id: u256) -> u256 {
             self.get_carbon_vintage(token_id).supply
                 + self.get_carbon_vintage(token_id).failed
                 - self.get_carbon_vintage(token_id).created
         }
 
-        fn get_initial_project_cc_supply(self: @ComponentState<TContractState>) -> u128 {
-            let mut project_supply: u128 = 0;
+        fn get_initial_project_cc_supply(self: @ComponentState<TContractState>) -> u256 {
+            let mut project_supply: u256 = 0;
             let n = self.Vintage_vintages_len.read();
             let mut index = 0;
             loop {
@@ -169,7 +169,7 @@ mod VintageComponent {
 
 
         fn rebase_vintage(
-            ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u128
+            ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u256
         ) {
             self.assert_only_role(OWNER_ROLE);
 
@@ -236,7 +236,7 @@ mod VintageComponent {
 
         fn set_vintages(
             ref self: ComponentState<TContractState>,
-            yearly_absorptions: Span<u128>,
+            yearly_absorptions: Span<u256>,
             start_year: u32
         ) {
             self.assert_only_role(OWNER_ROLE);

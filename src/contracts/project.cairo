@@ -340,11 +340,6 @@ mod Project {
                 .ERC1155_balances
                 .read((token_id, account)); // expressed in grams
             let initial_project_supply = self.vintage.get_initial_project_cc_supply();
-            println!(
-                "amount_cc_bought: {}, initial_project_supply: {}",
-                amount_cc_bought,
-                initial_project_supply
-            );
             (amount_cc_bought * CC_DECIMALS_MULTIPLIER) / initial_project_supply.into()
         }
 
@@ -356,8 +351,15 @@ mod Project {
             value: u256,
             data: Span<felt252>
         ) {
-            let share_value = self.vintage.cc_to_share(value, token_id);
-            self.erc1155.safe_transfer_from(from, to, token_id, share_value, data);
+            let balance = self._balance_of(from, token_id);
+            let value_represents_percentage_of_vintage_balance = balance
+                * CC_DECIMALS_MULTIPLIER
+                / value;
+            let internal_balance = self.erc1155.ERC1155_balances.read((token_id, from));
+            let new_internal_balance = internal_balance
+                * value_represents_percentage_of_vintage_balance
+                / CC_DECIMALS_MULTIPLIER;
+            self.erc1155.safe_transfer_from(from, to, token_id, new_internal_balance, data);
         }
 
         fn safe_batch_transfer_from(
@@ -389,12 +391,7 @@ mod Project {
         fn _balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
             let share = self.shares_of(account, token_id);
             let supply_vintage: u256 = self.vintage.get_carbon_vintage(token_id).supply.into();
-            println!("share: {}, supply_vintage: {}", share, supply_vintage);
             share * supply_vintage / CC_DECIMALS_MULTIPLIER
-        // let invested_amount = self.erc1155.balance_of(account, token_id);
-        // let max_money_amount = self.Mint_max_money_amount.read();
-        // let share = invested_amount * CC_DECIMALS_MULTIPLIER / max_money_amount;
-        // self.vintage.share_to_cc(share, token_id)
         }
     }
 }

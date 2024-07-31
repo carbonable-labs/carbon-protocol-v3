@@ -349,14 +349,14 @@ fn test_get_initial_cc_supply() {
     let token_id: u256 = 1;
     let initial_supply = vintages.get_carbon_vintage(token_id).supply;
     let diff = 50000;
-    let new_cc_supply: u128 = initial_supply + diff;
+    let new_cc_supply: u256 = initial_supply + diff;
     vintages.rebase_vintage(token_id, new_cc_supply);
     let fetched_initial_supply = vintages.get_initial_cc_supply(token_id);
     assert(vintages.get_carbon_vintage(token_id).created == diff, 'Created field error');
     assert(fetched_initial_supply == initial_supply, 'Initial supply error');
 
     // Do one negative rebase and check if initial supply is correct
-    let new_cc_supply: u128 = new_cc_supply - diff;
+    let new_cc_supply: u256 = new_cc_supply - diff;
     vintages.rebase_vintage(token_id, new_cc_supply);
     let fetched_initial_supply = vintages.get_initial_cc_supply(token_id);
     assert(fetched_initial_supply == initial_supply, 'Initial supply error');

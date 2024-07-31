@@ -14,7 +14,7 @@ use snforge_std::{
 // Models 
 
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
+use carbon_v3::models::constants::{CC_DECIMALS_MULTIPLIER, MULTIPLIER_TONS_TO_MGRAMS};
 
 // Components
 
@@ -36,8 +36,8 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 /// Mock Data
 ///
 
-fn get_mock_absorptions() -> Span<u128> {
-    let absorptions: Span<u128> = array![
+fn get_mock_absorptions() -> Span<u256> {
+    let absorptions: Span<u256> = array![
         // 0,
         // 1000000000,
         // 4799146600,
@@ -58,7 +58,6 @@ fn get_mock_absorptions() -> Span<u128> {
         // 694338593900,
         // 763870168400,
         // 800000000000
-        0,
         25000000000000000, // 25 000CC, in grams
         50000000000000000,
         75000000000000000,
@@ -77,10 +76,11 @@ fn get_mock_absorptions() -> Span<u128> {
         400000000000000000,
         425000000000000000,
         450000000000000000,
-        475000000000000000
+        475000000000000000,
+        500000000000000000
     ]
         .span();
-    let mut yearly_absorptions: Array<u128> = array![];
+    let mut yearly_absorptions: Array<u256> = array![];
     let mut index: u32 = 0;
     let mut max = absorptions.len() - 1;
     loop {
@@ -132,7 +132,7 @@ fn deploy_project() -> ContractAddress {
 }
 
 fn setup_project(
-    contract_address: ContractAddress, project_carbon: u128, yearly_absorptions: Span<u128>
+    contract_address: ContractAddress, project_carbon: u128, yearly_absorptions: Span<u256>
 ) {
     let vintages = IVintageDispatcher { contract_address };
     // Fake the owner to call set_vintages and set_project_carbon which can only be run by owner
@@ -145,7 +145,7 @@ fn setup_project(
 
 fn default_setup_and_deploy() -> ContractAddress {
     let project_address = deploy_project();
-    let yearly_absorptions: Span<u128> = get_mock_absorptions();
+    let yearly_absorptions: Span<u256> = get_mock_absorptions();
     setup_project(project_address, 8000000000, yearly_absorptions);
     project_address
 }
@@ -169,6 +169,7 @@ fn deploy_minter(
 ) -> ContractAddress {
     let contract = snf::declare("Minter").expect('Declaration failed');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
+    start_cheat_caller_address(project_address, owner);
     let public_sale: bool = true;
     let max_value: felt252 = 8000000000;
     let unit_price: felt252 = 11;
@@ -199,13 +200,13 @@ fn deploy_erc20() -> ContractAddress {
     contract_address
 }
 
-fn fuzzing_setup(cc_supply: u128) -> (ContractAddress, ContractAddress, ContractAddress) {
+fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, ContractAddress) {
     let project_address = deploy_project();
     let erc20_address = deploy_erc20();
     let minter_address = deploy_minter(project_address, erc20_address);
 
     // Tests are done on a single vintage, thus the absorptions are the same
-    let yearly_absorptions: Span<u128> = array![
+    let yearly_absorptions: Span<u256> = array![
         cc_supply,
         cc_supply,
         cc_supply,
@@ -247,11 +248,12 @@ fn buy_utils(
     let erc20_address: ContractAddress = minter.get_payment_token_address();
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
 
-    // If user wants to buy 1 carbon credit, the input should be 1*CC_DECIMALS_MULTIPLIER
-    let money_to_buy = total_cc_amount * minter.get_unit_price() / CC_DECIMALS_MULTIPLIER;
+    // If user wants to buy 1 carbon credit, the input should be 1*MULTIPLIER_TONS_TO_MGRAMS
+    let money_to_buy = total_cc_amount * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
 
     // [Prank] Use owner as caller for the ERC20 contract
     start_cheat_caller_address(erc20_address, owner_address); // Owner holds initial supply
+
     erc20.transfer(caller_address, money_to_buy);
 
     // [Prank] Use caller address (usually user) as caller for the ERC20 contract
@@ -262,6 +264,7 @@ fn buy_utils(
     start_cheat_caller_address(erc20_address, minter_address);
     // [Prank] Use caller (usually user) as caller for the Minter contract
     start_cheat_caller_address(minter_address, caller_address);
+    let balance_user = erc20.balance_of(caller_address);
     minter.public_buy(total_cc_amount);
 
     stop_cheat_caller_address(minter_address);
@@ -274,24 +277,18 @@ fn buy_utils(
 /// 
 
 fn perform_fuzzed_transfer(
-    raw_supply: u128,
-    raw_share: u256,
+    raw_supply: u256,
+    raw_cc_amount: u256,
     raw_last_digits_share: u256,
     percentage_of_balance_to_send: u256,
-    max_supply_for_vintage: u128
+    max_supply_for_vintage: u256
 ) {
     let supply = raw_supply % max_supply_for_vintage;
-    if raw_share == 0 || supply == 0 {
+    if raw_cc_amount == 0 || supply == 0 {
         return;
     }
-    let last_digits_share = raw_last_digits_share % 100;
-    let share_modulo = raw_share % CC_DECIMALS_MULTIPLIER;
-    let share = share_modulo * 100 + last_digits_share;
-    let share = share / 100;
 
-    if share == 0 {
-        return;
-    }
+    let cc_amount_to_buy = raw_cc_amount % supply;
 
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
@@ -302,33 +299,40 @@ fn perform_fuzzed_transfer(
     start_cheat_caller_address(project_address, owner_address);
     project.grant_minter_role(minter_address);
     start_cheat_caller_address(project_address, minter_address);
-
-    buy_utils(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, cc_amount_to_buy);
+    let sum_balance = helper_sum_balance(project_address, user_address);
+    equals_with_error(sum_balance, cc_amount_to_buy, 100);
 
     start_cheat_caller_address(project_address, user_address);
 
     let token_id = 1;
     let initial_balance = project.balance_of(user_address, token_id);
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let number_of_vintages = vintages.get_num_vintages();
+    let expected_balance_vintage = cc_amount_to_buy
+        / (number_of_vintages.into()); // Evenly distributed
+    equals_with_error(initial_balance, expected_balance_vintage, 100);
     let amount = percentage_of_balance_to_send * initial_balance / 10_000;
     project
         .safe_transfer_from(
             user_address, receiver_address, token_id, amount.into(), array![].span()
         );
     let balance_owner = project.balance_of(user_address, token_id);
-    assert(equals_with_error(balance_owner, initial_balance - amount, 10), 'Error balance owner 1');
+    assert(
+        equals_with_error(balance_owner, initial_balance - amount, 100), 'Error balance owner 1'
+    );
     let balance_receiver = project.balance_of(receiver_address, token_id);
-    assert(equals_with_error(balance_receiver, amount, 10), 'Error balance receiver 1');
+    assert(equals_with_error(balance_receiver, amount, 100), 'Error balance receiver 1');
 
     start_cheat_caller_address(project_address, receiver_address);
     project
         .safe_transfer_from(
             receiver_address, user_address, token_id, amount.into(), array![].span()
         );
-
     let balance_owner = project.balance_of(user_address, token_id);
-    assert(equals_with_error(balance_owner, initial_balance, 10), 'Error balance owner 2');
+    assert(equals_with_error(balance_owner, initial_balance, 100), 'Error balance owner 2');
     let balance_receiver = project.balance_of(receiver_address, token_id);
-    assert(equals_with_error(balance_receiver, 0, 10), 'Error balance receiver 2');
+    assert(equals_with_error(balance_receiver, 0, 100), 'Error balance receiver 2');
 }
 
 fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
@@ -358,8 +362,6 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
             break;
         }
         let balance = project.balance_of(user_address, index.into());
-        println!("Balance for vintage {}: {}", index, balance);
-        println!("vintage: {}", vintage.get_carbon_vintage(index.into()));
         total_balance += balance;
         index += 1;
     };

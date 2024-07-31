@@ -134,15 +134,12 @@ fn test_public_buy() {
 
     let token_id = 1;
     let balance_user_before = project_contract.balance_of(user_address, token_id);
-    println!("balance before: {}", balance_user_before);
 
     // let remaining_money = minter.get_available_money_amount();
     // assert(remaining_money == project_carbon.into(), 'remaining money wrong value'); todo fix, shouldn't be project carbon here
 
     let cc_to_buy: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS; // 10 CC
-    println!("cc to buy: {}", cc_to_buy);
     let money_amount = cc_to_buy * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
-    println!("money amount: {}", money_amount);
 
     start_cheat_caller_address(erc20_address, owner_address);
     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
@@ -156,11 +153,7 @@ fn test_public_buy() {
 
     minter.public_buy(cc_to_buy);
 
-    println!("sum of balances:");
     let balance_user_after = helper_sum_balance(project_address, user_address);
-    println!("balance after: {}", balance_user_after);
-    println!("cc_to_buy: {}", cc_to_buy);
-    println!("cc_to_buy-balance_user_after {}", cc_to_buy - balance_user_after);
 
     equals_with_error(balance_user_after, balance_user_before + cc_to_buy, 100);
 }
@@ -179,7 +172,7 @@ fn test_get_available_money_amount() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
     project_contract.grant_minter_role(minter_address);
 
-    let yearly_absorptions: Span<u128> = get_mock_absorptions();
+    let yearly_absorptions: Span<u256> = get_mock_absorptions();
 
     setup_project(project_address, 8000000000, yearly_absorptions);
     stop_cheat_caller_address(project_address);

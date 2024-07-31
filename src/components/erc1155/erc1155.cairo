@@ -347,7 +347,7 @@ mod ERC1155Component {
             values: Span<u256>
         ) {
             assert(token_ids.len() == values.len(), Errors::INVALID_ARRAY_LENGTH);
-            
+
             let mut index = 0;
             loop {
                 if index == token_ids.len() {

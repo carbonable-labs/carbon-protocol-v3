@@ -306,13 +306,11 @@ mod MintComponent {
             let unit_price = self.Mint_unit_price.read();
             // If user wants to buy 1 carbon credit, the input should be 1*MULTIPLIER_TONS_TO_MGRAMS
             let money_amount = cc_amount * unit_price / MULTIPLIER_TONS_TO_MGRAMS;
-            println!("money_amount: {}", money_amount);
-            println!("cc_amount: {}", cc_amount);
 
             let min_money_amount_per_tx = self.Mint_min_money_amount_per_tx.read();
             assert(money_amount >= min_money_amount_per_tx, 'Value too low');
-            let remaining_money_amount = self.Mint_remaining_money_amount.read();
-            assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
+            // let remaining_money_amount = self.Mint_remaining_money_amount.read();    // TODO
+            // assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
 
             // [Interaction] Compute the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
@@ -335,12 +333,13 @@ mod MintComponent {
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let minter_address = get_contract_address();
 
+            let balance_caller = erc20.balance_of(caller_address);
             let success = erc20.transfer_from(caller_address, minter_address, money_amount);
             // [Check] Transfer successful
             assert(success, 'Transfer failed');
 
             // [Interaction] Update remaining money amount
-            self.Mint_remaining_money_amount.write(remaining_money_amount - money_amount);
+            // self.Mint_remaining_money_amount.write(remaining_money_amount - money_amount); todo
 
             // [Interaction] Mint
             let project = IProjectDispatcher { contract_address: project_address };
