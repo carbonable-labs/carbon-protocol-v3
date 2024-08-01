@@ -155,7 +155,7 @@ fn test_public_buy() {
 
     let balance_user_after = helper_sum_balance(project_address, user_address);
 
-    equals_with_error(balance_user_after, balance_user_before + cc_to_buy, 100);
+    assert(equals_with_error(balance_user_after, balance_user_before + cc_to_buy, 100), 'balance should be the same');
 }
 
 // get_available_money_amount

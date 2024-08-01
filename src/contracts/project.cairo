@@ -352,14 +352,18 @@ mod Project {
             data: Span<felt252>
         ) {
             let balance = self._balance_of(from, token_id);
+            // println!("transfer: balance: {}", balance);
             let value_represents_percentage_of_vintage_balance = balance
                 * CC_DECIMALS_MULTIPLIER
                 / value;
+            // println!("value_represents_percentage_of_vintage_balance: {}", value_represents_percentage_of_vintage_balance);
             let internal_balance = self.erc1155.ERC1155_balances.read((token_id, from));
-            let new_internal_balance = internal_balance
+            // println!("internal balance before: {}", internal_balance);
+            let to_send = internal_balance
                 * value_represents_percentage_of_vintage_balance
                 / CC_DECIMALS_MULTIPLIER;
-            self.erc1155.safe_transfer_from(from, to, token_id, new_internal_balance, data);
+            // println!("to send: {}", to_send);
+            self.erc1155.safe_transfer_from(from, to, token_id, to_send, data);
         }
 
         fn safe_batch_transfer_from(

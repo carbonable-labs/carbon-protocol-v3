@@ -409,14 +409,14 @@ fn test_transfer_without_loss() {
     let amount_to_mint = initial_total_supply / 10; // 10% of the total supply
     buy_utils(owner_address, user_address, minter_address, amount_to_mint);
     let total_supply_balance = helper_sum_balance(project_address, user_address);
-    equals_with_error(amount_to_mint, total_supply_balance, 100);
+    assert(equals_with_error(amount_to_mint, total_supply_balance, 100), 'Error of total supply balance');
 
     start_cheat_caller_address(project_address, user_address);
     let token_id: u256 = 1;
     let num_vintages = vintages.get_num_vintages();
     let expected_balance = total_supply_balance / num_vintages.into();
     let balance = project_contract.balance_of(user_address, token_id);
-    equals_with_error(balance, expected_balance, 100);
+    assert(equals_with_error(balance, expected_balance, 100), 'Error of balance owner');
 
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let receiver_balance = project_contract.balance_of(receiver_address, token_id);
@@ -603,11 +603,15 @@ fn fuzz_test_transfer_medium_supply_low_amount(
 
 #[test]
 fn fuzz_test_transfer_medium_supply_medium_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
 ) {
+    // raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
+    let raw_supply: u256 = 94365046484817720939114948484448518925066696628864318182885849195794093634788;
+    let raw_share: u256 = 4548283413067176522814831837630882751146624989433986105735746239485922369869;
+    let raw_last_digits_share: u256 = 36883864587092468979195546282466206646048056734594801592409364701103152608278;
     // max supply of a vintage is 10k CC in mgrams
     let max_supply_for_vintage: u256 = 10_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 300; // with 2 digits after the comma, so 3%
+    // println!("raw_supply: {}, raw_share: {}, raw_last_digits_share: {}", raw_supply, raw_share, raw_last_digits_share);
     perform_fuzzed_transfer(
         raw_supply,
         raw_share,
