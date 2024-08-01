@@ -1,5 +1,5 @@
 #!/bin/bash
-source ../.env
+source .env
 
 # Check if --debug parameter is passed
 debug="false"
@@ -11,10 +11,10 @@ do
     fi
 done
 
-SIERRA_FILE=../target/dev/carbon_v3_Project.contract_class.json
+SIERRA_FILE=./target/dev/carbon_v3_Project.contract_class.json
 NAME="TokCC"
 SYMBOL="CARBT"
-OWNER=0x01e2F67d8132831f210E19c5Ee0197aA134308e16F7f284bBa2c72E28FC464D2
+OWNER=$DEPLOYER_ADDRESS
 STARTING_YEAR=2024
 NUMBER_OF_YEARS=20
 PROJECT_CARBON=121099000000
@@ -49,7 +49,7 @@ declare() {
         address=$(echo -e "$output" | ggrep -oP '0x[0-9a-fA-F]+')
     else
         # If ggrep is not available, use grep
-        address=$(echo -e "$output" | grep -oP '0x[0-9a-fA-F]+')
+        address=$(echo -e "$output" | grep -o '0x[0-9a-fA-F]+')
     fi
     echo $address
 }

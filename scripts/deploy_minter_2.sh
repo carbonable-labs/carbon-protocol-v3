@@ -1,5 +1,5 @@
 #!/bin/bash
-source ../.env
+source ./.env
 
 # Check if --debug parameter is passed
 debug="false"
@@ -11,7 +11,7 @@ do
     fi
 done
 
-SIERRA_FILE=../target/dev/carbon_v3_Minter.contract_class.json
+SIERRA_FILE=./target/dev/carbon_v3_Minter.contract_class.json
 PROJECT=0x06bdcca1d679f32955b1fd1c3116d0b72ae42b31c2833e22ba179fd0581d5a31
 OWNER=0x01e2F67d8132831f210E19c5Ee0197aA134308e16F7f284bBa2c72E28FC464D2
 ERC20=0x01bd7237484b074609961b53f7d8978e921127e53a2af358e59b4b80eb29d640
@@ -42,7 +42,7 @@ declare() {
         exit 1
     fi
 
-    address=$(echo "$output" | grep -oP '0x[0-9a-fA-F]+')
+    address=$(echo "$output" | grep -o 'Contract hash : 0x[0-9a-fA-F]\+' | awk '{print $NF}')
     echo $address
 }
 
@@ -65,7 +65,7 @@ deploy() {
         exit 1
     fi
 
-    address=$(echo "$output" | grep -oP '0x[0-9a-fA-F]+' | tail -n 1) 
+    address=$(echo "$output" |  grep -o 'Contract deployed: 0x[0-9a-fA-F]\+' | awk '{print $NF}')
     echo $address
 }
 
