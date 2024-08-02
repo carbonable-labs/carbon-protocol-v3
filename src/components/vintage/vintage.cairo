@@ -107,24 +107,6 @@ mod VintageComponent {
             CC_DECIMALS
         }
 
-        // Share is a percentage, 100% = CC_DECIMALS_MULTIPLIER
-        fn share_to_cc(self: @ComponentState<TContractState>, share: u256, token_id: u256) -> u256 {
-            let cc_supply: u256 = self.get_carbon_vintage(token_id).supply.into();
-            let result = share * cc_supply / CC_DECIMALS_MULTIPLIER;
-            assert(result <= cc_supply, 'CC value exceeds vintage supply');
-            result
-        }
-
-        fn cc_to_share(
-            self: @ComponentState<TContractState>, cc_value: u256, token_id: u256
-        ) -> u256 {
-            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
-            assert(cc_supply > 0, 'CC supply of vintage is 0');
-            let share = cc_value * CC_DECIMALS_MULTIPLIER / cc_supply;
-            assert(share <= CC_DECIMALS_MULTIPLIER, 'Share value exceeds 100%');
-            share
-        }
-
         fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<CarbonVintage> {
             let mut vintages = ArrayTrait::<CarbonVintage>::new();
             let n = self.Vintage_vintages_len.read();

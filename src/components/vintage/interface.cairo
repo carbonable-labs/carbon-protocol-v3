@@ -5,12 +5,6 @@ trait IVintage<TContractState> {
     /// Returns the project total carbon credits.
     fn get_project_carbon(self: @TContractState) -> u128;
 
-    ///  Convert a share of supply balance to a carbon credit balance.
-    fn share_to_cc(self: @TContractState, share: u256, token_id: u256) -> u256;
-
-    /// Convert a carbon credit balance to a share of supply balance.
-    fn cc_to_share(self: @TContractState, cc_value: u256, token_id: u256) -> u256;
-
     /// Returns the number of vintages of the project.
     fn get_num_vintages(self: @TContractState) -> usize;
 
