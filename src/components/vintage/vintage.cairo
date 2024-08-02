@@ -8,7 +8,7 @@ mod VintageComponent {
     use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
-    use carbon_v3::models::constants::{CC_DECIMALS, CC_DECIMALS_MULTIPLIER};
+    use carbon_v3::models::constants::{CC_DECIMALS};
     use carbon_v3::contracts::project::Project::OWNER_ROLE;
 
     // Roles
@@ -202,18 +202,6 @@ mod VintageComponent {
                         token_id: token_id, old_status: old_status, new_status: new_status,
                     }
                 );
-        }
-
-        fn set_project_carbon(ref self: ComponentState<TContractState>, new_carbon: u128) {
-            self.assert_only_role(OWNER_ROLE);
-
-            // [Check] Project carbon is not 0
-            assert(new_carbon >= 0, 'Project carbon cannot be 0');
-            // [Effect] Update storage
-            let old_carbon = self.Vintage_project_carbon.read();
-            self.Vintage_project_carbon.write(new_carbon);
-            // [Event] Emit event
-            self.emit(ProjectCarbonUpdated { old_carbon, new_carbon, });
         }
 
         fn set_vintages(

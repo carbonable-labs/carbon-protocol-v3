@@ -29,9 +29,6 @@ trait IVintage<TContractState> {
     /// Adapt the cc_supply of a vintage, will impact holders balance.
     fn rebase_vintage(ref self: TContractState, token_id: u256, new_cc_supply: u256);
 
-    /// Set the project total carbon credits. TODO: check if needed
-    fn set_project_carbon(ref self: TContractState, new_carbon: u128);
-
     /// Set all carbon vintages based on absorption curve
     fn set_vintages(ref self: TContractState, yearly_absorptions: Span<u256>, start_year: u32);
 }

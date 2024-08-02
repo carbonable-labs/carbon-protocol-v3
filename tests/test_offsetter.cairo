@@ -31,7 +31,6 @@ use snforge_std::{
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
 use carbon_v3::components::vintage::vintage::VintageComponent::{Event};
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::vintage::VintageComponent;
 use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
 use carbon_v3::components::offsetter::interface::{
@@ -112,23 +111,28 @@ fn test_offsetter_retire_carbon_credits() {
     stop_cheat_caller_address(project_address);
 
     let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
 
-    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
     let initial_balance = project.balance_of(user_address, token_id);
 
+    let amount_to_offset = initial_balance / 2;
+    
     start_cheat_caller_address(project_address, owner_address);
     vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
-    stop_cheat_caller_address(project_address);
-
+    
+    start_cheat_caller_address(offsetter_address, user_address);
+    start_cheat_caller_address(project_address, offsetter_address);
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
-    offsetter.retire_carbon_credits(token_id, 100000);
+    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+    // project.safe_transfer_from(user_address, offsetter_address, token_id, amount_to_offset, array![].span());
 
     let carbon_retired = offsetter.get_carbon_retired(token_id);
-    assert(carbon_retired == 100000, 'Carbon retired is wrong');
+    assert(carbon_retired == amount_to_offset, 'Carbon retired is wrong');
 
     let final_balance = project.balance_of(user_address, token_id);
-    assert(final_balance == initial_balance - 100000, 'Balance is wrong');
+    assert(final_balance == initial_balance - amount_to_offset, 'Balance is wrong');
 }
 
 #[test]
@@ -145,13 +149,15 @@ fn test_offsetter_wrong_status() {
     start_cheat_caller_address(project_address, owner_address);
 
     let project = IProjectDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
     project.grant_minter_role(minter_address);
     project.grant_offsetter_role(offsetter_address);
     stop_cheat_caller_address(project_address);
 
-    let share = 33 * CC_DECIMALS_MULTIPLIER / 100; // 33%
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
 
-    buy_utils(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
 
     let vintages = IVintageDispatcher { contract_address: project_address };
     let token_id: u256 = 1;
@@ -182,8 +188,10 @@ fn test_retire_carbon_credits_insufficient_credits() {
 
     stop_cheat_caller_address(project_address);
     let vintages = IVintageDispatcher { contract_address: project_address };
-    let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
-    buy_utils(owner_address, user_address, minter_address, share);
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
 
     start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
@@ -213,9 +221,10 @@ fn test_retire_carbon_credits_exact_balance() {
     stop_cheat_caller_address(project_address);
 
     let vintages = IVintageDispatcher { contract_address: project_address };
-    let share = 33 * CC_DECIMALS_MULTIPLIER / 100;
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
 
-    buy_utils(owner_address, user_address, minter_address, share);
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
     let token_id: u256 = 1;
     let user_balance = project_contract.balance_of(user_address, token_id);
 
@@ -251,8 +260,10 @@ fn test_retire_carbon_credits_multiple_retirements() {
     stop_cheat_caller_address(project_address);
 
     let vintages = IVintageDispatcher { contract_address: project_address };
-    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils(owner_address, user_address, minter_address, share);
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
     let token_id: u256 = 1;
     let balance_initial = project.balance_of(user_address, token_id);
 
@@ -291,8 +302,10 @@ fn test_retire_list_carbon_credits_valid_inputs() {
     stop_cheat_caller_address(project_address);
 
     let vintages = IVintageDispatcher { contract_address: project_address };
-    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils(owner_address, user_address, minter_address, share);
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
     let vintage_2024_id: u256 = 1;
     let vintage_2026_id: u256 = 3;
     let balance_initial_token_id = project.balance_of(user_address, vintage_2024_id);
@@ -367,8 +380,10 @@ fn test_retire_list_carbon_credits_partial_valid_inputs() {
     stop_cheat_caller_address(project_address);
 
     let vintages = IVintageDispatcher { contract_address: project_address };
-    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils(owner_address, user_address, minter_address, share);
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
 
     start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
@@ -400,8 +415,10 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
     stop_cheat_caller_address(project_address);
 
     let vintages = IVintageDispatcher { contract_address: project_address };
-    let share: u256 = 10 * CC_DECIMALS_MULTIPLIER / 100; // 10%
-    buy_utils(owner_address, user_address, minter_address, share);
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
     let token_id: u256 = 1;
     let initial_balance = project.balance_of(user_address, token_id);
 

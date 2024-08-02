@@ -1,3 +1,4 @@
+use core::traits::TryInto;
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
@@ -38,52 +39,51 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 
 fn get_mock_absorptions() -> Span<u256> {
     let absorptions: Span<u256> = array![
-        // 0,
-        // 1000000000,
-        // 4799146600,
-        // 8882860500,
-        // 11843814000,
-        // 37092250700,
-        // 62340687400,
-        // 87589124100,
-        // 112837560800,
-        // 138085997600,
-        // 207617572100,
-        // 277149146600,
-        // 346680721200,
-        // 416212295700,
-        // 485743870300,
-        // 555275444800,
-        // 624807019300,
-        // 694338593900,
-        // 763870168400,
-        // 800000000000
-        25000000000000000, // 25 000CC, in grams
-        50000000000000000,
-        75000000000000000,
-        100000000000000000,
-        125000000000000000,
-        150000000000000000,
-        175000000000000000,
-        200000000000000000,
-        225000000000000000,
-        250000000000000000,
-        275000000000000000,
-        300000000000000000,
-        325000000000000000,
-        350000000000000000,
-        375000000000000000,
-        400000000000000000,
-        425000000000000000,
-        450000000000000000,
-        475000000000000000,
-        500000000000000000
+        0,
+        100000000000,
+        479914660000,
+        888286050000,
+        1184381400000,
+        3709225070000,
+        6234068740000,
+        8758912410000,
+        11283756080000,
+        13808599760000,
+        20761757210000,
+        27714914660000,
+        34668072120000,
+        41621229570000,
+        48574387030000,
+        55527544480000,
+        62480701930000,
+        69433859390000,
+        76387016840000,
+        80000000000000
+        // 25000000000000000, // 25 000CC, in grams
+        // 50000000000000000,
+        // 75000000000000000,
+        // 100000000000000000,
+        // 125000000000000000,
+        // 150000000000000000,
+        // 175000000000000000,
+        // 200000000000000000,
+        // 225000000000000000,
+        // 250000000000000000,
+        // 275000000000000000,
+        // 300000000000000000,
+        // 325000000000000000,
+        // 350000000000000000,
+        // 375000000000000000,
+        // 400000000000000000,
+        // 425000000000000000,
+        // 450000000000000000,
+        // 475000000000000000,
+        // 500000000000000000
     ]
         .span();
 
     let mut yearly_absorptions: Array<u256> = array![];
     let mut index: u32 = 0;
-
     loop {
         if index >= absorptions.len() - 1 {
             break;
@@ -119,14 +119,15 @@ fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
     } else {
         b - a
     };
+    if diff > 10 {
+        // println!("diff: {}", diff);
+    }
+    let diff = if a > b {
+        a - b
+    } else {
+        b - a
+    };
     diff <= error
-}
-
-// testing with shares is easier to determine the expected values instead of amount in dollars
-fn share_to_buy_amount(project_address: ContractAddress, share: u256) -> u256 {
-    let project = IProjectDispatcher { contract_address: project_address };
-    let max_money_amount = project.get_max_money_amount();
-    share * max_money_amount / CC_DECIMALS_MULTIPLIER
 }
 
 ///
@@ -146,7 +147,7 @@ fn deploy_project() -> ContractAddress {
 }
 
 fn setup_project(
-    contract_address: ContractAddress, project_carbon: u128, yearly_absorptions: Span<u256>
+    contract_address: ContractAddress, yearly_absorptions: Span<u256>
 ) {
     let vintages = IVintageDispatcher { contract_address };
     // Fake the owner to call set_vintages and set_project_carbon which can only be run by owner
@@ -154,13 +155,12 @@ fn setup_project(
     start_cheat_caller_address(contract_address, owner_address);
 
     vintages.set_vintages(yearly_absorptions, 2024);
-    vintages.set_project_carbon(project_carbon);
 }
 
 fn default_setup_and_deploy() -> ContractAddress {
     let project_address = deploy_project();
     let yearly_absorptions: Span<u256> = get_mock_absorptions();
-    setup_project(project_address, 8000000000, yearly_absorptions);
+    setup_project(project_address, yearly_absorptions);
     project_address
 }
 
@@ -185,14 +185,39 @@ fn deploy_minter(
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     start_cheat_caller_address(project_address, owner);
     let public_sale: bool = true;
-    let max_value: felt252 = 8000000000;
+    let max_mintable_cc: felt252 = 80000000000000;
     let unit_price: felt252 = 11;
     let mut calldata: Array<felt252> = array![
         project_address.into(),
         payment_address.into(),
         public_sale.into(),
-        max_value,
+        max_mintable_cc,
         0,
+        unit_price,
+        0,
+        owner.into()
+    ];
+
+    let (contract_address, _) = contract.deploy(@calldata).expect('Minter deployment failed');
+    contract_address
+}
+
+fn deploy_minter_specific_max_mintable(
+    project_address: ContractAddress, payment_address: ContractAddress, max_mintable_cc: u256
+) -> ContractAddress {
+    let contract = snf::declare("Minter").expect('Declaration failed');
+    let owner: ContractAddress = contract_address_const::<'OWNER'>();
+    let low: felt252 = max_mintable_cc.low.into();
+    let high: felt252 = max_mintable_cc.high.into();
+    start_cheat_caller_address(project_address, owner);
+    let public_sale: bool = true;
+    let unit_price: felt252 = 11;
+    let mut calldata: Array<felt252> = array![
+        project_address.into(),
+        payment_address.into(),
+        public_sale.into(),
+        low,
+        high,
         unit_price,
         0,
         owner.into()
@@ -217,9 +242,8 @@ fn deploy_erc20() -> ContractAddress {
 fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, ContractAddress) {
     let project_address = deploy_project();
     let erc20_address = deploy_erc20();
-    let minter_address = deploy_minter(project_address, erc20_address);
-
-    // Tests are done on a single vintage, thus the absorptions are the same
+    
+    // Tests are done on a single vintage, thus the yearly supply are the same
     let mut total_absorption = 0;
     let mut index = 0;
     let num_vintages: usize = 20;
@@ -228,23 +252,24 @@ fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, Contract
     loop {
         if index >= num_vintages {
             break;
-        }
-        total_absorption += cc_supply;
-        yearly_absorptions.append(cc_supply);
-        index += 1;
-    };
-
-    let mut index = 0;
-    loop {
-        if index >= num_vintages {
-            break;
-        }
-        // println!("  ");
-        // println!("index: {}", index);
+            }
+            total_absorption += cc_supply;
+            yearly_absorptions.append(cc_supply);
+            index += 1;
+            };
+            
+            let mut index = 0;
+            loop {
+                if index >= num_vintages {
+                    break;
+                    }
+                    // println!("  ");
+                    // println!("index: {}", index);
         // println!("yearly_absorptions: {}", *yearly_absorptions.at(index));
         index += 1;
     };
-    setup_project(project_address, 8000000000, mock_absorptions);
+    let minter_address = deploy_minter_specific_max_mintable(project_address, erc20_address, total_absorption);
+    setup_project(project_address, mock_absorptions);
     (project_address, minter_address, erc20_address)
 }
 
@@ -303,8 +328,6 @@ fn perform_fuzzed_transfer(
     }
 
     let cc_amount_to_buy = raw_cc_amount % supply;
-    // println!("supply: {}", supply);
-    // println!("cc_amount_to_buy: {}", cc_amount_to_buy);
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
@@ -321,38 +344,23 @@ fn perform_fuzzed_transfer(
 
     start_cheat_caller_address(project_address, user_address);
 
-    let token_id: u256 = 1;
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let num_vintages = vintages.get_num_vintages();
-    let expected_balance = sum_balance / num_vintages.into();
-    let mut index = 0;
-    loop {
-        if index >= num_vintages {
-            break;
-        }
-        let balance = project.balance_of(user_address, index.into());
-        // println!("balance: {}", balance);
-        index += 1;
-    };
-    let balance = project.balance_of(user_address, token_id);
-    // println!("expected_balance: {}", expected_balance);
-    assert(equals_with_error(balance, expected_balance, 100), 'Error balance owner 1');
+    // Check the balance of the user, total cc amount bought should be distributed proportionally
+    helper_check_vintage_balances(project_address, user_address, cc_amount_to_buy);
 
+    // Receiver should have 0 cc
     let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
-    let receiver_balance = project.balance_of(receiver_address, token_id);
-    assert(equals_with_error(receiver_balance, 0, 10), 'Error of receiver balance 1');
+    helper_check_vintage_balances(project_address, receiver_address, 0);
 
-    project.safe_transfer_from(user_address, receiver_address, token_id, balance, array![].span());
+    let token_id = 1;
+    let balance_vintage_user_before = project.balance_of(user_address, token_id);
+    project.safe_transfer_from(user_address, receiver_address, token_id, balance_vintage_user_before, array![].span());
 
-    let balance = project.balance_of(user_address, token_id);
+    let balance_vintage_user_after = project.balance_of(user_address, token_id);
+    assert(equals_with_error(balance_vintage_user_after, 0, 100), 'Error balance vintage user');
 
-    assert(equals_with_error(balance, 0, 10), 'Error balance owner 2');
-
-    let receiver_balance = project.balance_of(receiver_address, token_id);
-    // println!("receiver_balance: {}", receiver_balance);
-    // println!("expected_balance: {}", expected_balance);
+    let balance_vintage_receiver = project.balance_of(receiver_address, token_id);
     assert(
-        equals_with_error(receiver_balance, expected_balance, 10), 'Error of receiver balance 2'
+        equals_with_error(balance_vintage_receiver, balance_vintage_user_before, 100), 'Error balance vintage receiver'
     );
 // let token_id = 1;
 // let initial_balance = project.balance_of(user_address, token_id);
@@ -421,4 +429,24 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
         index += 1;
     };
     total_balance
+}
+
+fn helper_check_vintage_balances(project_address: ContractAddress, user_address: ContractAddress, total_cc_bought: u256) {
+    let project = IProjectDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let num_vintages: usize = vintages.get_num_vintages();
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let token_ids = helper_get_token_ids(project_address);
+    let mut index = 0;
+    loop {
+        if index >= num_vintages {
+            break;
+        }
+        let token_id = *token_ids.at(index);
+        let proportion_supply = vintages.get_carbon_vintage(token_id).supply * CC_DECIMALS_MULTIPLIER / initial_total_supply;
+        let balance = project.balance_of(user_address, token_id);
+        let expected_balance = total_cc_bought * proportion_supply / CC_DECIMALS_MULTIPLIER;
+        assert(equals_with_error(balance, expected_balance, 10), 'Error vintage balance');
+        index += 1;
+    };
 }

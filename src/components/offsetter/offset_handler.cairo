@@ -29,8 +29,6 @@ mod OffsetComponent {
 
     // Constants
 
-    use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
-
     #[storage]
     struct Storage {
         Offsetter_carbonable_project_address: ContractAddress,
@@ -225,7 +223,8 @@ mod OffsetComponent {
             let project = IProjectDispatcher {
                 contract_address: self.Offsetter_carbonable_project_address.read()
             };
-            project.offset(from, vintage, amount);
+            let amount_to_offset = project.intern_balance_to_cc(from, amount, vintage);
+            project.offset(from, vintage, amount_to_offset);
             let current_retirement = self.Offsetter_carbon_retired.read((vintage, from));
             let new_retirement = current_retirement + amount;
             self.Offsetter_carbon_retired.write((vintage, from), new_retirement);

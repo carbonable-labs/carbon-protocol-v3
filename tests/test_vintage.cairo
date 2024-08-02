@@ -18,7 +18,6 @@ use snforge_std::{
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
 use carbon_v3::components::vintage::VintageComponent::{Event};
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::vintage::VintageComponent;
 
 // Contracts
@@ -58,50 +57,6 @@ struct Contracts {
 // Tests
 //
 
-/// set_project_carbon
-
-#[test]
-fn test_set_project_carbon() {
-    let project_address = deploy_project();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    start_cheat_caller_address(project_address, owner_address);
-    vintages.set_project_carbon(PROJECT_CARBON);
-    let fetched_value = vintages.get_project_carbon();
-    assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
-}
-
-#[test]
-#[should_panic(expected: 'Caller does not have role')]
-fn test_set_project_carbon_without_owner_role() {
-    let project_address = deploy_project();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    vintages.set_project_carbon(PROJECT_CARBON.into());
-}
-
-#[test]
-fn test_get_project_carbon_not_set() {
-    let project_address = deploy_project();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    // [Assert] default project_carbon is 0
-    let fetched_value = vintages.get_project_carbon();
-    assert(fetched_value == 0, 'default project_carbon is not 0');
-}
-
-#[test]
-fn test_set_project_carbon_twice() {
-    let project_address = deploy_project();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    start_cheat_caller_address(project_address, owner_address);
-    vintages.set_project_carbon(PROJECT_CARBON.into());
-    let fetched_value = vintages.get_project_carbon();
-    assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
-    let new_value: u128 = 100;
-    vintages.set_project_carbon(new_value);
-    let fetched_value = vintages.get_project_carbon();
-    assert(fetched_value == new_value, 'project_carbon did not change');
-}
 
 /// set_vintages
 
@@ -317,8 +272,10 @@ fn test_rebase_half_supply() {
     project.grant_minter_role(minter_address);
     start_cheat_caller_address(project_address, minter_address);
 
-    let share = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%
-    buy_utils(owner_address, user_address, minter_address, share);
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 50; // 50% of the total supply
+
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
 
     let num_vintages = vintages.get_num_vintages();
     // Rebase every vintage with half the supply

@@ -2,7 +2,7 @@ use starknet::{ContractAddress, ClassHash};
 
 #[starknet::interface]
 trait IExternal<TContractState> {
-    fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
+    // fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
     fn offset(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
         ref self: TContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
@@ -13,8 +13,6 @@ trait IExternal<TContractState> {
     fn uri(self: @TContractState, token_id: u256) -> Span<felt252>;
     fn get_provider(self: @TContractState) -> ContractAddress;
     fn set_provider(ref self: TContractState, provider: ContractAddress);
-    fn set_max_money_amount(ref self: TContractState, max_money_amount: u256);
-    fn get_max_money_amount(self: @TContractState) -> u256;
     fn get_uri(self: @TContractState) -> ClassHash;
     fn set_uri(ref self: TContractState, class_hash: ClassHash);
     fn decimals(self: @TContractState) -> u8;
@@ -48,6 +46,9 @@ trait IExternal<TContractState> {
         self: @TContractState, owner: ContractAddress, operator: ContractAddress
     ) -> bool;
     fn set_approval_for_all(ref self: TContractState, operator: ContractAddress, approved: bool);
+    fn intern_balance_to_cc(
+        self: @TContractState, account: ContractAddress, value: u256, token_id: u256
+    ) -> u256;
 }
 
 
@@ -139,7 +140,6 @@ mod Project {
         erc4906: ERC4906Component::Storage,
         #[substorage(v0)]
         metadata: MetadataComponent::Storage,
-        Mint_max_money_amount: u256,
     }
 
     #[event]
@@ -199,19 +199,18 @@ mod Project {
     // Externals
     #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
-        fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
-            // [Check] Only Minter can mint
-            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
-            assert(isMinter, 'Only Minter can mint');
-            self.erc1155.mint(to, token_id, value);
-        }
+        // fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+        //     // [Check] Only Minter can mint
+        //     let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+        //     assert(isMinter, 'Only Minter can mint');
+        //     self.erc1155.mint(to, token_id, value);
+        // }
 
         fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
             // [Check] Only Offsetter can offset
             let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
             assert(isOffseter, 'Only Offsetter can offset');
-            let share_value = self.vintage.cc_to_share(value, token_id);
-            self.erc1155.burn(from, token_id, share_value);
+            self.erc1155.burn(from, token_id, value);
         }
 
         fn batch_mint(
@@ -249,17 +248,6 @@ mod Project {
             let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
             assert!(isOwner, "Caller is not owner");
             self.metadata.set_provider(provider);
-        }
-
-        fn set_max_money_amount(ref self: ContractState, max_money_amount: u256) {
-            // TODO: possible only while public sale is open
-            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
-            assert!(isOwner, "Caller is not owner");
-            self.Mint_max_money_amount.write(max_money_amount);
-        }
-
-        fn get_max_money_amount(self: @ContractState) -> u256 {
-            self.Mint_max_money_amount.read()
         }
 
         fn set_uri(ref self: ContractState, class_hash: ClassHash) {
@@ -351,18 +339,7 @@ mod Project {
             value: u256,
             data: Span<felt252>
         ) {
-            let balance = self._balance_of(from, token_id);
-            // println!("transfer: balance: {}", balance);
-            let value_represents_percentage_of_vintage_balance = balance
-                * CC_DECIMALS_MULTIPLIER
-                / value;
-            // println!("value_represents_percentage_of_vintage_balance: {}", value_represents_percentage_of_vintage_balance);
-            let internal_balance = self.erc1155.ERC1155_balances.read((token_id, from));
-            // println!("internal balance before: {}", internal_balance);
-            let to_send = internal_balance
-                * value_represents_percentage_of_vintage_balance
-                / CC_DECIMALS_MULTIPLIER;
-            // println!("to send: {}", to_send);
+            let to_send = self.intern_balance_to_cc(from, value, token_id);
             self.erc1155.safe_transfer_from(from, to, token_id, to_send, data);
         }
 
@@ -387,6 +364,21 @@ mod Project {
             ref self: ContractState, operator: ContractAddress, approved: bool
         ) {
             self.erc1155.set_approval_for_all(operator, approved);
+        }
+
+        fn intern_balance_to_cc(
+            self: @ContractState, account: ContractAddress, value: u256, token_id: u256
+        ) -> u256 {
+
+            let balance = self._balance_of(account, token_id);
+            let value_represents_percentage_of_vintage_balance = value
+                * CC_DECIMALS_MULTIPLIER
+                / balance;
+            let internal_balance = self.erc1155.ERC1155_balances.read((token_id, account));
+            let to_send = internal_balance
+                * value_represents_percentage_of_vintage_balance
+                / CC_DECIMALS_MULTIPLIER;
+            to_send
         }
     }
 
