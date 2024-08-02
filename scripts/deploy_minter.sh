@@ -4,21 +4,22 @@ source ../.env
 source .env 
 
 
-USAGE="Usage: ./deploy_minter.sh <CLASS_HASH> <StableCoin> <Project>"
-# Vérification de l'argument CLASS_HASH
+USAGE="Usage: ./deploy_minter.sh <CLASS_HASH> <STABLECOIN> <PROJECT>"
+
+#  CLASS_HASH var verification
 if [ -z "$1" ]; then
     echo "Error: No CLASS_HASH provided.$USAGE"
     exit 1
 fi
 
-# Vérification de l'argument CLASS_HASH
+#  STABLECOIN var verification
 if [ -z "$2" ]; then
     echo "Error: No stablecoin stable provided.$USAGE"
     exit 1
 fi
 
-# Vérification de l'argument CLASS_HASH
-if [ -z "$2" ]; then
+#  PROJECT var verification
+if [ -z "$3" ]; then
     echo "Error: No project address provided.$USAGE"
     exit 1
 fi
