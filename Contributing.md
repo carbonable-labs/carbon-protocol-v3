@@ -113,7 +113,7 @@ bash scripts/declare.sh
 2 Declare contract -> it gives you a class_hash
 
 ```bash
-bash scripts/declare.sh <name>
+bash scripts/declare.sh <contract_name>
 ```
 
 3 Deploy contract (order mock (if needed), project, minter, offsetter, minter)
