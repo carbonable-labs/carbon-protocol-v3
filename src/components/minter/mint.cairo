@@ -335,11 +335,6 @@ mod MintComponent {
             assert(money_amount >= min_money_amount_per_tx, 'Value too low');
 
             let remaining_mintable_cc = self.Mint_remaining_mintable_cc.read();
-            if (remaining_mintable_cc < cc_amount) {
-                println!("max_mintable_cc: {}", self.Mint_max_mintable_cc.read());
-                println!("remaining_mintable_cc: {}", remaining_mintable_cc);
-                println!("cc_amount: {}", cc_amount);
-            }
             assert(remaining_mintable_cc >= cc_amount, 'Minting limit reached');
 
             // [Interaction] Compute the amount of cc for each vintage

@@ -46,8 +46,8 @@ trait IExternal<TContractState> {
         self: @TContractState, owner: ContractAddress, operator: ContractAddress
     ) -> bool;
     fn set_approval_for_all(ref self: TContractState, operator: ContractAddress, approved: bool);
-    fn intern_balance_to_cc(
-        self: @TContractState, account: ContractAddress, value: u256, token_id: u256
+    fn cc_to_internal(
+        self: @TContractState, account: ContractAddress, cc_value_to_send: u256, token_id: u256
     ) -> u256;
 }
 
@@ -339,7 +339,7 @@ mod Project {
             value: u256,
             data: Span<felt252>
         ) {
-            let to_send = self.intern_balance_to_cc(from, value, token_id);
+            let to_send = self.cc_to_internal(from, value, token_id);
             self.erc1155.safe_transfer_from(from, to, token_id, to_send, data);
         }
 
@@ -366,19 +366,13 @@ mod Project {
             self.erc1155.set_approval_for_all(operator, approved);
         }
 
-        fn intern_balance_to_cc(
-            self: @ContractState, account: ContractAddress, value: u256, token_id: u256
+        fn cc_to_internal(
+            self: @ContractState, account: ContractAddress, cc_value_to_send: u256, token_id: u256
         ) -> u256 {
+            let vintage_supply = self.vintage.get_carbon_vintage(token_id).supply.into();
+            let initial_project_supply = self.vintage.get_initial_project_cc_supply();
+            cc_value_to_send * initial_project_supply / vintage_supply
 
-            let balance = self._balance_of(account, token_id);
-            let value_represents_percentage_of_vintage_balance = value
-                * CC_DECIMALS_MULTIPLIER
-                / balance;
-            let internal_balance = self.erc1155.ERC1155_balances.read((token_id, account));
-            let to_send = internal_balance
-                * value_represents_percentage_of_vintage_balance
-                / CC_DECIMALS_MULTIPLIER;
-            to_send
         }
     }
 

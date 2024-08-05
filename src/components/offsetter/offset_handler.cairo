@@ -223,7 +223,7 @@ mod OffsetComponent {
             let project = IProjectDispatcher {
                 contract_address: self.Offsetter_carbonable_project_address.read()
             };
-            let amount_to_offset = project.intern_balance_to_cc(from, amount, vintage);
+            let amount_to_offset = project.cc_to_internal(from, amount, vintage);
             project.offset(from, vintage, amount_to_offset);
             let current_retirement = self.Offsetter_carbon_retired.read((vintage, from));
             let new_retirement = current_retirement + amount;

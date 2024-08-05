@@ -431,6 +431,7 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
     total_balance
 }
 
+// Should be used to test balances after a mint, not for transfers
 fn helper_check_vintage_balances(project_address: ContractAddress, user_address: ContractAddress, total_cc_bought: u256) {
     let project = IProjectDispatcher { contract_address: project_address };
     let vintages = IVintageDispatcher { contract_address: project_address };

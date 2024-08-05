@@ -404,6 +404,7 @@ fn test_project_balance_of() {
 fn test_transfer_without_loss() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
     let project_contract = IProjectDispatcher { contract_address: project_address };
@@ -412,29 +413,27 @@ fn test_transfer_without_loss() {
 
     start_cheat_caller_address(project_address, owner_address);
     project_contract.grant_minter_role(minter_address);
-
     stop_cheat_caller_address(project_address);
+
     let initial_total_supply = vintages.get_initial_project_cc_supply();
     let amount_to_mint = initial_total_supply / 10; // 10% of the total supply
     buy_utils(owner_address, user_address, minter_address, amount_to_mint);
     let total_supply_balance = helper_sum_balance(project_address, user_address);
     assert(equals_with_error(amount_to_mint, total_supply_balance, 100), 'Error of total supply balance');
+    helper_check_vintage_balances(project_address, user_address, amount_to_mint);
 
-    start_cheat_caller_address(project_address, user_address);
     let token_id: u256 = 1;
-    let num_vintages = vintages.get_num_vintages();
-    let expected_balance = total_supply_balance / num_vintages.into();
-    let balance = project_contract.balance_of(user_address, token_id);
-    assert(equals_with_error(balance, expected_balance, 100), 'Error of balance owner');
-
-    let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let receiver_balance = project_contract.balance_of(receiver_address, token_id);
     assert(equals_with_error(receiver_balance, 0, 10), 'Error of receiver balance 1');
 
+    let balance_user_before = project_contract.balance_of(user_address, token_id);
+    
     // let mut spy = spy_events();
-    // let value = vintages.cc_to_share(balance, token_id);
+    
+    start_cheat_caller_address(project_address, user_address);
+    println!("balance_user_before in test: {}", balance_user_before);
     project_contract
-        .safe_transfer_from(user_address, receiver_address, token_id, balance, array![].span());
+        .safe_transfer_from(user_address, receiver_address, token_id, balance_user_before, array![].span());
     // let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
     //     ERC1155Component::TransferSingle {
     //         operator: user_address,
@@ -446,11 +445,12 @@ fn test_transfer_without_loss() {
     // );
     // spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
 
-    let balance = project_contract.balance_of(user_address, token_id);
+    let balance_user_after = project_contract.balance_of(user_address, token_id);
 
-    assert(equals_with_error(balance, 0, 10), 'Error balance owner 2');
+    assert(equals_with_error(balance_user_after, 0, 10), 'Error balance user 2');
 
     let receiver_balance = project_contract.balance_of(receiver_address, token_id);
+    let expected_balance = balance_user_before;
     assert(
         equals_with_error(receiver_balance, expected_balance, 10), 'Error of receiver balance 2'
     );
