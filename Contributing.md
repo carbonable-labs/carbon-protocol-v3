@@ -104,7 +104,7 @@ starknet-devnet --help
 #### Deploy
 
 To deploy (on testnet/mainnet/devnet), use:
-1 Check available contract
+1. Check available contract
 
 ```bash
 bash scripts/declare.sh
