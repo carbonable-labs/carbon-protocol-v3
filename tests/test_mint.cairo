@@ -135,9 +135,6 @@ fn test_public_buy() {
     let token_id = 1;
     let balance_user_before = project_contract.balance_of(user_address, token_id);
 
-    // let remaining_money = minter.get_available_money_amount();
-    // assert(remaining_money == project_carbon.into(), 'remaining money wrong value'); todo fix, shouldn't be project carbon here
-
     let cc_to_buy: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS; // 10 CC
     let money_amount = cc_to_buy * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
 
@@ -160,62 +157,63 @@ fn test_public_buy() {
 
 // get_remaining_mintable_cc
 
-// #[test]
-// fn test_get_remaining_mintable_cc() {
-//     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-//     let user_address: ContractAddress = contract_address_const::<'USER'>();
-//     let project_address = deploy_project();
-//     let erc20_address = deploy_erc20();
-//     let minter_address = deploy_minter(project_address, erc20_address);
+#[test]
+fn test_get_remaining_mintable_cc() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = deploy_project();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
-//     start_cheat_caller_address(project_address, owner_address);
-//     let project_contract = IProjectDispatcher { contract_address: project_address };
-//     project_contract.grant_minter_role(minter_address);
+    start_cheat_caller_address(project_address, owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(minter_address);
 
-//     let yearly_absorptions: Span<u256> = get_mock_absorptions();
-//     let default_max_mintable_cc: u256 = 8000000000;
-//     setup_project(project_address, yearly_absorptions);
-//     stop_cheat_caller_address(project_address);
+    let yearly_absorptions: Span<u256> = get_mock_absorptions();
+    let default_max_mintable_cc: u256 = 80000000000000;
+    setup_project(project_address, yearly_absorptions);
+    stop_cheat_caller_address(project_address);
 
-//     let minter = IMintDispatcher { contract_address: minter_address };
+    let minter = IMintDispatcher { contract_address: minter_address };
 
-//     let remaining_mintable_cc = minter.get_remaining_mintable_cc();
-//     assert(remaining_mintable_cc == default_max_mintable_cc, 'remaining money wrong value');
+    let remaining_mintable_cc = minter.get_remaining_mintable_cc();
+    assert(remaining_mintable_cc == default_max_mintable_cc, 'remaining money wrong value 1');
 
-//     let amount_to_buy: u256 = 1000;
+    let amount_to_buy: u256 = 1000;
 
-//     start_cheat_caller_address(erc20_address, owner_address);
-//     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
-//     erc20.transfer(user_address, amount_to_buy);
+    start_cheat_caller_address(erc20_address, owner_address);
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    erc20.transfer(user_address, amount_to_buy);
 
-//     start_cheat_caller_address(erc20_address, user_address);
-//     erc20.approve(minter_address, amount_to_buy);
+    start_cheat_caller_address(erc20_address, user_address);
+    erc20.approve(minter_address, amount_to_buy);
 
-//     start_cheat_caller_address(minter_address, user_address);
-//     start_cheat_caller_address(erc20_address, minter_address);
-//     minter.public_buy(amount_to_buy);
-//     stop_cheat_caller_address(minter_address);
-//     stop_cheat_caller_address(erc20_address);
+    start_cheat_caller_address(minter_address, user_address);
+    start_cheat_caller_address(erc20_address, minter_address);
+    minter.public_buy(amount_to_buy);
+    stop_cheat_caller_address(minter_address);
+    stop_cheat_caller_address(erc20_address);
 
-//     let remaining_mintable_cc_after_buy = minter.get_remaining_mintable_cc();
-//     assert(
-//         remaining_mintable_cc_after_buy == default_max_mintable_cc - amount_to_buy,
-//     );
+    let remaining_mintable_cc_after_buy = minter.get_remaining_mintable_cc();
+    assert(
+        remaining_mintable_cc_after_buy == default_max_mintable_cc - amount_to_buy, 'remaining money wrong value 2'
+    );
 
-//     // Mint all the remaining carbon credits
-//     let remaining_mintable_cc = minter.get_remaining_mintable_cc();
-//     start_cheat_caller_address(erc20_address, owner_address);
-//     erc20.transfer(user_address, remaining_mintable_cc);
+    // Mint all the remaining carbon credits
+    let remaining_mintable_cc = minter.get_remaining_mintable_cc();
+    start_cheat_caller_address(erc20_address, owner_address);
+    erc20.transfer(user_address, remaining_mintable_cc);
 
-//     start_cheat_caller_address(erc20_address, user_address);
-//     erc20.approve(minter_address, remaining_money_to_buy);
-//     start_cheat_caller_address(minter_address, user_address);
-//     start_cheat_caller_address(erc20_address, minter_address);
-//     minter.public_buy(remaining_money_to_buy);
+    let remaining_money_to_buy = remaining_mintable_cc * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
+    start_cheat_caller_address(erc20_address, user_address);
+    erc20.approve(minter_address, remaining_money_to_buy);
+    start_cheat_caller_address(minter_address, user_address);
+    start_cheat_caller_address(erc20_address, minter_address);
+    minter.public_buy(remaining_mintable_cc);
 
-//     let remaining_money_after_buying_all = minter.get_available_money_amount();
-//     assert(remaining_money_after_buying_all == 0, 'remaining money wrong value');
-// }
+    let remaining_mintable_cc_after_buying_all = minter.get_remaining_mintable_cc();
+    assert(remaining_mintable_cc_after_buying_all == 0, 'remaining money wrong value');
+}
 
 // cancel_mint
 
@@ -297,49 +295,93 @@ fn test_get_min_money_amount_per_tx() {
     );
 }
 
-// #[test]
-// fn test_is_sold_out() {
-//     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-//     let user_address: ContractAddress = contract_address_const::<'USER'>();
-//     let project_address = default_setup_and_deploy();
-//     let erc20_address = deploy_erc20();
-//     let minter_address = deploy_minter(project_address, erc20_address);
-//     let mut spy = spy_events();
+#[test]
+fn test_is_sold_out() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let mut spy = spy_events();
 
-//     start_cheat_caller_address(project_address, owner_address);
-//     let project_contract = IProjectDispatcher { contract_address: project_address };
-//     project_contract.grant_minter_role(minter_address);
-//     stop_cheat_caller_address(project_address);
+    start_cheat_caller_address(project_address, owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(minter_address);
+    stop_cheat_caller_address(project_address);
 
-//     let minter = IMintDispatcher { contract_address: minter_address };
-//     let is_sold_out_initial = minter.is_sold_out();
-//     assert(!is_sold_out_initial, 'should not be sold out');
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let is_sold_out_initial = minter.is_sold_out();
+    assert(!is_sold_out_initial, 'should not be sold out');
 
-//     let remaining_money = minter.get_available_money_amount();
-//     start_cheat_caller_address(erc20_address, owner_address);
-//     let erc20 = IERC20Dispatcher { contract_address: erc20_address };
-//     erc20.transfer(user_address, remaining_money);
+    let remaining_mintable_cc = minter.get_remaining_mintable_cc();
+    buy_utils(owner_address, user_address, minter_address, remaining_mintable_cc);
 
-//     start_cheat_caller_address(erc20_address, user_address);
-//     erc20.approve(minter_address, remaining_money);
+    let remaining_cc_after_buying_all = minter.get_remaining_mintable_cc();
+    assert(remaining_cc_after_buying_all == 0, 'remaining cc wrong value');
 
-//     start_cheat_caller_address(minter_address, user_address);
-//     start_cheat_caller_address(erc20_address, minter_address);
-//     minter.public_buy(remaining_money);
+    let is_sold_out_after = minter.is_sold_out();
+    assert(is_sold_out_after, 'should be sold out');
 
-//     let remaining_money_after_buying_all = minter.get_available_money_amount();
-//     assert(remaining_money_after_buying_all == 0, 'remaining money wrong');
+    let is_sale_open = minter.is_public_sale_open();
+    assert(!is_sale_open, 'public sale should be closed');
 
-//     let is_sold_out_after = minter.is_sold_out();
-//     assert(is_sold_out_after, 'should be sold out');
+    let expected_event_sale_close = MintComponent::Event::PublicSaleClose(
+        MintComponent::PublicSaleClose { old_value: true, new_value: false }
+    );
+    let expected_event_sold_out = MintComponent::Event::SoldOut(MintComponent::SoldOut {});
+    spy.assert_emitted(@array![(minter_address, expected_event_sale_close)]);
+    spy.assert_emitted(@array![(minter_address, expected_event_sold_out)]);
+}
 
-//     let expected_event_sale_close = MintComponent::Event::PublicSaleClose(
-//         MintComponent::PublicSaleClose { old_value: true, new_value: false }
-//     );
-//     let expected_event_sold_out = MintComponent::Event::SoldOut(MintComponent::SoldOut {});
-//     spy.assert_emitted(@array![(minter_address, expected_event_sale_close)]);
-//     spy.assert_emitted(@array![(minter_address, expected_event_sold_out)]);
-// }
+#[test]
+#[should_panic(expected: 'Minting limit reached')]
+fn test_public_buy_when_sold_out() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    start_cheat_caller_address(project_address, owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(minter_address);
+    stop_cheat_caller_address(project_address);
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let remaining_mintable_cc = minter.get_remaining_mintable_cc();
+    buy_utils(owner_address, user_address, minter_address, remaining_mintable_cc);
+
+    let remaining_cc_after_buying_all = minter.get_remaining_mintable_cc();
+    assert(remaining_cc_after_buying_all == 0, 'remaining cc wrong value');
+
+    start_cheat_caller_address(erc20_address, user_address);
+    buy_utils(owner_address, user_address, minter_address, 1);
+}
+
+#[test]
+#[should_panic(expected: 'Minting limit reached')]
+fn test_public_buy_exceeds_mint_limit(){
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    start_cheat_caller_address(project_address, owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(minter_address);
+    stop_cheat_caller_address(project_address);
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let remaining_mintable_cc = minter.get_remaining_mintable_cc();
+    buy_utils(owner_address, user_address, minter_address, remaining_mintable_cc - 1);
+
+    let remaining_cc_after_partial_buy = minter.get_remaining_mintable_cc();
+    assert(remaining_cc_after_partial_buy == 1, 'remaining cc wrong value');
+
+    start_cheat_caller_address(erc20_address, user_address);
+    buy_utils(owner_address, user_address, minter_address, 2); // This should cause a panic
+}
 
 #[test]
 fn test_set_min_money_amount_per_tx() {

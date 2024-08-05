@@ -381,6 +381,17 @@ mod MintComponent {
                         }
                     )
                 );
+
+                if self.is_sold_out() {
+                    self.Mint_public_sale_open.write(false);
+                    self
+                        .emit(
+                            Event::PublicSaleClose(
+                                PublicSaleClose { old_value: true, new_value: false }
+                            )
+                        );
+                    self.emit(Event::SoldOut(SoldOut {}));
+                };
         }
     }
 }
