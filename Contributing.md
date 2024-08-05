@@ -122,11 +122,6 @@ bash scripts/declare.sh <name>
 bash scripts/deploy_<name>.sh <ClASS_HASH> <...ARGS>
 ```
 
-You can batch 2&3
-
-```bash
-bash scripts/declare.sh <name> | tail -n 1 |read HASH && bash scripts/deploy_<name>.sh <HASH> <...ARGS>
-```
 
 ### Guidelines
 
