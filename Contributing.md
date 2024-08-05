@@ -116,7 +116,8 @@ bash scripts/declare.sh
 bash scripts/declare.sh <contract_name>
 ```
 
-3 Deploy contract (order mock (if needed), project, minter, offsetter, minter)
+3. Deploy contracts
+If you want to simulate the whole infra, please deploy in this order: mock_stable, project, minter, offsetter
 
 ```bash
 bash scripts/deploy_<name>.sh <ClASS_HASH> <...ARGS>
