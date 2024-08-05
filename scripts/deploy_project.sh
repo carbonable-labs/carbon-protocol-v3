@@ -2,9 +2,13 @@
 source ../.env 
 source .env 
 
-OWNER=$DEPLOYER_ADDRESS
 
 USAGE="Usage: ./deploy_project.sh <CLASS_HASH>"
+
+# You cn change these variables
+OWNER=$DEPLOYER_ADDRESS
+FROM_TIMESTAMP=2024
+DURATION_IN_YEARS=20
 
 if [ -z "$1" ]; then
     echo "Error: No CLASS_HASH provided.$USAGE"
@@ -12,7 +16,7 @@ if [ -z "$1" ]; then
 fi
 deploy() {
     class_hash=$1
-    output=$(starkli deploy $class_hash "$OWNER" "$OWNER"  --account "$STARKNET_ACCOUNT" --rpc "$STARKNET_RPC" --keystore "$STARKNET_KEYSTORE" --keystore-password "$KEYSTORE_PASSWORD" 2>&1)
+    output=$(starkli deploy $class_hash "$OWNER" "$OWNER" $FROM_TIMESTAMP $DURATION_IN_YEARS --account "$STARKNET_ACCOUNT" --rpc "$STARKNET_RPC" --keystore "$STARKNET_KEYSTORE" --keystore-password "$KEYSTORE_PASSWORD" 2>&1)
     if [[ $output == *"Error"* ]]; then
         echo "Error at deployment: $output"
         exit 1
