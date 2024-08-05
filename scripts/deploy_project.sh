@@ -5,7 +5,7 @@ source .env
 
 USAGE="Usage: ./deploy_project.sh <CLASS_HASH>"
 
-# You cn change these variables
+# You can change these variables
 OWNER=$DEPLOYER_ADDRESS
 FROM_TIMESTAMP=2024
 DURATION_IN_YEARS=20
