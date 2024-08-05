@@ -51,7 +51,7 @@ struct Signers {
 #[derive(Drop)]
 struct Contracts {
     project: ContractAddress,
-    offseter: ContractAddress,
+    offsetter: ContractAddress,
 }
 
 //

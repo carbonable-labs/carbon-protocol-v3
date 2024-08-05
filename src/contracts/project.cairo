@@ -205,8 +205,8 @@ mod Project {
 
         fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
             // [Check] Only Offsetter can offset
-            let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
-            assert(isOffseter, 'Only Offsetter can offset');
+            let isOffsetter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
+            assert(isOffsetter, 'Only Offsetter can offset');
             let share_value = self.vintage.cc_to_share(value, token_id);
             self.erc1155.burn(from, token_id, share_value);
         }
@@ -229,8 +229,8 @@ mod Project {
         ) {
             // TODO : Check that the caller is the owner of the value he wnt to burn
             // [Check] Only Offsetter can offset
-            let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
-            assert(isOffseter, 'Only Offsetter can batch offset');
+            let isOffsetter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
+            assert(isOffsetter, 'Only Offsetter can batch offset');
             self.erc1155.batch_burn(from, token_ids, values);
         }
 
