@@ -37,6 +37,9 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 /// Mock Data
 ///
 
+const DEFAULT_REMAINING_MINTABLE_CC: u256 = 80000000000000;
+const STARTING_YEAR: u32 = 2024;
+
 fn get_mock_absorptions() -> Span<u256> {
     let absorptions: Span<u256> = array![
         0,
@@ -108,6 +111,20 @@ fn get_mock_absorptions() -> Span<u256> {
     yearly_absorptions
 }
 
+fn get_mock_absorptions_times_2() -> Span<u256> {
+    let yearly_absorptions: Span<u256> = get_mock_absorptions();
+    let mut yearly_absorptions_times_2: Array<u256> = array![];
+    let mut index = 0;
+    loop {
+        if index >= yearly_absorptions.len() {
+            break;
+        }
+        yearly_absorptions_times_2.append(*yearly_absorptions.at(index) * 2);
+        index += 1;
+    };
+    yearly_absorptions_times_2.span()
+}
+
 
 ///
 /// Math functions
@@ -136,10 +153,9 @@ fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
 
 fn deploy_project() -> ContractAddress {
     let contract = snf::declare("Project").expect('Declaration failed');
-    let starting_year: u64 = 2024;
     let number_of_years: u64 = 20;
     let mut calldata: Array<felt252> = array![
-        contract_address_const::<'OWNER'>().into(), starting_year.into(), number_of_years.into()
+        contract_address_const::<'OWNER'>().into(), STARTING_YEAR.into(), number_of_years.into()
     ];
     let (contract_address, _) = contract.deploy(@calldata).expect('Project deployment failed');
 
@@ -153,8 +169,8 @@ fn setup_project(
     // Fake the owner to call set_vintages and set_project_carbon which can only be run by owner
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     start_cheat_caller_address(contract_address, owner_address);
-
-    vintages.set_vintages(yearly_absorptions, 2024);
+    vintages.set_vintages(yearly_absorptions, STARTING_YEAR);
+    stop_cheat_caller_address(contract_address);
 }
 
 fn default_setup_and_deploy() -> ContractAddress {
@@ -185,14 +201,15 @@ fn deploy_minter(
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     start_cheat_caller_address(project_address, owner);
     let public_sale: bool = true;
-    let max_mintable_cc: felt252 = 80000000000000;
+    let low: felt252 = DEFAULT_REMAINING_MINTABLE_CC.low.into();
+    let high: felt252 = DEFAULT_REMAINING_MINTABLE_CC.high.into();
     let unit_price: felt252 = 11;
     let mut calldata: Array<felt252> = array![
         project_address.into(),
         payment_address.into(),
         public_sale.into(),
-        max_mintable_cc,
-        0,
+        low,
+        high,
         unit_price,
         0,
         owner.into()
@@ -425,6 +442,9 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
             break;
         }
         let balance = project.balance_of(user_address, index.into());
+        // println!("index: {}", index);
+        // println!("balance: {}", balance);
+        // println!(" ");
         total_balance += balance;
         index += 1;
     };

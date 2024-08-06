@@ -50,6 +50,7 @@ mod MintComponent {
         Withdraw: Withdraw,
         AmountRetrieved: AmountRetrieved,
         MinMoneyAmountPerTxUpdated: MinMoneyAmountPerTxUpdated,
+        RemainingMintableCCUpdated: RemainingMintableCCUpdated,
         MaxMintableCCUpdated: MaxMintableCCUpdated,
     }
 
@@ -110,6 +111,12 @@ mod MintComponent {
 
     #[derive(Drop, starknet::Event)]
     struct MaxMintableCCUpdated {
+        old_value: u256,
+        new_value: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct RemainingMintableCCUpdated {
         old_value: u256,
         new_value: u256,
     }
@@ -188,10 +195,16 @@ mod MintComponent {
             let public_sale_open = self.Mint_public_sale_open.read();
             assert(public_sale_open, 'Sale is closed');
 
-            let old_value = self.Mint_max_mintable_cc.read();
+            let old_value_remaining = self.Mint_remaining_mintable_cc.read();
+            let old_value_max = self.Mint_max_mintable_cc.read();
+
+            let remaining_mintable_cc = old_value_remaining + max_mintable_cc - old_value_max;
+            self.Mint_remaining_mintable_cc.write(remaining_mintable_cc);
+
             self.Mint_max_mintable_cc.write(max_mintable_cc);
 
-            self.emit(MaxMintableCCUpdated { old_value: old_value, new_value: max_mintable_cc });
+            self.emit(RemainingMintableCCUpdated { old_value: old_value_remaining, new_value: remaining_mintable_cc });
+            self.emit(MaxMintableCCUpdated { old_value: old_value_max, new_value: max_mintable_cc });
         }
 
         fn set_public_sale_open(ref self: ComponentState<TContractState>, public_sale_open: bool) {

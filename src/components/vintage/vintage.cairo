@@ -215,7 +215,6 @@ mod VintageComponent {
             let vintages_num = yearly_absorptions.len();
 
             // [Effect] Update storage
-            self.Vintage_vintages_len.write(vintages_num);
             let mut index = 0;
             loop {
                 if index == vintages_num {
@@ -254,6 +253,7 @@ mod VintageComponent {
             ref self: ComponentState<TContractState>, starting_year: u32, number_of_years: u32
         ) {
             // [Storage] Store new vintages
+            self.Vintage_vintages_len.write(number_of_years.into());
             let mut index = starting_year;
             let n = index + number_of_years;
             loop {

@@ -328,6 +328,9 @@ mod Project {
                 .ERC1155_balances
                 .read((token_id, account)); // expressed in grams
             let initial_project_supply = self.vintage.get_initial_project_cc_supply();
+            if initial_project_supply == 0 {
+                panic!("Initial project supply is not set");
+            }
             (amount_cc_bought * CC_DECIMALS_MULTIPLIER) / initial_project_supply.into()
         }
 

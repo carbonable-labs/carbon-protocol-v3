@@ -32,7 +32,7 @@ use carbon_v3::contracts::project::{
 use super::tests_lib::{
     get_mock_absorptions, equals_with_error, deploy_project, setup_project,
     default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_offsetter,
-    deploy_minter, deploy_erc20
+    deploy_minter, deploy_erc20, STARTING_YEAR
 };
 
 // Constants
@@ -66,9 +66,8 @@ fn test_set_vintages() {
     let yearly_absorptions = get_mock_absorptions();
     start_cheat_caller_address(project_address, owner_address);
 
-    let starting_year = 2024;
     let vintages = IVintageDispatcher { contract_address: project_address };
-    vintages.set_vintages(yearly_absorptions, starting_year);
+    vintages.set_vintages(yearly_absorptions, STARTING_YEAR);
 
     let cc_vintages = vintages.get_cc_vintages();
     let mut index = 0;
@@ -78,7 +77,7 @@ fn test_set_vintages() {
         }
         let vintage = cc_vintages.at(index);
         let expected__cc_vintage = CarbonVintage {
-            year: (starting_year + index.into()),
+            year: (STARTING_YEAR + index.into()),
             supply: *yearly_absorptions.at(index),
             failed: 0,
             created: 0,
@@ -95,7 +94,7 @@ fn test_set_vintages() {
         }
         let vintage = cc_vintages.at(index);
         let expected__cc_vintage: CarbonVintage = CarbonVintage {
-            year: (starting_year.into() + index.into()),
+            year: (STARTING_YEAR.into() + index.into()),
             supply: 0,
             failed: 0,
             created: 0,
@@ -111,9 +110,8 @@ fn test_set_vintages() {
 fn test_set_vintages_without_owner_role() {
     let project_address = deploy_project();
     let yearly_absorptions = get_mock_absorptions();
-    let starting_year = 2024;
     let vintages = IVintageDispatcher { contract_address: project_address };
-    vintages.set_vintages(yearly_absorptions, starting_year);
+    vintages.set_vintages(yearly_absorptions, STARTING_YEAR);
 }
 
 /// get_carbon_vintage
