@@ -162,6 +162,8 @@ mod Project {
         ERC4906Event: ERC4906Component::Event,
         #[flat]
         MetadataEvent: MetadataComponent::Event,
+        TransferSingle: TransferSingle,
+        TransferBatch: TransferBatch,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -172,6 +174,32 @@ mod Project {
     #[derive(Drop, starknet::Event)]
     struct MinterRoleRevoked {
         account: ContractAddress,
+    }
+
+    /// Emitted when `value` token is transferred from `from` to `to` for `id`.
+    #[derive(Drop, PartialEq, starknet::Event)]
+    struct TransferSingle {
+        #[key]
+        operator: ContractAddress,
+        #[key]
+        from: ContractAddress,
+        #[key]
+        to: ContractAddress,
+        id: u256,
+        value: u256
+    }
+
+    /// Emitted when `values` are transferred from `from` to `to` for `ids`.
+    #[derive(Drop, PartialEq, starknet::Event)]
+    struct TransferBatch {
+        #[key]
+        operator: ContractAddress,
+        #[key]
+        from: ContractAddress,
+        #[key]
+        to: ContractAddress,
+        ids: Span<u256>,
+        values: Span<u256>,
     }
 
     mod Errors {
@@ -422,24 +450,16 @@ mod Project {
             ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
         ) {
             self.erc1155.batch_mint(to, token_ids, values);
-            // let mut values_to_emit: Array<u256> = Default::default();
-            // let mut index = 0;
-            // let self_snap = @self;
-            // loop {
-            //     if index == token_ids.len() {
-            //         break;
-            //     }
-            //     // let value_intern = self_snap.cc_to_internal(*values.at(index), *token_ids.at(index));
-            //     // values_to_emit.append(value_intern);
-            //     let vintage_supply = self
-            //         .vintage
-            //         .get_carbon_vintage(*token_ids.at(index))
-            //         .supply
-            //         .into();
-            //     let initial_project_supply = self.vintage.get_initial_project_cc_supply();
-            //     values_to_emit.append(*values.at(index) * vintage_supply / initial_project_supply);
-            //     index += 1;
-            // };
+            let mut values_to_emit: Array<u256> = Default::default();
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                let value_intern = self.cc_to_internal(*values.at(index), *token_ids.at(index));
+                values_to_emit.append(value_intern);
+                index += 1;
+            };
         // self
         //     .emit(
         //         TransferBatch {

@@ -29,37 +29,37 @@ mod ERC1155Component {
     #[event]
     #[derive(Drop, PartialEq, starknet::Event)]
     enum Event {
-        TransferSingle: TransferSingle,
-        TransferBatch: TransferBatch,
+        // TransferSingle: TransferSingle,
+        // TransferBatch: TransferBatch,
         ApprovalForAll: ApprovalForAll,
         URI: URI
     }
 
-    /// Emitted when `value` token is transferred from `from` to `to` for `id`.
-    #[derive(Drop, PartialEq, starknet::Event)]
-    struct TransferSingle {
-        #[key]
-        operator: ContractAddress,
-        #[key]
-        from: ContractAddress,
-        #[key]
-        to: ContractAddress,
-        id: u256,
-        value: u256
-    }
+    // /// Emitted when `value` token is transferred from `from` to `to` for `id`.
+    // #[derive(Drop, PartialEq, starknet::Event)]
+    // struct TransferSingle {
+    //     #[key]
+    //     operator: ContractAddress,
+    //     #[key]
+    //     from: ContractAddress,
+    //     #[key]
+    //     to: ContractAddress,
+    //     id: u256,
+    //     value: u256
+    // }
 
-    /// Emitted when `values` are transferred from `from` to `to` for `ids`.
-    #[derive(Drop, PartialEq, starknet::Event)]
-    struct TransferBatch {
-        #[key]
-        operator: ContractAddress,
-        #[key]
-        from: ContractAddress,
-        #[key]
-        to: ContractAddress,
-        ids: Span<u256>,
-        values: Span<u256>,
-    }
+    // /// Emitted when `values` are transferred from `from` to `to` for `ids`.
+    // #[derive(Drop, PartialEq, starknet::Event)]
+    // struct TransferBatch {
+    //     #[key]
+    //     operator: ContractAddress,
+    //     #[key]
+    //     from: ContractAddress,
+    //     #[key]
+    //     to: ContractAddress,
+    //     ids: Span<u256>,
+    //     values: Span<u256>,
+    // }
 
     /// Emitted when `account` enables or disables (`approved`) `operator` to manage
     /// all of its assets.
@@ -366,17 +366,17 @@ mod ERC1155Component {
                 }
                 index += 1;
             };
-            let operator = get_caller_address();
-            if token_ids.len() == 1 {
-                self
-                    .emit(
-                        TransferSingle {
-                            operator, from, to, id: *token_ids.at(0), value: *values.at(0)
-                        }
-                    );
-            } else {
-                self.emit(TransferBatch { operator, from, to, ids: token_ids, values });
-            }
+        // let operator = get_caller_address();
+        // if token_ids.len() == 1 {
+        //     self
+        //         .emit(
+        //             TransferSingle {
+        //                 operator, from, to, id: *token_ids.at(0), value: *values.at(0)
+        //             }
+        //         );
+        // } else {
+        //     self.emit(TransferBatch { operator, from, to, ids: token_ids, values });
+        // }
         }
 
         /// Creates a `value` amount of tokens of type `token_id`, and assigns them to `to`.
