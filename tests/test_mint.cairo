@@ -44,8 +44,8 @@ use carbon_v3::mock::usdcarb::USDCarb;
 use super::tests_lib::{
     get_mock_absorptions, equals_with_error, deploy_project, setup_project,
     default_setup_and_deploy, deploy_offsetter, deploy_erc20, deploy_minter, buy_utils,
-    helper_get_token_ids, helper_sum_balance, DEFAULT_REMAINING_MINTABLE_CC, helper_check_vintage_balances,
-    get_mock_absorptions_times_2
+    helper_get_token_ids, helper_sum_balance, DEFAULT_REMAINING_MINTABLE_CC,
+    helper_check_vintage_balances, get_mock_absorptions_times_2, helper_expected_transfer_event
 };
 
 // Constants
@@ -124,7 +124,6 @@ fn test_public_buy() {
     let project_address = default_setup_and_deploy();
     let erc20_address = deploy_erc20();
     let minter_address = deploy_minter(project_address, erc20_address);
-    let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
@@ -149,11 +148,20 @@ fn test_public_buy() {
     start_cheat_caller_address(minter_address, user_address);
     start_cheat_caller_address(erc20_address, minter_address);
 
+    // let mut spy = spy_events();
     minter.public_buy(cc_to_buy);
 
-    let balance_user_after = helper_sum_balance(project_address, user_address);
+    // let token_ids = helper_get_token_ids(project_address);
+    // let expected_event = helper_expected_transfer_event(
+    //     project_address, project_address, user_address, user_address, token_ids, cc_to_buy
+    // );
+    // spy.assert_emitted(@array![(project_address, expected_event)]);
 
-    assert(equals_with_error(balance_user_after, balance_user_before + cc_to_buy, 100), 'balance should be the same');
+    let balance_user_after = helper_sum_balance(project_address, user_address);
+    assert(
+        equals_with_error(balance_user_after, balance_user_before + cc_to_buy, 100),
+        'balance should be the same'
+    );
 }
 
 // set_max_mintable_cc
@@ -165,7 +173,7 @@ fn test_set_max_mintable_cc_without_owner_role() {
     let minter_address = deploy_minter(project_address, erc20_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
-    minter.set_max_mintable_cc(100* MULTIPLIER_TONS_TO_MGRAMS);
+    minter.set_max_mintable_cc(100 * MULTIPLIER_TONS_TO_MGRAMS);
 }
 
 #[test]
@@ -179,7 +187,7 @@ fn test_set_max_mintable_cc_with_owner_role() {
     start_cheat_caller_address(minter_address, owner_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
-    let new_max_mintable_cc: u256 = 100* MULTIPLIER_TONS_TO_MGRAMS;
+    let new_max_mintable_cc: u256 = 100 * MULTIPLIER_TONS_TO_MGRAMS;
     minter.set_max_mintable_cc(new_max_mintable_cc);
 
     let max_mintable_cc = minter.get_max_mintable_cc();
@@ -242,7 +250,8 @@ fn test_get_remaining_mintable_cc() {
 
     let remaining_mintable_cc_after_buy = minter.get_remaining_mintable_cc();
     assert(
-        remaining_mintable_cc_after_buy == default_max_mintable_cc - amount_to_buy, 'remaining money wrong value 2'
+        remaining_mintable_cc_after_buy == default_max_mintable_cc - amount_to_buy,
+        'remaining money wrong value 2'
     );
 
     // Mint all the remaining carbon credits
@@ -250,7 +259,9 @@ fn test_get_remaining_mintable_cc() {
     start_cheat_caller_address(erc20_address, owner_address);
     erc20.transfer(user_address, remaining_mintable_cc);
 
-    let remaining_money_to_buy = remaining_mintable_cc * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
+    let remaining_money_to_buy = remaining_mintable_cc
+        * minter.get_unit_price()
+        / MULTIPLIER_TONS_TO_MGRAMS;
     start_cheat_caller_address(erc20_address, user_address);
     erc20.approve(minter_address, remaining_money_to_buy);
     start_cheat_caller_address(minter_address, user_address);
@@ -406,7 +417,7 @@ fn test_public_buy_when_sold_out() {
 
 #[test]
 #[should_panic(expected: 'Minting limit reached')]
-fn test_public_buy_exceeds_mint_limit(){
+fn test_public_buy_exceeds_mint_limit() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -724,7 +735,7 @@ fn test_retrieve_amount_without_owner_role() {
 // 6. Some users transfers some of their tokens to others. Check correct values of transfers.
 
 #[test]
-fn test_mint_integration() {
+fn integration_test_mint() {
     // [Step 1]
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let alice_address: ContractAddress = contract_address_const::<'ALICE'>();
@@ -741,7 +752,6 @@ fn test_mint_integration() {
     let yearly_absorptions: Span<u256> = get_mock_absorptions();
     setup_project(project_address, yearly_absorptions); // Set vintage supplies
     stop_cheat_caller_address(project_address);
-    
 
     let minter = IMintDispatcher { contract_address: minter_address };
     let default_max_mintable_cc: u256 = DEFAULT_REMAINING_MINTABLE_CC;
@@ -749,10 +759,13 @@ fn test_mint_integration() {
     let remaining_mintable_cc = minter.get_remaining_mintable_cc();
     assert(remaining_mintable_cc == default_max_mintable_cc, 'default remaining value wrong');
     // [Step 2]
-    let amount_to_buy: u256 = remaining_mintable_cc/2;
+    let amount_to_buy: u256 = remaining_mintable_cc / 2;
     buy_utils(owner_address, alice_address, minter_address, amount_to_buy);
     let remaining_mintable_cc_after_buy = minter.get_remaining_mintable_cc();
-    assert(remaining_mintable_cc_after_buy == default_max_mintable_cc - amount_to_buy, 'remaining money wrong value 2');
+    assert(
+        remaining_mintable_cc_after_buy == default_max_mintable_cc - amount_to_buy,
+        'remaining money wrong value 2'
+    );
 
     // store vintage balances of alice
     let mut vintage_balances_alice: Array<u256> = Default::default();
@@ -766,14 +779,11 @@ fn test_mint_integration() {
         let vintage_balance = project_contract.balance_of(alice_address, index.into());
         vintage_balances_alice.append(vintage_balance);
         index += 1;
-    };        
+    };
 
     buy_utils(owner_address, bob_address, minter_address, remaining_mintable_cc_after_buy);
     let remaining_cc_after_buying_all = minter.get_remaining_mintable_cc();
     assert(remaining_cc_after_buying_all == 0, 'remaining money wrong value');
-    
-    // let first_total_balance_bob = helper_sum_balance(project_address, bob_address);
-    // assert(equals_with_error(first_total_balance_bob, remaining_mintable_cc_after_buy, 100), 'balance should be the same');
 
     let is_sold_out = minter.is_sold_out();
     assert(is_sold_out, 'should be sold out');
@@ -786,20 +796,20 @@ fn test_mint_integration() {
     let is_sale_open = minter.is_public_sale_open();
     assert(is_sale_open, 'public sale should be opened');
 
-    minter.set_max_mintable_cc(default_max_mintable_cc*2);
+    minter.set_max_mintable_cc(default_max_mintable_cc * 2);
     let updated_yearly_absorptions: Span<u256> = get_mock_absorptions_times_2();
-    setup_project(project_address, updated_yearly_absorptions); // Update vintage supplies to double the amount
+    setup_project(
+        project_address, updated_yearly_absorptions
+    ); // Update vintage supplies to double the amount
 
     let remaining_mintable_cc_after_reopen = minter.get_remaining_mintable_cc();
-    assert(remaining_mintable_cc_after_reopen == default_max_mintable_cc, 'remaining money wrong value');
+    assert(
+        remaining_mintable_cc_after_reopen == default_max_mintable_cc, 'remaining money wrong value'
+    );
 
     start_cheat_caller_address(project_address, minter_address);
-    buy_utils(owner_address, bob_address, minter_address, remaining_mintable_cc_after_reopen/2);
-    // let second_total_balance_bob = helper_sum_balance(project_address, bob_address);
-    // assert(equals_with_error(second_total_balance_bob, remaining_mintable_cc_after_buy + remaining_mintable_cc_after_reopen/4, 100), 'balance should be the same');
-
-    buy_utils(owner_address, john_address, minter_address, remaining_mintable_cc_after_reopen/2);
-    // assert(equals_with_error(helper_sum_balance(project_address, john_address), remaining_mintable_cc_after_reopen/2, 100), 'balance should be the same');
+    buy_utils(owner_address, bob_address, minter_address, remaining_mintable_cc_after_reopen / 2);
+    buy_utils(owner_address, john_address, minter_address, remaining_mintable_cc_after_reopen / 2);
 
     let is_sold_out_after_reopen = minter.is_sold_out();
     assert(is_sold_out_after_reopen, 'should be sold out');
@@ -812,8 +822,13 @@ fn test_mint_integration() {
     start_cheat_caller_address(minter_address, owner_address);
     minter.withdraw();
     let balance_owner_after = erc20.balance_of(owner_address);
-    let expected_raised_money = minter.get_max_mintable_cc() * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
-    assert(equals_with_error(balance_owner_after, balance_owner_before + expected_raised_money, 100), 'erc20 raised wrong value');
+    let expected_raised_money = minter.get_max_mintable_cc()
+        * minter.get_unit_price()
+        / MULTIPLIER_TONS_TO_MGRAMS;
+    assert(
+        equals_with_error(balance_owner_after, balance_owner_before + expected_raised_money, 100),
+        'erc20 raised wrong value'
+    );
 
     // [Step 4]
     start_cheat_caller_address(minter_address, owner_address);
@@ -830,15 +845,22 @@ fn test_mint_integration() {
     };
 
     let total_balance_alice = helper_sum_balance(project_address, alice_address);
-    assert(equals_with_error(total_balance_alice, default_max_mintable_cc/2, 100), 'balance should be the same');
+    assert(
+        equals_with_error(total_balance_alice, default_max_mintable_cc / 2, 100),
+        'balance should be the same'
+    );
 
     let total_balance_bob = helper_sum_balance(project_address, bob_address);
-    assert(equals_with_error(total_balance_bob, default_max_mintable_cc, 100), 'balance should be the same');
-
+    assert(
+        equals_with_error(total_balance_bob, default_max_mintable_cc, 100),
+        'balance should be the same'
+    );
+    helper_check_vintage_balances(project_address, alice_address, default_max_mintable_cc / 2);
     let total_balance_john = helper_sum_balance(project_address, john_address);
-    assert(equals_with_error(total_balance_john, default_max_mintable_cc/2, 100), 'balance should be the same');
-
-    helper_check_vintage_balances(project_address, alice_address, default_max_mintable_cc/2);
+    assert(
+        equals_with_error(total_balance_john, default_max_mintable_cc / 2, 100),
+        'balance should be the same'
+    );
     helper_check_vintage_balances(project_address, bob_address, default_max_mintable_cc);
-    helper_check_vintage_balances(project_address, john_address, default_max_mintable_cc/2);
+    helper_check_vintage_balances(project_address, john_address, default_max_mintable_cc / 2);
 }

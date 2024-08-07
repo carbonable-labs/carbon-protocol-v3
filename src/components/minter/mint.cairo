@@ -147,8 +147,7 @@ mod MintComponent {
             self.Mint_unit_price.read()
         }
 
-        fn get_remaining_mintable_cc
-        (self: @ComponentState<TContractState>) -> u256 {
+        fn get_remaining_mintable_cc(self: @ComponentState<TContractState>) -> u256 {
             self.Mint_remaining_mintable_cc.read()
         }
 
@@ -203,8 +202,16 @@ mod MintComponent {
 
             self.Mint_max_mintable_cc.write(max_mintable_cc);
 
-            self.emit(RemainingMintableCCUpdated { old_value: old_value_remaining, new_value: remaining_mintable_cc });
-            self.emit(MaxMintableCCUpdated { old_value: old_value_max, new_value: max_mintable_cc });
+            self
+                .emit(
+                    RemainingMintableCCUpdated {
+                        old_value: old_value_remaining, new_value: remaining_mintable_cc
+                    }
+                );
+            self
+                .emit(
+                    MaxMintableCCUpdated { old_value: old_value_max, new_value: max_mintable_cc }
+                );
         }
 
         fn set_public_sale_open(ref self: ComponentState<TContractState>, public_sale_open: bool) {
@@ -371,7 +378,6 @@ mod MintComponent {
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let minter_address = get_contract_address();
 
-            let balance_caller = erc20.balance_of(caller_address);
             let success = erc20.transfer_from(caller_address, minter_address, money_amount);
             // [Check] Transfer successful
             assert(success, 'Transfer failed');
@@ -395,16 +401,16 @@ mod MintComponent {
                     )
                 );
 
-                if self.is_sold_out() {
-                    self.Mint_public_sale_open.write(false);
-                    self
-                        .emit(
-                            Event::PublicSaleClose(
-                                PublicSaleClose { old_value: true, new_value: false }
-                            )
-                        );
-                    self.emit(Event::SoldOut(SoldOut {}));
-                };
+            if self.is_sold_out() {
+                self.Mint_public_sale_open.write(false);
+                self
+                    .emit(
+                        Event::PublicSaleClose(
+                            PublicSaleClose { old_value: true, new_value: false }
+                        )
+                    );
+                self.emit(Event::SoldOut(SoldOut {}));
+            };
         }
     }
 }

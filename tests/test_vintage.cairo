@@ -57,7 +57,6 @@ struct Contracts {
 // Tests
 //
 
-
 /// set_vintages
 
 fn test_set_vintages() {
@@ -138,8 +137,10 @@ fn test_get_carbon_vintage() {
 /// get_initial_cc_supply
 #[test]
 fn test_get_initial_cc_supply() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
+    start_cheat_caller_address(owner_address, owner_address);
 
     // initial supply should be equal to supply before any rebases
     let cc_vintages = vintages.get_cc_vintages();
@@ -202,11 +203,11 @@ fn test_get_cc_decimals() {
 
 #[test]
 fn test_update_vintage_status_valid() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
-
+    start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
-
     let mut new_status: u8 = 0;
     loop {
         if new_status > 3 {
@@ -223,8 +224,10 @@ fn test_update_vintage_status_valid() {
 #[test]
 #[should_panic(expected: 'Invalid status')]
 fn test_update_vintage_status_invalid() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
+    start_cheat_caller_address(project_address, owner_address);
 
     let token_id: u256 = 1;
     let invalid_status: u8 = 5; // Example invalid status

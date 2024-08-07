@@ -13,7 +13,7 @@ erc4906 = { git = "https://github.com/carbonable-labs/cairo-erc-4906" }
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.26.0" }
 
 [scripts]
-test = "snforge test"
+test = "snforge test --max-n-steps 30000000"
 
 [[target.starknet-contract]]
 sierra = true

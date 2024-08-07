@@ -118,10 +118,10 @@ fn test_offsetter_retire_carbon_credits() {
     let initial_balance = project.balance_of(user_address, token_id);
 
     let amount_to_offset = initial_balance / 2;
-    
+
     start_cheat_caller_address(project_address, owner_address);
     vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
-    
+
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, offsetter_address);
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };

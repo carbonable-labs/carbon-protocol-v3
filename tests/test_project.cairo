@@ -60,7 +60,6 @@ use super::tests_lib::{
 //     project_contract.grant_minter_role(minter_address);
 //     start_cheat_caller_address(project_address, minter_address);
 
-
 //     let mut spy: EventSpy = spy_events();
 
 //     let cc_to_mint = 1000*MULTIPLIER_TONS_TO_MGRAMS; // 10 CC
@@ -173,19 +172,18 @@ fn test_project_batch_mint_with_minter_role() {
 
     let total_cc_balance = helper_sum_balance(project_address, user_address);
     assert(equals_with_error(total_cc_balance, cc_to_mint, 10), 'Error of balance');
-    
-    helper_check_vintage_balances(project_address, user_address, cc_to_mint);
 
-    // let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
-    //     ERC1155Component::TransferBatch {
-    //         operator: minter_address,
-    //         from: Zeroable::zero(),
-    //         to: user_address,
-    //         ids: token_ids,
-    //         values: cc_shares
-    //     }
-    // );
-    // spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
+    helper_check_vintage_balances(project_address, user_address, cc_to_mint);
+// let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
+//     ERC1155Component::TransferBatch {
+//         operator: minter_address,
+//         from: Zeroable::zero(),
+//         to: user_address,
+//         ids: token_ids,
+//         values: cc_shares
+//     }
+// );
+// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
 }
 
 #[test]
@@ -222,16 +220,16 @@ fn test_project_offset_with_offsetter_role() {
     // let mut spy = spy_events();
     start_cheat_caller_address(project_address, offsetter_address);
     project.offset(user_address, token_id, balance);
-    // let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
-    //     ERC1155Component::TransferSingle {
-    //         operator: offsetter_address,
-    //         from: user_address,
-    //         to: Zeroable::zero(),
-    //         id: token_id,
-    //         value: share_value
-    //     }
-    // );
-    // spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
+// let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
+//     ERC1155Component::TransferSingle {
+//         operator: offsetter_address,
+//         from: user_address,
+//         to: Zeroable::zero(),
+//         id: token_id,
+//         value: share_value
+//     }
+// );
+// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
 }
 
 #[test]
@@ -302,7 +300,7 @@ fn test_project_batch_offset_with_offsetter_role() {
             break;
         };
 
-        cc_distribution.append(cc_to_mint/num_vintages.into());
+        cc_distribution.append(cc_to_mint / num_vintages.into());
         tokens.append(index.into());
         let balance = project.balance_of(user_address, index.into());
         index += 1;
@@ -314,17 +312,16 @@ fn test_project_batch_offset_with_offsetter_role() {
 
     start_cheat_caller_address(project_address, offsetter_address);
     project.batch_offset(user_address, token_ids, cc_distribution);
-
-    // let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
-    //     ERC1155Component::TransferBatch {
-    //         operator: offsetter_address,
-    //         from: user_address,
-    //         to: Zeroable::zero(),
-    //         ids: token_ids,
-    //         values: cc_distribution
-    //     }
-    // );
-    // spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
+// let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
+//     ERC1155Component::TransferBatch {
+//         operator: offsetter_address,
+//         from: user_address,
+//         to: Zeroable::zero(),
+//         ids: token_ids,
+//         values: cc_distribution
+//     }
+// );
+// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
 }
 
 #[test]
@@ -396,7 +393,7 @@ fn test_project_balance_of() {
 
     let total_cc_balance = helper_sum_balance(project_address, user_address);
     assert(equals_with_error(total_cc_balance, cc_to_buy, 100), 'Error of balance');
-    
+
     helper_check_vintage_balances(project_address, user_address, cc_to_buy);
 }
 
@@ -419,7 +416,10 @@ fn test_transfer_without_loss() {
     let amount_to_mint = initial_total_supply / 10; // 10% of the total supply
     buy_utils(owner_address, user_address, minter_address, amount_to_mint);
     let total_supply_balance = helper_sum_balance(project_address, user_address);
-    assert(equals_with_error(amount_to_mint, total_supply_balance, 100), 'Error of total supply balance');
+    assert(
+        equals_with_error(amount_to_mint, total_supply_balance, 100),
+        'Error of total supply balance'
+    );
     helper_check_vintage_balances(project_address, user_address, amount_to_mint);
 
     let token_id: u256 = 1;
@@ -427,13 +427,14 @@ fn test_transfer_without_loss() {
     assert(equals_with_error(receiver_balance, 0, 10), 'Error of receiver balance 1');
 
     let balance_user_before = project_contract.balance_of(user_address, token_id);
-    
+
     // let mut spy = spy_events();
-    
+
     start_cheat_caller_address(project_address, user_address);
-    println!("balance_user_before in test: {}", balance_user_before);
     project_contract
-        .safe_transfer_from(user_address, receiver_address, token_id, balance_user_before, array![].span());
+        .safe_transfer_from(
+            user_address, receiver_address, token_id, balance_user_before, array![].span()
+        );
     // let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
     //     ERC1155Component::TransferSingle {
     //         operator: user_address,
@@ -501,23 +502,18 @@ fn test_consecutive_transfers_and_rebases(
         .safe_transfer_from(
             user_address, receiver_address, token_id, initial_balance.into(), array![].span()
         );
-    let balance_receiver_before_rebase = project_contract.balance_of(receiver_address, token_id);
-    // println!("balance_receiver_before_rebase: {}", balance_receiver_before_rebase);
 
     let initial_vintage_supply = vintages.get_carbon_vintage(token_id).supply;
-    // println!("initial_vintage_supply: {}", initial_vintage_supply);
     let new_vintage_supply_1 = initial_vintage_supply
         * first_percentage_rebase.try_into().unwrap()
         / 100_000;
-    // println!("new_vintage_supply_1: {}", new_vintage_supply_1);
     stop_cheat_caller_address(project_address);
 
     start_cheat_caller_address(project_address, owner_address);
     vintages.rebase_vintage(token_id, new_vintage_supply_1);
     stop_cheat_caller_address(project_address);
-    
+
     let balance_receiver = project_contract.balance_of(receiver_address, token_id);
-    // println!("balance_receiver after rebase: {}", balance_receiver);
     start_cheat_caller_address(project_address, receiver_address);
     project_contract
         .safe_transfer_from(
@@ -525,13 +521,9 @@ fn test_consecutive_transfers_and_rebases(
         );
     stop_cheat_caller_address(project_address);
 
-    let balance_user_before_rebase = project_contract.balance_of(user_address, token_id);
-    // println!("balance_user_before_rebase: {}", balance_user_before_rebase);
-
     let new_vintage_supply_2 = new_vintage_supply_1
         * second_percentage_rebase.try_into().unwrap()
         / 100_000;
-    // println!("new_vintage_supply_2: {}", new_vintage_supply_2);
     start_cheat_caller_address(project_address, owner_address);
     vintages.rebase_vintage(token_id, new_vintage_supply_2);
 
@@ -553,7 +545,6 @@ fn test_consecutive_transfers_and_rebases(
 
     helper_check_vintage_balances(project_address, user_address, cc_to_buy);
     let balance_receiver = project_contract.balance_of(receiver_address, token_id);
-    // println!("balance_receiver after rebase: {}", balance_receiver);
     assert(equals_with_error(balance_receiver, 0, 10), 'Error final balance receiver');
 }
 
@@ -626,12 +617,14 @@ fn fuzz_test_transfer_medium_supply_low_amount(
 }
 
 #[test]
-fn fuzz_test_transfer_medium_supply_medium_amount(
-) {
+fn fuzz_test_transfer_medium_supply_medium_amount() {
     // raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-    let raw_supply: u256 = 94365046484817720939114948484448518925066696628864318182885849195794093634788;
-    let raw_share: u256 = 4548283413067176522814831837630882751146624989433986105735746239485922369869;
-    let raw_last_digits_share: u256 = 36883864587092468979195546282466206646048056734594801592409364701103152608278;
+    let raw_supply: u256 =
+        94365046484817720939114948484448518925066696628864318182885849195794093634788;
+    let raw_share: u256 =
+        4548283413067176522814831837630882751146624989433986105735746239485922369869;
+    let raw_last_digits_share: u256 =
+        36883864587092468979195546282466206646048056734594801592409364701103152608278;
     // max supply of a vintage is 10k CC in mgrams
     let max_supply_for_vintage: u256 = 10_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 300; // with 2 digits after the comma, so 3%
@@ -709,30 +702,30 @@ fn fuzz_test_transfer_high_supply_high_amount(
     );
 }
 
-// #[test]
-// fn test_project_metadata_update() {
-//     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-//     let project_address = default_setup_and_deploy();
-//     let project_contract = IProjectDispatcher { contract_address: project_address };
-//     let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
-//     let mut spy = spy_events();
-//     let base_uri: ByteArray = format!("{}", 'uri');
-//     let mut new_uri: ByteArray = format!("{}", 'new/uri');
+#[test]
+fn test_project_metadata_update() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
+    let mut spy = spy_events();
+    let base_uri: ByteArray = format!("{}", 'uri');
+    let mut new_uri: ByteArray = format!("{}", 'new/uri');
 
-//     start_cheat_caller_address(project_address, owner_address);
+    start_cheat_caller_address(project_address, owner_address);
 
-//     let vintage = 1;
-//     assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
+    let vintage = 1;
+    assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
 
-//     project_contract.set_uri(new_uri.clone());
-//     assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
+    project_contract.set_uri(new_uri.clone());
+    assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
 
-//     let expected_batch_metadata_update = BatchMetadataUpdate {
-//         from_token_id: 0,
-//         to_token_id: 1
-//     };
-//     spy.assert_emitted(@array![(project_address, expected_batch_metadata_update)]);
-// }
+    let expected_batch_metadata_update = BatchMetadataUpdate {
+        from_token_id: 0,
+        to_token_id: 1
+    };
+    spy.assert_emitted(@array![(project_address, expected_batch_metadata_update)]);
+}
 
 fn test_set_uri() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();

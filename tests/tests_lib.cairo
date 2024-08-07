@@ -23,6 +23,8 @@ use carbon_v3::components::vintage::interface::{
     IVintage, IVintageDispatcher, IVintageDispatcherTrait
 };
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
+use openzeppelin::token::erc1155::ERC1155Component;
+
 
 // Contracts
 
@@ -61,27 +63,28 @@ fn get_mock_absorptions() -> Span<u256> {
         62480701930000,
         69433859390000,
         76387016840000,
-        80000000000000
-        // 25000000000000000, // 25 000CC, in grams
-        // 50000000000000000,
-        // 75000000000000000,
-        // 100000000000000000,
-        // 125000000000000000,
-        // 150000000000000000,
-        // 175000000000000000,
-        // 200000000000000000,
-        // 225000000000000000,
-        // 250000000000000000,
-        // 275000000000000000,
-        // 300000000000000000,
-        // 325000000000000000,
-        // 350000000000000000,
-        // 375000000000000000,
-        // 400000000000000000,
-        // 425000000000000000,
-        // 450000000000000000,
-        // 475000000000000000,
-        // 500000000000000000
+        80000000000000,
+        82500000000000,
+    // 25000000000000000, // 25 000CC, in grams
+    // 50000000000000000,
+    // 75000000000000000,
+    // 100000000000000000,
+    // 125000000000000000,
+    // 150000000000000000,
+    // 175000000000000000,
+    // 200000000000000000,
+    // 225000000000000000,
+    // 250000000000000000,
+    // 275000000000000000,
+    // 300000000000000000,
+    // 325000000000000000,
+    // 350000000000000000,
+    // 375000000000000000,
+    // 400000000000000000,
+    // 425000000000000000,
+    // 450000000000000000,
+    // 475000000000000000,
+    // 500000000000000000
     ]
         .span();
 
@@ -97,17 +100,6 @@ fn get_mock_absorptions() -> Span<u256> {
     };
 
     let yearly_absorptions = yearly_absorptions.span();
-    // println!("yearly_absorptions.len(): {}", yearly_absorptions.len());
-
-    let mut index = 0;
-    loop {
-        if index >= yearly_absorptions.len() {
-            break;
-        }
-        // println!("yearly_absorptions[{}]: {}", index, *yearly_absorptions.at(index));
-        index += 1;
-    };
-
     yearly_absorptions
 }
 
@@ -136,14 +128,6 @@ fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
     } else {
         b - a
     };
-    if diff > 10 {
-        // println!("diff: {}", diff);
-    }
-    let diff = if a > b {
-        a - b
-    } else {
-        b - a
-    };
     diff <= error
 }
 
@@ -162,9 +146,7 @@ fn deploy_project() -> ContractAddress {
     contract_address
 }
 
-fn setup_project(
-    contract_address: ContractAddress, yearly_absorptions: Span<u256>
-) {
+fn setup_project(contract_address: ContractAddress, yearly_absorptions: Span<u256>) {
     let vintages = IVintageDispatcher { contract_address };
     // Fake the owner to call set_vintages and set_project_carbon which can only be run by owner
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
@@ -259,7 +241,7 @@ fn deploy_erc20() -> ContractAddress {
 fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, ContractAddress) {
     let project_address = deploy_project();
     let erc20_address = deploy_erc20();
-    
+
     // Tests are done on a single vintage, thus the yearly supply are the same
     let mut total_absorption = 0;
     let mut index = 0;
@@ -269,23 +251,11 @@ fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, Contract
     loop {
         if index >= num_vintages {
             break;
-            }
-            total_absorption += cc_supply;
-            yearly_absorptions.append(cc_supply);
-            index += 1;
-            };
-            
-            let mut index = 0;
-            loop {
-                if index >= num_vintages {
-                    break;
-                    }
-                    // println!("  ");
-                    // println!("index: {}", index);
-        // println!("yearly_absorptions: {}", *yearly_absorptions.at(index));
+        }
+        total_absorption += cc_supply;
+        yearly_absorptions.append(cc_supply);
         index += 1;
     };
-    let minter_address = deploy_minter_specific_max_mintable(project_address, erc20_address, total_absorption);
     setup_project(project_address, mock_absorptions);
     (project_address, minter_address, erc20_address)
 }
@@ -356,7 +326,6 @@ fn perform_fuzzed_transfer(
     start_cheat_caller_address(project_address, minter_address);
     buy_utils(owner_address, user_address, minter_address, cc_amount_to_buy);
     let sum_balance = helper_sum_balance(project_address, user_address);
-    // println!("sum_balance: {}", sum_balance);
     assert(equals_with_error(sum_balance, cc_amount_to_buy, 100), 'Error sum balance');
 
     start_cheat_caller_address(project_address, user_address);
@@ -370,14 +339,18 @@ fn perform_fuzzed_transfer(
 
     let token_id = 1;
     let balance_vintage_user_before = project.balance_of(user_address, token_id);
-    project.safe_transfer_from(user_address, receiver_address, token_id, balance_vintage_user_before, array![].span());
+    project
+        .safe_transfer_from(
+            user_address, receiver_address, token_id, balance_vintage_user_before, array![].span()
+        );
 
     let balance_vintage_user_after = project.balance_of(user_address, token_id);
     assert(equals_with_error(balance_vintage_user_after, 0, 100), 'Error balance vintage user');
 
     let balance_vintage_receiver = project.balance_of(receiver_address, token_id);
     assert(
-        equals_with_error(balance_vintage_receiver, balance_vintage_user_before, 100), 'Error balance vintage receiver'
+        equals_with_error(balance_vintage_receiver, balance_vintage_user_before, 100),
+        'Error balance vintage receiver'
     );
 // let token_id = 1;
 // let initial_balance = project.balance_of(user_address, token_id);
@@ -442,17 +415,15 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
             break;
         }
         let balance = project.balance_of(user_address, index.into());
-        // println!("index: {}", index);
-        // println!("balance: {}", balance);
-        // println!(" ");
         total_balance += balance;
         index += 1;
     };
     total_balance
 }
 
-// Should be used to test balances after a mint, not for transfers
-fn helper_check_vintage_balances(project_address: ContractAddress, user_address: ContractAddress, total_cc_bought: u256) {
+fn helper_check_vintage_balances(
+    project_address: ContractAddress, user_address: ContractAddress, total_cc_bought: u256
+) {
     let project = IProjectDispatcher { contract_address: project_address };
     let vintages = IVintageDispatcher { contract_address: project_address };
     let num_vintages: usize = vintages.get_num_vintages();
@@ -464,10 +435,69 @@ fn helper_check_vintage_balances(project_address: ContractAddress, user_address:
             break;
         }
         let token_id = *token_ids.at(index);
-        let proportion_supply = vintages.get_carbon_vintage(token_id).supply * CC_DECIMALS_MULTIPLIER / initial_total_supply;
+        let proportion_supply = vintages.get_carbon_vintage(token_id).supply
+            * CC_DECIMALS_MULTIPLIER
+            / initial_total_supply;
         let balance = project.balance_of(user_address, token_id);
         let expected_balance = total_cc_bought * proportion_supply / CC_DECIMALS_MULTIPLIER;
         assert(equals_with_error(balance, expected_balance, 10), 'Error vintage balance');
         index += 1;
     };
 }
+
+fn helper_check_vintage_balance(
+    project_address: ContractAddress,
+    user_address: ContractAddress,
+    token_id: u256,
+    total_cc_bought: u256
+) {
+    let project = IProjectDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let proportion_supply = vintages.get_carbon_vintage(token_id).supply
+        * CC_DECIMALS_MULTIPLIER
+        / initial_total_supply;
+    let balance = project.balance_of(user_address, token_id);
+    let expected_balance = total_cc_bought * proportion_supply / CC_DECIMALS_MULTIPLIER;
+    assert(equals_with_error(balance, expected_balance, 10), 'Error vintage balance');
+}
+
+// fn helper_expected_transfer_event(
+//     project_address: ContractAddress,
+//     operator: ContractAddress,
+//     from: ContractAddress,
+//     to: ContractAddress,
+//     token_ids: Span<u256>,
+//     total_cc_amount: u256
+// ) -> ERC1155Component::Event {
+//     let project = IProjectDispatcher { contract_address: project_address };
+//     if token_ids.len() == 1 {
+//         ERC1155Component::Event::TransferSingle(
+//             ERC1155Component::TransferSingle {
+//                 operator, from, to, id: *token_ids.at(0), value: total_cc_amount
+//             }
+//         )
+//     } else {
+//         let mut values: Array<u256> = Default::default();
+//         let mut index = 0;
+//         loop {
+//             if index >= token_ids.len() {
+//                 break;
+//             }
+//             let value = project.internal_to_cc(total_cc_amount, *token_ids.at(index));
+//             values.append(value);
+//             index += 1;
+//         };
+//         let values = values.span();
+//         let mut index = 0;
+//         loop {
+//             if index >= token_ids.len() {
+//                 break;
+//             }
+//             index += 1;
+//         };
+//         ERC1155Component::Event::TransferBatch(
+//             ERC1155Component::TransferBatch { operator, from, to, ids: token_ids, values }
+//         )
+//     }
+// }
