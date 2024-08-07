@@ -462,42 +462,42 @@ fn helper_check_vintage_balance(
     assert(equals_with_error(balance, expected_balance, 10), 'Error vintage balance');
 }
 
-// fn helper_expected_transfer_event(
-//     project_address: ContractAddress,
-//     operator: ContractAddress,
-//     from: ContractAddress,
-//     to: ContractAddress,
-//     token_ids: Span<u256>,
-//     total_cc_amount: u256
-// ) -> ERC1155Component::Event {
-//     let project = IProjectDispatcher { contract_address: project_address };
-//     if token_ids.len() == 1 {
-//         ERC1155Component::Event::TransferSingle(
-//             ERC1155Component::TransferSingle {
-//                 operator, from, to, id: *token_ids.at(0), value: total_cc_amount
-//             }
-//         )
-//     } else {
-//         let mut values: Array<u256> = Default::default();
-//         let mut index = 0;
-//         loop {
-//             if index >= token_ids.len() {
-//                 break;
-//             }
-//             let value = project.internal_to_cc(total_cc_amount, *token_ids.at(index));
-//             values.append(value);
-//             index += 1;
-//         };
-//         let values = values.span();
-//         let mut index = 0;
-//         loop {
-//             if index >= token_ids.len() {
-//                 break;
-//             }
-//             index += 1;
-//         };
-//         ERC1155Component::Event::TransferBatch(
-//             ERC1155Component::TransferBatch { operator, from, to, ids: token_ids, values }
-//         )
-//     }
-// }
+fn helper_expected_transfer_event(
+    project_address: ContractAddress,
+    operator: ContractAddress,
+    from: ContractAddress,
+    to: ContractAddress,
+    token_ids: Span<u256>,
+    total_cc_amount: u256
+) -> ERC1155Component::Event {
+    let project = IProjectDispatcher { contract_address: project_address };
+    if token_ids.len() == 1 {
+        ERC1155Component::Event::TransferSingle(
+            ERC1155Component::TransferSingle {
+                operator, from, to, id: *token_ids.at(0), value: total_cc_amount
+            }
+        )
+    } else {
+        let mut values: Array<u256> = Default::default();
+        let mut index = 0;
+        loop {
+            if index >= token_ids.len() {
+                break;
+            }
+            let value = project.internal_to_cc(total_cc_amount, *token_ids.at(index));
+            values.append(value);
+            index += 1;
+        };
+        let values = values.span();
+        let mut index = 0;
+        loop {
+            if index >= token_ids.len() {
+                break;
+            }
+            index += 1;
+        };
+        ERC1155Component::Event::TransferBatch(
+            ERC1155Component::TransferBatch { operator, from, to, ids: token_ids, values }
+        )
+    }
+}
