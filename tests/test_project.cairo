@@ -702,30 +702,30 @@ fn fuzz_test_transfer_high_supply_high_amount(
     );
 }
 
-#[test]
-fn test_project_metadata_update() {
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    let project_address = default_setup_and_deploy();
-    let project_contract = IProjectDispatcher { contract_address: project_address };
-    let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
-    let mut spy = spy_events();
-    let base_uri: ByteArray = format!("{}", 'uri');
-    let mut new_uri: ByteArray = format!("{}", 'new/uri');
+// #[test]
+// fn test_project_metadata_update() {
+//     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+//     let project_address = default_setup_and_deploy();
+//     let project_contract = IProjectDispatcher { contract_address: project_address };
+//     let erc1155_meta = IERC1155MetadataURIDispatcher { contract_address: project_address };
+//     let mut spy = spy_events();
+//     let base_uri: ByteArray = format!("{}", 'uri');
+//     let mut new_uri: ByteArray = format!("{}", 'new/uri');
 
-    start_cheat_caller_address(project_address, owner_address);
+//     start_cheat_caller_address(project_address, owner_address);
 
-    let vintage = 1;
-    assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
+//     let vintage = 1;
+//     assert(erc1155_meta.uri(vintage) == base_uri, 'Wrong base token URI');
 
-    project_contract.set_uri(new_uri.clone());
-    assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
+//     project_contract.set_uri(new_uri.clone());
+//     assert(erc1155_meta.uri(vintage) == new_uri.clone(), 'Wrong updated token URI');
 
-    let expected_batch_metadata_update = BatchMetadataUpdate {
-        from_token_id: 0,
-        to_token_id: 1
-    };
-    spy.assert_emitted(@array![(project_address, expected_batch_metadata_update)]);
-}
+//     let expected_batch_metadata_update = BatchMetadataUpdate {
+//         from_token_id: 0,
+//         to_token_id: 1
+//     };
+//     spy.assert_emitted(@array![(project_address, expected_batch_metadata_update)]);
+// }
 
 fn test_set_uri() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();

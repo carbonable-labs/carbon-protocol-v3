@@ -241,6 +241,7 @@ fn deploy_erc20() -> ContractAddress {
 fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, ContractAddress) {
     let project_address = deploy_project();
     let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
     // Tests are done on a single vintage, thus the yearly supply are the same
     let mut total_absorption = 0;
