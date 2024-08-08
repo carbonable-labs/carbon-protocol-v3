@@ -241,7 +241,9 @@ fn deploy_erc20() -> ContractAddress {
 fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, ContractAddress) {
     let project_address = deploy_project();
     let erc20_address = deploy_erc20();
-    let minter_address = deploy_minter(project_address, erc20_address);
+    let minter_address = deploy_minter_specific_max_mintable(
+        project_address, erc20_address, cc_supply
+    );
 
     // Tests are done on a single vintage, thus the yearly supply are the same
     let mut total_absorption = 0;
@@ -340,6 +342,7 @@ fn perform_fuzzed_transfer(
 
     let token_id = 1;
     let balance_vintage_user_before = project.balance_of(user_address, token_id);
+    start_cheat_caller_address(project_address, user_address);
     project
         .safe_transfer_from(
             user_address, receiver_address, token_id, balance_vintage_user_before, array![].span()
@@ -353,40 +356,21 @@ fn perform_fuzzed_transfer(
         equals_with_error(balance_vintage_receiver, balance_vintage_user_before, 100),
         'Error balance vintage receiver'
     );
-// let token_id = 1;
-// let initial_balance = project.balance_of(user_address, token_id);
-// println!("initial_balance: {}", initial_balance);
-// let vintages = IVintageDispatcher { contract_address: project_address };
-// let number_of_vintages = vintages.get_num_vintages();
-// println!("number_of_vintages: {}", number_of_vintages);
-// let expected_balance_vintage = cc_amount_to_buy
-//     / (number_of_vintages.into()); // Evenly distributed
-// let amount = percentage_of_balance_to_send * initial_balance / 10_000;
-// println!("expected balance: {}", expected_balance_vintage);
-// println!("balance user: {}", initial_balance);
-// println!("amount to send: {}", amount);
-// equals_with_error(initial_balance, expected_balance_vintage, 100);
-// project
-//     .safe_transfer_from(
-//         user_address, receiver_address, token_id, amount.into(), array![].span()
-//     );
-// let balance_owner = project.balance_of(user_address, token_id);
-// assert(
-//     equals_with_error(balance_owner, initial_balance - amount, 100), 'Error balance owner 1'
-// );
-// let balance_receiver = project.balance_of(receiver_address, token_id);
-// assert(equals_with_error(balance_receiver, amount, 100), 'Error balance receiver 1');
 
-// println!("2");
-// start_cheat_caller_address(project_address, receiver_address);
-// project
-//     .safe_transfer_from(
-//         receiver_address, user_address, token_id, amount.into(), array![].span()
-//     );
-// let balance_owner = project.balance_of(user_address, token_id);
-// assert(equals_with_error(balance_owner, initial_balance, 100), 'Error balance owner 2');
-// let balance_receiver = project.balance_of(receiver_address, token_id);
-// assert(equals_with_error(balance_receiver, 0, 100), 'Error balance receiver 2');
+    start_cheat_caller_address(project_address, receiver_address);
+    project
+        .safe_transfer_from(
+            receiver_address, user_address, token_id, balance_vintage_receiver, array![].span()
+        );
+
+    let balance_vintage_user_after = project.balance_of(user_address, token_id);
+    assert(
+        equals_with_error(balance_vintage_user_after, balance_vintage_user_before, 100),
+        'Error balance vintage user'
+    );
+
+    let balance_vintage_receiver = project.balance_of(receiver_address, token_id);
+    assert(equals_with_error(balance_vintage_receiver, 0, 100), 'Error balance vintage receiver');
 }
 
 fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
@@ -398,8 +382,8 @@ fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
         if index >= num_vintages {
             break;
         }
+        tokens.append(index.into());
         index += 1;
-        tokens.append(index.into())
     };
     tokens.span()
 }
@@ -417,6 +401,7 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
         }
         let balance = project.balance_of(user_address, index.into());
         total_balance += balance;
+        let vintage_supply = vintage.get_carbon_vintage(index.into()).supply.into();
         index += 1;
     };
     total_balance
@@ -481,22 +466,17 @@ fn helper_expected_transfer_event(
     } else {
         let mut values: Array<u256> = Default::default();
         let mut index = 0;
+        let mut total_emitted = 0;
         loop {
             if index >= token_ids.len() {
                 break;
             }
             let value = project.internal_to_cc(total_cc_amount, *token_ids.at(index));
             values.append(value);
+            total_emitted += value;
             index += 1;
         };
         let values = values.span();
-        let mut index = 0;
-        loop {
-            if index >= token_ids.len() {
-                break;
-            }
-            index += 1;
-        };
         ERC1155Component::Event::TransferBatch(
             ERC1155Component::TransferBatch { operator, from, to, ids: token_ids, values }
         )

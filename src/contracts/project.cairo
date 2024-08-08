@@ -424,9 +424,6 @@ mod Project {
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn _balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            // let share = self.shares_of(account, token_id);
-            // let supply_vintage: u256 = self.vintage.get_carbon_vintage(token_id).supply.into();
-            // share * supply_vintage / CC_DECIMALS_MULTIPLIER
             self.internal_to_cc(self.erc1155.balance_of(account, token_id), token_id)
         }
 
@@ -451,25 +448,29 @@ mod Project {
         ) {
             self.erc1155.batch_mint(to, token_ids, values);
             let mut values_to_emit: Array<u256> = Default::default();
+            let self_snap = @self;
             let mut index = 0;
+            let mut total_emitted = 0;
             loop {
                 if index == token_ids.len() {
                     break;
                 }
-                let value_intern = self.cc_to_internal(*values.at(index), *token_ids.at(index));
-                values_to_emit.append(value_intern);
+                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                values_to_emit.append(cc_value);
+                total_emitted += cc_value;
                 index += 1;
             };
-        // self
-        //     .emit(
-        //         TransferBatch {
-        //             operator: get_contract_address(),
-        //             from: Zeroable::zero(),
-        //             to,
-        //             ids: token_ids,
-        //             values: values_to_emit.span(),
-        //         }
-        //     );
+            let values_to_emit = values_to_emit.span();
+            self
+                .emit(
+                    TransferBatch {
+                        operator: get_caller_address(),
+                        from: Zeroable::zero(),
+                        to,
+                        ids: token_ids,
+                        values: values_to_emit,
+                    }
+                );
         }
 
         fn _offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {

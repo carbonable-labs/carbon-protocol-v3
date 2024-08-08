@@ -43,7 +43,8 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 use super::tests_lib::{
     equals_with_error, deploy_project, setup_project, default_setup_and_deploy,
     perform_fuzzed_transfer, buy_utils, deploy_erc20, deploy_minter, deploy_offsetter,
-    helper_sum_balance, helper_check_vintage_balances
+    helper_sum_balance, helper_check_vintage_balances, helper_get_token_ids,
+    helper_expected_transfer_event
 };
 
 // #[test]
@@ -143,7 +144,6 @@ fn test_project_batch_mint_with_minter_role() {
     let erc20_address = deploy_erc20();
     let minter_address = deploy_minter(project_address, erc20_address);
     let vintages = IVintageDispatcher { contract_address: project_address };
-    let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };
@@ -153,37 +153,34 @@ fn test_project_batch_mint_with_minter_role() {
 
     let initial_total_supply = vintages.get_initial_project_cc_supply();
     let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
     let num_vintages = vintages.get_num_vintages();
     let mut cc_values: Array<u256> = Default::default();
     let mut tokens: Array<u256> = Default::default();
-    let mut index = 0;
+    let mut index = 0; // todo replace this loop by instant init like in rust
     loop {
         if index >= num_vintages {
             break;
         };
-
         cc_values.append(cc_to_mint);
         tokens.append(index.into());
         index += 1;
     };
     let token_ids = tokens.span();
 
+    let mut spy = spy_events();
     project_contract.batch_mint(user_address, token_ids, cc_values.span());
+
+    let token_ids = helper_get_token_ids(project_address);
+    let expected_event = helper_expected_transfer_event(
+        project_address, minter_address, Zeroable::zero(), user_address, token_ids, cc_to_mint
+    );
+    spy.assert_emitted(@array![(project_address, expected_event)]);
 
     let total_cc_balance = helper_sum_balance(project_address, user_address);
     assert(equals_with_error(total_cc_balance, cc_to_mint, 10), 'Error of balance');
 
     helper_check_vintage_balances(project_address, user_address, cc_to_mint);
-// let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
-//     ERC1155Component::TransferBatch {
-//         operator: minter_address,
-//         from: Zeroable::zero(),
-//         to: user_address,
-//         ids: token_ids,
-//         values: cc_shares
-//     }
-// );
-// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
 }
 
 #[test]
@@ -302,7 +299,6 @@ fn test_project_batch_offset_with_offsetter_role() {
 
         cc_distribution.append(cc_to_mint / num_vintages.into());
         tokens.append(index.into());
-        let balance = project.balance_of(user_address, index.into());
         index += 1;
     };
     let cc_distribution = cc_distribution.span();
@@ -655,12 +651,16 @@ fn fuzz_test_transfer_medium_supply_high_amount(
 }
 
 #[test]
-fn fuzz_test_transfer_high_supply_low_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
+fn fuzz_test_transfer_high_supply_low_amount(// raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
 ) {
     // max supply of a vintage is 10M CC in mgrams
     let max_supply_for_vintage: u256 = 10_000_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 1; // with 2 digits after the comma, so 0.01%
+
+    let raw_supply = 110031889472511083670363002860459421466580476352140151480284168545104461300044;
+    let raw_share = 8705161503140068071018661352234439726289024200679691002570881155635338172122;
+    let raw_last_digits_share =
+        105445079905597346800075221358915599979072479728537949409476616114042104613629;
     perform_fuzzed_transfer(
         raw_supply,
         raw_share,
