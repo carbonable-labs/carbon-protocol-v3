@@ -738,7 +738,6 @@ fn integration_test_mint() {
     let project_address = deploy_project();
     let erc20_address = deploy_erc20();
     let minter_address = deploy_minter(project_address, erc20_address);
-    let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, owner_address);
     let project_contract = IProjectDispatcher { contract_address: project_address };

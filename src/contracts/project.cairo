@@ -162,8 +162,6 @@ mod Project {
         ERC4906Event: ERC4906Component::Event,
         #[flat]
         MetadataEvent: MetadataComponent::Event,
-        TransferSingle: TransferSingle,
-        TransferBatch: TransferBatch,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -176,31 +174,6 @@ mod Project {
         account: ContractAddress,
     }
 
-    /// Emitted when `value` token is transferred from `from` to `to` for `id`.
-    #[derive(Drop, PartialEq, starknet::Event)]
-    struct TransferSingle {
-        #[key]
-        operator: ContractAddress,
-        #[key]
-        from: ContractAddress,
-        #[key]
-        to: ContractAddress,
-        id: u256,
-        value: u256
-    }
-
-    /// Emitted when `values` are transferred from `from` to `to` for `ids`.
-    #[derive(Drop, PartialEq, starknet::Event)]
-    struct TransferBatch {
-        #[key]
-        operator: ContractAddress,
-        #[key]
-        from: ContractAddress,
-        #[key]
-        to: ContractAddress,
-        ids: Span<u256>,
-        values: Span<u256>,
-    }
 
     mod Errors {
         const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';
@@ -369,8 +342,7 @@ mod Project {
             value: u256,
             data: Span<felt252>
         ) {
-            let to_send = self.cc_to_internal(value, token_id);
-            self.erc1155.safe_transfer_from(from, to, token_id, to_send, data);
+            self._safe_transfer_from(from, to, token_id, value, data);
         }
 
         fn safe_batch_transfer_from(
@@ -431,15 +403,18 @@ mod Project {
             let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
             assert(isMinter, 'Only Minter can mint');
             self.erc1155.mint(to, token_id, value);
+            let cc_value = self.internal_to_cc(value, token_id);
             self
                 .emit(
-                    TransferSingle {
-                        operator: get_contract_address(),
-                        from: get_contract_address(),
-                        to,
-                        id: token_id,
-                        value,
-                    }
+                    ERC1155Component::Event::TransferSingle(
+                        ERC1155Component::TransferSingle {
+                            operator: get_contract_address(),
+                            from: get_contract_address(),
+                            to,
+                            id: token_id,
+                            value: cc_value,
+                        }
+                    )
                 );
         }
 
@@ -450,40 +425,44 @@ mod Project {
             let mut values_to_emit: Array<u256> = Default::default();
             let self_snap = @self;
             let mut index = 0;
-            let mut total_emitted = 0;
             loop {
                 if index == token_ids.len() {
                     break;
                 }
                 let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
                 values_to_emit.append(cc_value);
-                total_emitted += cc_value;
                 index += 1;
             };
             let values_to_emit = values_to_emit.span();
+
             self
                 .emit(
-                    TransferBatch {
-                        operator: get_caller_address(),
-                        from: Zeroable::zero(),
-                        to,
-                        ids: token_ids,
-                        values: values_to_emit,
-                    }
+                    ERC1155Component::Event::TransferBatch(
+                        ERC1155Component::TransferBatch {
+                            operator: get_caller_address(),
+                            from: Zeroable::zero(),
+                            to,
+                            ids: token_ids,
+                            values: values_to_emit,
+                        }
+                    )
                 );
         }
 
         fn _offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
             self.erc1155.burn(from, token_id, value);
+            let cc_value = self.internal_to_cc(value, token_id);
             self
                 .emit(
-                    TransferSingle {
-                        operator: get_contract_address(),
-                        from,
-                        to: Zeroable::zero(),
-                        id: token_id,
-                        value,
-                    }
+                    ERC1155Component::Event::TransferSingle(
+                        ERC1155Component::TransferSingle {
+                            operator: get_caller_address(),
+                            from,
+                            to: Zeroable::zero(),
+                            id: token_id,
+                            value: cc_value,
+                        }
+                    )
                 );
         }
 
@@ -494,15 +473,30 @@ mod Project {
             values: Span<u256>
         ) {
             self.erc1155.batch_burn(from, token_ids, values);
+            let mut values_to_emit: Array<u256> = Default::default();
+            let self_snap = @self;
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                values_to_emit.append(cc_value);
+                index += 1;
+            };
+            let values_to_emit = values_to_emit.span();
+
             self
                 .emit(
-                    TransferBatch {
-                        operator: get_contract_address(),
-                        from,
-                        to: Zeroable::zero(),
-                        ids: token_ids,
-                        values,
-                    }
+                    ERC1155Component::Event::TransferBatch(
+                        ERC1155Component::TransferBatch {
+                            operator: get_caller_address(),
+                            from,
+                            to: Zeroable::zero(),
+                            ids: token_ids,
+                            values: values_to_emit,
+                        }
+                    )
                 );
         }
 
@@ -516,12 +510,14 @@ mod Project {
         ) {
             let to_send = self.cc_to_internal(value, token_id);
             self.erc1155.safe_transfer_from(from, to, token_id, to_send, data);
-
+            let cc_value = self.internal_to_cc(value, token_id);
             self
                 .emit(
-                    TransferSingle {
-                        operator: get_contract_address(), from, to, id: token_id, value,
-                    }
+                    ERC1155Component::Event::TransferSingle(
+                        ERC1155Component::TransferSingle {
+                            operator: get_caller_address(), from, to, id: token_id, value: cc_value,
+                        }
+                    )
                 );
         }
 
@@ -534,12 +530,29 @@ mod Project {
             data: Span<felt252>
         ) {
             self.erc1155.safe_batch_transfer_from(from, to, token_ids, values, data);
-
+            let mut values_to_emit: Array<u256> = Default::default();
+            let self_snap = @self;
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                values_to_emit.append(cc_value);
+                index += 1;
+            };
+            let values_to_emit = values_to_emit.span();
             self
                 .emit(
-                    TransferBatch {
-                        operator: get_contract_address(), from, to, ids: token_ids, values,
-                    }
+                    ERC1155Component::Event::TransferBatch(
+                        ERC1155Component::TransferBatch {
+                            operator: get_caller_address(),
+                            from,
+                            to,
+                            ids: token_ids,
+                            values: values_to_emit,
+                        }
+                    )
                 );
         }
     }

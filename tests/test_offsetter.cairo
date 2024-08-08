@@ -1,3 +1,6 @@
+use snforge_std::cheatcodes::events::EventsFilterTrait;
+use snforge_std::cheatcodes::events::EventSpyTrait;
+use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
 use core::array::SpanTrait;
 // Core deps
 
@@ -49,7 +52,8 @@ use carbon_v3::mock::usdcarb::USDCarb;
 // Utils for testing purposes
 
 use super::tests_lib::{
-    default_setup_and_deploy, buy_utils, deploy_offsetter, deploy_erc20, deploy_minter
+    default_setup_and_deploy, buy_utils, deploy_offsetter, deploy_erc20, deploy_minter,
+    helper_expected_transfer_event
 };
 
 // Constants
@@ -125,8 +129,12 @@ fn test_offsetter_retire_carbon_credits() {
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, offsetter_address);
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+    let mut spy = spy_events();
     offsetter.retire_carbon_credits(token_id, amount_to_offset);
-    // project.safe_transfer_from(user_address, offsetter_address, token_id, amount_to_offset, array![].span());
+
+    let (_, transfer_event_from_offset) = spy.get_events().emitted_by(project_address).events.at(0);
+    let cc_value_emitted: u256 = (*transfer_event_from_offset.data.at(2)).into();
+    assert(amount_to_offset == cc_value_emitted, 'Error Event emitted');
 
     let carbon_retired = offsetter.get_carbon_retired(token_id);
     assert(carbon_retired == amount_to_offset, 'Carbon retired is wrong');

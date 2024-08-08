@@ -424,23 +424,23 @@ fn test_transfer_without_loss() {
 
     let balance_user_before = project_contract.balance_of(user_address, token_id);
 
-    // let mut spy = spy_events();
+    let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, user_address);
     project_contract
         .safe_transfer_from(
             user_address, receiver_address, token_id, balance_user_before, array![].span()
         );
-    // let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
-    //     ERC1155Component::TransferSingle {
-    //         operator: user_address,
-    //         from: user_address,
-    //         to: receiver_address,
-    //         id: token_id,
-    //         value: value
-    //     }
-    // );
-    // spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
+
+    let expected_event = helper_expected_transfer_event(
+        project_address,
+        user_address,
+        user_address,
+        receiver_address,
+        array![token_id].span(),
+        balance_user_before
+    );
+    spy.assert_emitted(@array![(project_address, expected_event)]);
 
     let balance_user_after = project_contract.balance_of(user_address, token_id);
 
@@ -651,7 +651,7 @@ fn fuzz_test_transfer_medium_supply_high_amount(
 }
 
 #[test]
-fn fuzz_test_transfer_high_supply_low_amount(// raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
+fn fuzz_test_transfer_high_supply_low_amount( // raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
 ) {
     // max supply of a vintage is 10M CC in mgrams
     let max_supply_for_vintage: u256 = 10_000_000 * MULTIPLIER_TONS_TO_MGRAMS;

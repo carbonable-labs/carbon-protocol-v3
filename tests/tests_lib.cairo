@@ -320,7 +320,6 @@ fn perform_fuzzed_transfer(
     let cc_amount_to_buy = raw_cc_amount % supply;
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
-    let receiver_address: ContractAddress = contract_address_const::<'receiver'>();
     let (project_address, minter_address, _) = fuzzing_setup(supply);
     let project = IProjectDispatcher { contract_address: project_address };
     // Setup Roles for the contracts
@@ -401,7 +400,6 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
         }
         let balance = project.balance_of(user_address, index.into());
         total_balance += balance;
-        let vintage_supply = vintage.get_carbon_vintage(index.into()).supply.into();
         index += 1;
     };
     total_balance
@@ -458,6 +456,7 @@ fn helper_expected_transfer_event(
 ) -> ERC1155Component::Event {
     let project = IProjectDispatcher { contract_address: project_address };
     if token_ids.len() == 1 {
+        let total_cc_amount = project.internal_to_cc(total_cc_amount, *token_ids.at(0));
         ERC1155Component::Event::TransferSingle(
             ERC1155Component::TransferSingle {
                 operator, from, to, id: *token_ids.at(0), value: total_cc_amount
@@ -477,6 +476,13 @@ fn helper_expected_transfer_event(
             index += 1;
         };
         let values = values.span();
+        let mut index = 0;
+        loop {
+            if index >= token_ids.len() {
+                break;
+            }
+            index += 1;
+        };
         ERC1155Component::Event::TransferBatch(
             ERC1155Component::TransferBatch { operator, from, to, ids: token_ids, values }
         )
