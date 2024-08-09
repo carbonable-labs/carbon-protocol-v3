@@ -366,17 +366,17 @@ mod ERC1155Component {
                 }
                 index += 1;
             };
-            // let operator = get_caller_address();
-            // if token_ids.len() == 1 {
-            //     self
-            //         .emit(
-            //             TransferSingle {
-            //                 operator, from, to, id: *token_ids.at(0), value: *values.at(0)
-            //             }
-            //         );
-            // } else {
-            //     self.emit(TransferBatch { operator, from, to, ids: token_ids, values });
-            // }
+        // let operator = get_caller_address();
+        // if token_ids.len() == 1 {
+        //     self
+        //         .emit(
+        //             TransferSingle {
+        //                 operator, from, to, id: *token_ids.at(0), value: *values.at(0)
+        //             }
+        //         );
+        // } else {
+        //     self.emit(TransferBatch { operator, from, to, ids: token_ids, values });
+        // }
         }
 
         /// Creates a `value` amount of tokens of type `token_id`, and assigns them to `to`.

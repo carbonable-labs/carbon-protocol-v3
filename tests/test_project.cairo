@@ -216,7 +216,7 @@ fn test_project_offset_with_offsetter_role() {
 
     // let mut spy = spy_events();
     start_cheat_caller_address(project_address, offsetter_address);
-    project.offset(user_address, token_id, balance);
+    project.burn(user_address, token_id, balance);
 // let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
 //     ERC1155Component::TransferSingle {
 //         operator: offsetter_address,
@@ -230,7 +230,7 @@ fn test_project_offset_with_offsetter_role() {
 }
 
 #[test]
-#[should_panic(expected: 'Only Offsetter can offset')]
+#[should_panic(expected: 'Only Offsetter can burn')]
 fn test_project_offset_without_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
@@ -258,7 +258,7 @@ fn test_project_offset_without_offsetter_role() {
     stop_cheat_caller_address(project_address);
 
     start_cheat_caller_address(project_address, owner_address);
-    project.offset(user_address, token_id, 100);
+    project.burn(user_address, token_id, 100);
 }
 
 #[test]
@@ -321,7 +321,7 @@ fn test_project_batch_offset_with_offsetter_role() {
 }
 
 #[test]
-#[should_panic(expected: 'Only Offsetter can batch offset')]
+#[should_panic(expected: 'Only Offsetter can batch burn')]
 fn test_project_batch_offset_without_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();

@@ -3,7 +3,7 @@ use starknet::{ContractAddress, ClassHash};
 #[starknet::interface]
 trait IExternal<TContractState> {
     // fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
-    fn offset(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
+    fn burn(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
         ref self: TContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
@@ -208,11 +208,11 @@ mod Project {
         //     self._mint(to, token_id, value);
         // }
 
-        fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
-            // [Check] Only Offsetter can offset
+        fn burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
+            // [Check] Only Offsetter can burn
             let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
-            assert(isOffseter, 'Only Offsetter can offset');
-            self._offset(from, token_id, value);
+            assert(isOffseter, 'Only Offsetter can burn');
+            self._burn(from, token_id, value);
         }
 
         fn batch_mint(
@@ -230,9 +230,9 @@ mod Project {
             values: Span<u256>
         ) {
             // TODO : Check that the caller is the owner of the value he wnt to burn
-            // [Check] Only Offsetter can offset
+            // [Check] Only Offsetter can burn
             let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
-            assert(isOffseter, 'Only Offsetter can batch offset');
+            assert(isOffseter, 'Only Offsetter can batch burn');
             self._batch_offset(from, token_ids, values);
         }
 
@@ -449,7 +449,7 @@ mod Project {
                 );
         }
 
-        fn _offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
+        fn _burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
             self.erc1155.burn(from, token_id, value);
             let cc_value = self.internal_to_cc(value, token_id);
             self
