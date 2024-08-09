@@ -23,18 +23,18 @@ mod MintComponent {
 
     // Constants
 
-    const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
+    use carbon_v3::models::constants::{MULTIPLIER_TONS_TO_MGRAMS};
 
     #[storage]
     struct Storage {
         Mint_carbonable_project_address: ContractAddress,
         Mint_payment_token_address: ContractAddress,
         Mint_public_sale_open: bool,
-        Mint_max_money_amount: u256,
         Mint_min_money_amount_per_tx: u256,
         Mint_unit_price: u256,
         Mint_claimed_value: LegacyMap::<ContractAddress, u256>,
-        Mint_remaining_money_amount: u256,
+        Mint_max_mintable_cc: u256,
+        Mint_remaining_mintable_cc: u256,
         Mint_cancel: bool,
     }
 
@@ -50,6 +50,8 @@ mod MintComponent {
         Withdraw: Withdraw,
         AmountRetrieved: AmountRetrieved,
         MinMoneyAmountPerTxUpdated: MinMoneyAmountPerTxUpdated,
+        RemainingMintableCCUpdated: RemainingMintableCCUpdated,
+        MaxMintableCCUpdated: MaxMintableCCUpdated,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -71,7 +73,7 @@ mod MintComponent {
     struct Buy {
         #[key]
         address: ContractAddress,
-        money_amount: u256,
+        cc_amount: u256,
         vintages: Span<u256>,
     }
 
@@ -107,6 +109,18 @@ mod MintComponent {
         new_amount: u256,
     }
 
+    #[derive(Drop, starknet::Event)]
+    struct MaxMintableCCUpdated {
+        old_value: u256,
+        new_value: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct RemainingMintableCCUpdated {
+        old_value: u256,
+        new_value: u256,
+    }
+
     mod Errors {
         const INVALID_ARRAY_LENGTH: felt252 = 'Mint: invalid array length';
     }
@@ -133,8 +147,12 @@ mod MintComponent {
             self.Mint_unit_price.read()
         }
 
-        fn get_available_money_amount(self: @ComponentState<TContractState>) -> u256 {
-            self.Mint_remaining_money_amount.read()
+        fn get_remaining_mintable_cc(self: @ComponentState<TContractState>) -> u256 {
+            self.Mint_remaining_mintable_cc.read()
+        }
+
+        fn get_max_mintable_cc(self: @ComponentState<TContractState>) -> u256 {
+            self.Mint_max_mintable_cc.read()
         }
 
         fn get_min_money_amount_per_tx(self: @ComponentState<TContractState>) -> u256 {
@@ -142,7 +160,7 @@ mod MintComponent {
         }
 
         fn is_sold_out(self: @ComponentState<TContractState>) -> bool {
-            self.get_available_money_amount() == 0
+            self.get_remaining_mintable_cc() == 0
         }
 
         fn cancel_mint(ref self: ComponentState<TContractState>, should_cancel: bool) {
@@ -162,6 +180,38 @@ mod MintComponent {
 
         fn is_canceled(self: @ComponentState<TContractState>) -> bool {
             self.Mint_cancel.read()
+        }
+
+        fn set_max_mintable_cc(ref self: ComponentState<TContractState>, max_mintable_cc: u256) {
+            let project_address = self.Mint_carbonable_project_address.read();
+            let project = IProjectDispatcher { contract_address: project_address };
+
+            let caller_address = get_caller_address();
+            assert(!caller_address.is_zero(), 'Invalid caller');
+            let isOwner = project.only_owner(caller_address);
+            assert(isOwner, 'Caller is not the owner');
+
+            let public_sale_open = self.Mint_public_sale_open.read();
+            assert(public_sale_open, 'Sale is closed');
+
+            let old_value_remaining = self.Mint_remaining_mintable_cc.read();
+            let old_value_max = self.Mint_max_mintable_cc.read();
+
+            let remaining_mintable_cc = old_value_remaining + max_mintable_cc - old_value_max;
+            self.Mint_remaining_mintable_cc.write(remaining_mintable_cc);
+
+            self.Mint_max_mintable_cc.write(max_mintable_cc);
+
+            self
+                .emit(
+                    RemainingMintableCCUpdated {
+                        old_value: old_value_remaining, new_value: remaining_mintable_cc
+                    }
+                );
+            self
+                .emit(
+                    MaxMintableCCUpdated { old_value: old_value_max, new_value: max_mintable_cc }
+                );
         }
 
         fn set_public_sale_open(ref self: ComponentState<TContractState>, public_sale_open: bool) {
@@ -241,11 +291,11 @@ mod MintComponent {
                 );
         }
 
-        fn public_buy(ref self: ComponentState<TContractState>, money_amount: u256) {
+        fn public_buy(ref self: ComponentState<TContractState>, cc_amount: u256) {
             let public_sale_open = self.Mint_public_sale_open.read();
             assert(public_sale_open, 'Sale is closed');
 
-            self._buy(money_amount);
+            self._buy(cc_amount);
         }
 
         fn set_min_money_amount_per_tx(
@@ -259,12 +309,6 @@ mod MintComponent {
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
-            let max_money_amount_per_tx = self.get_max_money_amount();
-            assert(
-                max_money_amount_per_tx >= min_money_amount_per_tx,
-                'Invalid min money amount per tx'
-            );
-
             let old_amount = self.Mint_min_money_amount_per_tx.read();
             self.Mint_min_money_amount_per_tx.write(min_money_amount_per_tx);
             self
@@ -273,10 +317,6 @@ mod MintComponent {
                         old_amount: old_amount, new_amount: min_money_amount_per_tx,
                     }
                 );
-        }
-
-        fn get_max_money_amount(self: @ComponentState<TContractState>) -> u256 {
-            self.Mint_max_money_amount.read()
         }
     }
 
@@ -289,70 +329,74 @@ mod MintComponent {
             carbonable_project_address: ContractAddress,
             payment_token_address: ContractAddress,
             public_sale_open: bool,
-            max_money_amount: u256,
+            max_mintable_cc: u256,
             unit_price: u256,
         ) {
             assert(unit_price > 0, 'Invalid unit price');
-
             self.Mint_carbonable_project_address.write(carbonable_project_address);
             self.Mint_payment_token_address.write(payment_token_address);
             self.Mint_unit_price.write(unit_price);
-            self.Mint_remaining_money_amount.write(max_money_amount);
-            self.Mint_max_money_amount.write(max_money_amount);
+            self.Mint_max_mintable_cc.write(max_mintable_cc);
+            self.Mint_remaining_mintable_cc.write(max_mintable_cc);
             self.Mint_public_sale_open.write(public_sale_open);
         }
 
-        fn _buy(ref self: ComponentState<TContractState>, money_amount: u256) {
-            assert(money_amount > 0, 'Invalid amount of money');
+        fn _buy(ref self: ComponentState<TContractState>, cc_amount: u256) {
+            assert(cc_amount > 0, 'Invalid carbon credit amount');
 
             let caller_address = get_caller_address();
             assert(!caller_address.is_zero(), 'Invalid caller');
 
+            let unit_price = self.Mint_unit_price.read();
+            // If user wants to buy 1 carbon credit, the input should be 1*MULTIPLIER_TONS_TO_MGRAMS
+            let money_amount = cc_amount * unit_price / MULTIPLIER_TONS_TO_MGRAMS;
+
             let min_money_amount_per_tx = self.Mint_min_money_amount_per_tx.read();
             assert(money_amount >= min_money_amount_per_tx, 'Value too low');
 
-            let remaining_money_amount = self.Mint_remaining_money_amount.read();
-            assert(money_amount <= remaining_money_amount, 'Not enough remaining money');
+            let remaining_mintable_cc = self.Mint_remaining_mintable_cc.read();
+            assert(remaining_mintable_cc >= cc_amount, 'Minting limit reached');
 
-            let max_money_amount = self.get_max_money_amount();
-            let share = money_amount * CC_DECIMALS_MULTIPLIER / max_money_amount;
-
+            // [Interaction] Compute the amount of cc for each vintage
             let project_address = self.Mint_carbonable_project_address.read();
             let vintages = IVintageDispatcher { contract_address: project_address };
             let num_vintages: usize = vintages.get_num_vintages();
 
-            // User mints the same amount of tokens for all the vintages
-            let mut cc_shares: Array<u256> = Default::default();
-            let mut tokens: Array<u256> = Default::default();
+            let mut tokens_ids: Array<u256> = Default::default();
+            let mut values_cc: Array<u256> = Default::default();
             let mut index = 0;
             loop {
                 if index >= num_vintages {
                     break;
                 }
-                cc_shares.append(share);
+                values_cc.append(cc_amount.into());
+                tokens_ids.append(index.into());
                 index += 1;
-                tokens.append(index.into())
             };
-            let cc_shares = cc_shares.span();
-            let token_ids = tokens.span();
-
+            // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
             let erc20 = IERC20Dispatcher { contract_address: token_address };
             let minter_address = get_contract_address();
 
             let success = erc20.transfer_from(caller_address, minter_address, money_amount);
+            // [Check] Transfer successful
             assert(success, 'Transfer failed');
 
-            self.Mint_remaining_money_amount.write(remaining_money_amount - money_amount);
+            // [Interaction] Update remaining mintable cc
+            self.Mint_remaining_mintable_cc.write(remaining_mintable_cc - cc_amount);
 
+            // [Interaction] Mint
             let project = IProjectDispatcher { contract_address: project_address };
-            project.batch_mint(caller_address, token_ids, cc_shares);
+            project.batch_mint(caller_address, tokens_ids.span(), values_cc.span());
 
+            // [Event] Emit event
             self
                 .emit(
                     Event::Buy(
                         Buy {
-                            address: caller_address, money_amount: money_amount, vintages: token_ids
+                            address: caller_address,
+                            vintages: tokens_ids.span(),
+                            cc_amount: cc_amount,
                         }
                     )
                 );

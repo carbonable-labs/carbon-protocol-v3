@@ -2,8 +2,8 @@ use starknet::{ContractAddress, ClassHash};
 
 #[starknet::interface]
 trait IExternal<TContractState> {
-    fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
-    fn offset(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
+    // fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
+    fn burn(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
         ref self: TContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
@@ -46,13 +46,17 @@ trait IExternal<TContractState> {
         self: @TContractState, owner: ContractAddress, operator: ContractAddress
     ) -> bool;
     fn set_approval_for_all(ref self: TContractState, operator: ContractAddress, approved: bool);
+    fn cc_to_internal(self: @TContractState, cc_value_to_send: u256, token_id: u256) -> u256;
+
+    fn internal_to_cc(self: @TContractState, internal_value_to_send: u256, token_id: u256) -> u256;
 }
 
 
 #[starknet::contract]
 mod Project {
+    use core::starknet::event::EventEmitter;
     use carbon_v3::components::vintage::interface::IVintageDispatcher;
-    use starknet::{get_caller_address, ContractAddress, ClassHash};
+    use starknet::{get_caller_address, get_contract_address, ContractAddress, ClassHash};
 
     // Ownable
     use openzeppelin::access::ownable::OwnableComponent;
@@ -114,7 +118,7 @@ mod Project {
     // Constants
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
     const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
-    const CC_DECIMALS_MULTIPLIER: u256 = 100_000_000_000_000;
+    use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
     const MINTER_ROLE: felt252 = selector!("Minter");
     const OFFSETTER_ROLE: felt252 = selector!("Offsetter");
     const OWNER_ROLE: felt252 = selector!("Owner");
@@ -170,6 +174,7 @@ mod Project {
         account: ContractAddress,
     }
 
+
     mod Errors {
         const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';
         const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: no equal array length';
@@ -196,29 +201,26 @@ mod Project {
     // Externals
     #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
-        fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
-            // [Check] Only Minter can mint
-            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
-            assert(isMinter, 'Only Minter can mint');
-            self.erc1155.mint(to, token_id, value);
-        }
+        // fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+        //     // [Check] Only Minter can mint
+        //     let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+        //     assert(isMinter, 'Only Minter can mint');
+        //     self._mint(to, token_id, value);
+        // }
 
-        fn offset(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
-            // [Check] Only Offsetter can offset
-            let isOffsetter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
-            assert(isOffsetter, 'Only Offsetter can offset');
-            let share_value = self.vintage.cc_to_share(value, token_id);
-            self.erc1155.burn(from, token_id, share_value);
+        fn burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
+            // [Check] Only Offsetter can burn
+            let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
+            assert(isOffseter, 'Only Offsetter can burn');
+            self._burn(from, token_id, value);
         }
 
         fn batch_mint(
             ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
         ) {
-            // TODO : Check the avalibility of the ampount of vintage cc_supply for each values.it should be done in the absorber/carbon_handler
-            // [Check] Only Minter can mint
             let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
             assert(isMinter, 'Only Minter can batch mint');
-            self.erc1155.batch_mint(to, token_ids, values);
+            self._batch_mint(to, token_ids, values);
         }
 
         fn batch_offset(
@@ -228,10 +230,10 @@ mod Project {
             values: Span<u256>
         ) {
             // TODO : Check that the caller is the owner of the value he wnt to burn
-            // [Check] Only Offsetter can offset
-            let isOffsetter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
-            assert(isOffsetter, 'Only Offsetter can batch offset');
-            self.erc1155.batch_burn(from, token_ids, values);
+            // [Check] Only Offsetter can burn
+            let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
+            assert(isOffseter, 'Only Offsetter can batch burn');
+            self._batch_offset(from, token_ids, values);
         }
 
         fn uri(self: @ContractState, token_id: u256) -> Span<felt252> {
@@ -321,7 +323,15 @@ mod Project {
         }
 
         fn shares_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            self.erc1155.ERC1155_balances.read((token_id, account))
+            let amount_cc_bought = self
+                .erc1155
+                .ERC1155_balances
+                .read((token_id, account)); // expressed in grams
+            let initial_project_supply = self.vintage.get_initial_project_cc_supply();
+            if initial_project_supply == 0 {
+                panic!("Initial project supply is not set");
+            }
+            (amount_cc_bought * CC_DECIMALS_MULTIPLIER) / initial_project_supply.into()
         }
 
         fn safe_transfer_from(
@@ -332,8 +342,7 @@ mod Project {
             value: u256,
             data: Span<felt252>
         ) {
-            let share_value = self.vintage.cc_to_share(value, token_id);
-            self.erc1155.safe_transfer_from(from, to, token_id, share_value, data);
+            self._safe_transfer_from(from, to, token_id, value, data);
         }
 
         fn safe_batch_transfer_from(
@@ -344,7 +353,17 @@ mod Project {
             values: Span<u256>,
             data: Span<felt252>
         ) {
-            self.erc1155.safe_batch_transfer_from(from, to, token_ids, values, data);
+            let mut index = 0;
+            let self_snap = @self;
+            let mut to_send = array![];
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                to_send.append(self_snap.cc_to_internal(*values.at(index), *token_ids.at(index)));
+                index += 1;
+            };
+            self._safe_batch_transfer_from(from, to, token_ids, to_send.span(), data);
         }
 
         fn is_approved_for_all(
@@ -358,13 +377,183 @@ mod Project {
         ) {
             self.erc1155.set_approval_for_all(operator, approved);
         }
+
+        fn cc_to_internal(self: @ContractState, cc_value_to_send: u256, token_id: u256) -> u256 {
+            let vintage_supply = self.vintage.get_carbon_vintage(token_id).supply.into();
+            let initial_project_supply = self.vintage.get_initial_project_cc_supply();
+            cc_value_to_send * initial_project_supply / vintage_supply
+        }
+
+        fn internal_to_cc(
+            self: @ContractState, internal_value_to_send: u256, token_id: u256
+        ) -> u256 {
+            let vintage_supply = self.vintage.get_carbon_vintage(token_id).supply.into();
+            let initial_project_supply = self.vintage.get_initial_project_cc_supply();
+            internal_value_to_send * vintage_supply / initial_project_supply
+        }
     }
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
         fn _balance_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            let share = self.erc1155.balance_of(account, token_id);
-            self.vintage.share_to_cc(share, token_id)
+            self.internal_to_cc(self.erc1155.balance_of(account, token_id), token_id)
+        }
+
+        fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+            assert(isMinter, 'Only Minter can mint');
+            self.erc1155.mint(to, token_id, value);
+            let cc_value = self.internal_to_cc(value, token_id);
+            self
+                .emit(
+                    ERC1155Component::Event::TransferSingle(
+                        ERC1155Component::TransferSingle {
+                            operator: get_contract_address(),
+                            from: get_contract_address(),
+                            to,
+                            id: token_id,
+                            value: cc_value,
+                        }
+                    )
+                );
+        }
+
+        fn _batch_mint(
+            ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
+        ) {
+            self.erc1155.batch_mint(to, token_ids, values);
+            let mut values_to_emit: Array<u256> = Default::default();
+            let self_snap = @self;
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                values_to_emit.append(cc_value);
+                index += 1;
+            };
+            let values_to_emit = values_to_emit.span();
+
+            self
+                .emit(
+                    ERC1155Component::Event::TransferBatch(
+                        ERC1155Component::TransferBatch {
+                            operator: get_caller_address(),
+                            from: Zeroable::zero(),
+                            to,
+                            ids: token_ids,
+                            values: values_to_emit,
+                        }
+                    )
+                );
+        }
+
+        fn _burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
+            self.erc1155.burn(from, token_id, value);
+            let cc_value = self.internal_to_cc(value, token_id);
+            self
+                .emit(
+                    ERC1155Component::Event::TransferSingle(
+                        ERC1155Component::TransferSingle {
+                            operator: get_caller_address(),
+                            from,
+                            to: Zeroable::zero(),
+                            id: token_id,
+                            value: cc_value,
+                        }
+                    )
+                );
+        }
+
+        fn _batch_offset(
+            ref self: ContractState,
+            from: ContractAddress,
+            token_ids: Span<u256>,
+            values: Span<u256>
+        ) {
+            self.erc1155.batch_burn(from, token_ids, values);
+            let mut values_to_emit: Array<u256> = Default::default();
+            let self_snap = @self;
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                values_to_emit.append(cc_value);
+                index += 1;
+            };
+            let values_to_emit = values_to_emit.span();
+
+            self
+                .emit(
+                    ERC1155Component::Event::TransferBatch(
+                        ERC1155Component::TransferBatch {
+                            operator: get_caller_address(),
+                            from,
+                            to: Zeroable::zero(),
+                            ids: token_ids,
+                            values: values_to_emit,
+                        }
+                    )
+                );
+        }
+
+        fn _safe_transfer_from(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_id: u256,
+            value: u256,
+            data: Span<felt252>
+        ) {
+            let to_send = self.cc_to_internal(value, token_id);
+            self.erc1155.safe_transfer_from(from, to, token_id, to_send, data);
+            let cc_value = self.internal_to_cc(value, token_id);
+            self
+                .emit(
+                    ERC1155Component::Event::TransferSingle(
+                        ERC1155Component::TransferSingle {
+                            operator: get_caller_address(), from, to, id: token_id, value: cc_value,
+                        }
+                    )
+                );
+        }
+
+        fn _safe_batch_transfer_from(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_ids: Span<u256>,
+            values: Span<u256>,
+            data: Span<felt252>
+        ) {
+            self.erc1155.safe_batch_transfer_from(from, to, token_ids, values, data);
+            let mut values_to_emit: Array<u256> = Default::default();
+            let self_snap = @self;
+            let mut index = 0;
+            loop {
+                if index == token_ids.len() {
+                    break;
+                }
+                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                values_to_emit.append(cc_value);
+                index += 1;
+            };
+            let values_to_emit = values_to_emit.span();
+            self
+                .emit(
+                    ERC1155Component::Event::TransferBatch(
+                        ERC1155Component::TransferBatch {
+                            operator: get_caller_address(),
+                            from,
+                            to,
+                            ids: token_ids,
+                            values: values_to_emit,
+                        }
+                    )
+                );
         }
     }
 }

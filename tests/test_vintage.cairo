@@ -18,7 +18,6 @@ use snforge_std::{
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
 use carbon_v3::components::vintage::VintageComponent::{Event};
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
 use carbon_v3::components::vintage::VintageComponent;
 
 // Contracts
@@ -33,7 +32,7 @@ use carbon_v3::contracts::project::{
 use super::tests_lib::{
     get_mock_absorptions, equals_with_error, deploy_project, setup_project,
     default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_offsetter,
-    deploy_minter, deploy_erc20
+    deploy_minter, deploy_erc20, STARTING_YEAR
 };
 
 // Constants
@@ -58,194 +57,6 @@ struct Contracts {
 // Tests
 //
 
-/// set_project_carbon
-
-#[test]
-fn test_set_project_carbon() {
-    let project_address = deploy_project();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    start_cheat_caller_address(project_address, owner_address);
-    vintages.set_project_carbon(PROJECT_CARBON);
-    let fetched_value = vintages.get_project_carbon();
-    assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
-}
-
-#[test]
-#[should_panic(expected: 'Caller does not have role')]
-fn test_set_project_carbon_without_owner_role() {
-    let project_address = deploy_project();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    vintages.set_project_carbon(PROJECT_CARBON.into());
-}
-
-#[test]
-fn test_get_project_carbon_not_set() {
-    let project_address = deploy_project();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    // [Assert] default project_carbon is 0
-    let fetched_value = vintages.get_project_carbon();
-    assert(fetched_value == 0, 'default project_carbon is not 0');
-}
-
-#[test]
-fn test_set_project_carbon_twice() {
-    let project_address = deploy_project();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-    start_cheat_caller_address(project_address, owner_address);
-    vintages.set_project_carbon(PROJECT_CARBON.into());
-    let fetched_value = vintages.get_project_carbon();
-    assert(fetched_value == PROJECT_CARBON.into(), 'project_carbon wrong value');
-    let new_value: u128 = 100;
-    vintages.set_project_carbon(new_value);
-    let fetched_value = vintages.get_project_carbon();
-    assert(fetched_value == new_value, 'project_carbon did not change');
-}
-
-/// share_to_cc
-
-#[test]
-fn test_share_to_cc_zero_share() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let token_id: u256 = 1.into();
-    let share: u256 = 0.into();
-    let cc_value = vintages.share_to_cc(share, token_id);
-    assert(cc_value == 0.into(), 'CC value should be zero');
-}
-
-#[test]
-#[should_panic(expected: 'CC value exceeds vintage supply')]
-fn test_share_to_cc_revert_exceeds_supply() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let share: u256 = 2 * CC_DECIMALS_MULTIPLIER; // share is greater than 100%
-    let token_id = 1;
-    vintages.share_to_cc(share, token_id);
-}
-
-#[test]
-fn test_share_to_cc_equal_to_multiplier() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let share: u256 = CC_DECIMALS_MULTIPLIER.into();
-    let token_id = 1;
-    let supply = vintages.get_carbon_vintage(token_id).supply;
-    let result = vintages.share_to_cc(share, token_id);
-    assert(result == supply.into(), 'Result should equal cc_supply');
-    assert(result > 0, 'Result should be greater than 0');
-}
-
-#[test]
-fn test_share_to_cc_half_supply() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-
-    let share: u256 = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%
-    let token_id: u256 = 1;
-    let cc_supply = vintages.get_carbon_vintage(token_id).supply;
-    let result = vintages.share_to_cc(share, token_id);
-    assert(result == cc_supply.into() / 2, 'Result error');
-    assert(result > 0, 'Result should be greater than 0');
-}
-
-#[test]
-fn test_share_to_cc_non_existent_token_id() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let token_id: u256 = 999.into(); // Assuming 999 does not exist
-    let share: u256 = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%
-    let result = vintages.share_to_cc(share, token_id);
-    assert(result == 0.into(), 'Result should be 0');
-}
-
-#[test]
-fn test_share_to_cc_zero_cc_supply() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let token_id: u256 = 1;
-    let share: u256 = 1000.into();
-    let result = vintages.share_to_cc(share, token_id);
-    assert(result == 0.into(), 'Result should be 0');
-}
-
-// cc_to_share
-
-#[test]
-fn test_cc_to_share_zero_cc_value() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let token_id: u256 = 1;
-    let cc_value: u256 = 0.into();
-    let share_value = vintages.cc_to_share(cc_value, token_id);
-    assert(share_value == 0.into(), 'Share value should be zero');
-}
-
-#[test]
-fn test_cc_to_share_equal_to_supply() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let token_id: u256 = 1;
-
-    let cc_supply = vintages.get_carbon_vintage(token_id).supply.into();
-    let cc_value: u256 = cc_supply;
-    let result = vintages.cc_to_share(cc_value, token_id);
-    assert(result == CC_DECIMALS_MULTIPLIER.into(), 'Result error');
-    assert(result > 0, 'Result should be greater than 0');
-}
-
-#[test]
-fn test_cc_to_share_half_supply() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let token_id: u256 = 1;
-
-    let cc_supply = vintages.get_carbon_vintage(token_id).supply.into();
-    let cc_value: u256 = cc_supply / 2;
-    let result = vintages.cc_to_share(cc_value, token_id);
-    assert(result == 50 * CC_DECIMALS_MULTIPLIER / 100, 'Result error');
-    assert(result > 0, 'Result should be greater than 0');
-}
-
-#[test]
-#[should_panic(expected: 'CC supply of vintage is 0')]
-fn test_cc_to_share_zero_cc_supply() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let token_id: u256 = 1;
-
-    let cc_value: u256 = 1000.into();
-    vintages.rebase_vintage(token_id, 0);
-    let result = vintages.cc_to_share(cc_value, token_id);
-
-    let cc_supply = vintages.get_carbon_vintage(token_id).supply.into();
-    assert(cc_supply == 0, 'CC supply should be 0');
-    assert(result == 0, 'Result should be 0');
-}
-
-#[test]
-#[should_panic(expected: 'CC supply of vintage is 0')]
-fn test_cc_to_share_non_existent_token_id() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let cc_value: u256 = 100000.into();
-    vintages.cc_to_share(cc_value, 999);
-}
-
-#[test]
-#[should_panic(expected: 'Share value exceeds 100%')]
-fn test_cc_to_share_revert_exceeds_supply() {
-    let project_address = default_setup_and_deploy();
-    let vintages = IVintageDispatcher { contract_address: project_address };
-    let token_id: u256 = 1;
-
-    let cc_supply = vintages.get_carbon_vintage(token_id).supply.into();
-    let cc_value: u256 = 2 * cc_supply;
-    vintages.cc_to_share(cc_value, token_id);
-}
-
-
 /// set_vintages
 
 fn test_set_vintages() {
@@ -254,9 +65,8 @@ fn test_set_vintages() {
     let yearly_absorptions = get_mock_absorptions();
     start_cheat_caller_address(project_address, owner_address);
 
-    let starting_year = 2024;
     let vintages = IVintageDispatcher { contract_address: project_address };
-    vintages.set_vintages(yearly_absorptions, starting_year);
+    vintages.set_vintages(yearly_absorptions, STARTING_YEAR);
 
     let cc_vintages = vintages.get_cc_vintages();
     let mut index = 0;
@@ -266,7 +76,7 @@ fn test_set_vintages() {
         }
         let vintage = cc_vintages.at(index);
         let expected__cc_vintage = CarbonVintage {
-            year: (starting_year + index.into()),
+            year: (STARTING_YEAR + index.into()),
             supply: *yearly_absorptions.at(index),
             failed: 0,
             created: 0,
@@ -283,7 +93,7 @@ fn test_set_vintages() {
         }
         let vintage = cc_vintages.at(index);
         let expected__cc_vintage: CarbonVintage = CarbonVintage {
-            year: (starting_year.into() + index.into()),
+            year: (STARTING_YEAR.into() + index.into()),
             supply: 0,
             failed: 0,
             created: 0,
@@ -299,9 +109,8 @@ fn test_set_vintages() {
 fn test_set_vintages_without_owner_role() {
     let project_address = deploy_project();
     let yearly_absorptions = get_mock_absorptions();
-    let starting_year = 2024;
     let vintages = IVintageDispatcher { contract_address: project_address };
-    vintages.set_vintages(yearly_absorptions, starting_year);
+    vintages.set_vintages(yearly_absorptions, STARTING_YEAR);
 }
 
 /// get_carbon_vintage
@@ -328,8 +137,10 @@ fn test_get_carbon_vintage() {
 /// get_initial_cc_supply
 #[test]
 fn test_get_initial_cc_supply() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
+    start_cheat_caller_address(project_address, owner_address);
 
     // initial supply should be equal to supply before any rebases
     let cc_vintages = vintages.get_cc_vintages();
@@ -349,14 +160,14 @@ fn test_get_initial_cc_supply() {
     let token_id: u256 = 1;
     let initial_supply = vintages.get_carbon_vintage(token_id).supply;
     let diff = 50000;
-    let new_cc_supply: u128 = initial_supply + diff;
+    let new_cc_supply: u256 = initial_supply + diff;
     vintages.rebase_vintage(token_id, new_cc_supply);
     let fetched_initial_supply = vintages.get_initial_cc_supply(token_id);
     assert(vintages.get_carbon_vintage(token_id).created == diff, 'Created field error');
     assert(fetched_initial_supply == initial_supply, 'Initial supply error');
 
     // Do one negative rebase and check if initial supply is correct
-    let new_cc_supply: u128 = new_cc_supply - diff;
+    let new_cc_supply: u256 = new_cc_supply - diff;
     vintages.rebase_vintage(token_id, new_cc_supply);
     let fetched_initial_supply = vintages.get_initial_cc_supply(token_id);
     assert(fetched_initial_supply == initial_supply, 'Initial supply error');
@@ -392,11 +203,11 @@ fn test_get_cc_decimals() {
 
 #[test]
 fn test_update_vintage_status_valid() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
-
+    start_cheat_caller_address(project_address, owner_address);
     let token_id: u256 = 1;
-
     let mut new_status: u8 = 0;
     loop {
         if new_status > 3 {
@@ -413,8 +224,10 @@ fn test_update_vintage_status_valid() {
 #[test]
 #[should_panic(expected: 'Invalid status')]
 fn test_update_vintage_status_invalid() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
     let vintages = IVintageDispatcher { contract_address: project_address };
+    start_cheat_caller_address(project_address, owner_address);
 
     let token_id: u256 = 1;
     let invalid_status: u8 = 5; // Example invalid status
@@ -460,8 +273,10 @@ fn test_rebase_half_supply() {
     project.grant_minter_role(minter_address);
     start_cheat_caller_address(project_address, minter_address);
 
-    let share = 50 * CC_DECIMALS_MULTIPLIER / 100; // 50%
-    buy_utils(owner_address, user_address, minter_address, share);
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 50; // 50% of the total supply
+
+    buy_utils(owner_address, user_address, minter_address, cc_to_mint);
 
     let num_vintages = vintages.get_num_vintages();
     // Rebase every vintage with half the supply

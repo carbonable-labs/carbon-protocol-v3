@@ -8,7 +8,7 @@ mod VintageComponent {
     use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
-    use carbon_v3::models::constants::{CC_DECIMALS, CC_DECIMALS_MULTIPLIER};
+    use carbon_v3::models::constants::{CC_DECIMALS};
     use carbon_v3::contracts::project::Project::OWNER_ROLE;
 
     // Roles
@@ -35,8 +35,8 @@ mod VintageComponent {
     struct VintageRebased {
         #[key]
         token_id: u256,
-        old_supply: u128,
-        new_supply: u128,
+        old_supply: u256,
+        new_supply: u256,
     }
 
     #[derive(Drop, PartialEq, starknet::Event)]
@@ -107,24 +107,6 @@ mod VintageComponent {
             CC_DECIMALS
         }
 
-        // Share is a percentage, 100% = CC_DECIMALS_MULTIPLIER
-        fn share_to_cc(self: @ComponentState<TContractState>, share: u256, token_id: u256) -> u256 {
-            let cc_supply: u256 = self.get_carbon_vintage(token_id).supply.into();
-            let result = share * cc_supply / CC_DECIMALS_MULTIPLIER;
-            assert(result <= cc_supply, 'CC value exceeds vintage supply');
-            result
-        }
-
-        fn cc_to_share(
-            self: @ComponentState<TContractState>, cc_value: u256, token_id: u256
-        ) -> u256 {
-            let cc_supply = self.get_carbon_vintage(token_id).supply.into();
-            assert(cc_supply > 0, 'CC supply of vintage is 0');
-            let share = cc_value * CC_DECIMALS_MULTIPLIER / cc_supply;
-            assert(share <= CC_DECIMALS_MULTIPLIER, 'Share value exceeds 100%');
-            share
-        }
-
         fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<CarbonVintage> {
             let mut vintages = ArrayTrait::<CarbonVintage>::new();
             let n = self.Vintage_vintages_len.read();
@@ -146,15 +128,30 @@ mod VintageComponent {
             self.Vintage_vintages.read(token_id)
         }
 
-        fn get_initial_cc_supply(self: @ComponentState<TContractState>, token_id: u256) -> u128 {
+        fn get_initial_cc_supply(self: @ComponentState<TContractState>, token_id: u256) -> u256 {
             self.get_carbon_vintage(token_id).supply
                 + self.get_carbon_vintage(token_id).failed
                 - self.get_carbon_vintage(token_id).created
         }
 
+        fn get_initial_project_cc_supply(self: @ComponentState<TContractState>) -> u256 {
+            let mut project_supply: u256 = 0;
+            let n = self.Vintage_vintages_len.read();
+            let mut index = 0;
+            loop {
+                if index >= n {
+                    break ();
+                }
+                let initial_vintage_supply = self.get_initial_cc_supply(index.into());
+                project_supply += initial_vintage_supply;
+                index += 1;
+            };
+            project_supply
+        }
+
 
         fn rebase_vintage(
-            ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u128
+            ref self: ComponentState<TContractState>, token_id: u256, new_cc_supply: u256
         ) {
             self.assert_only_role(OWNER_ROLE);
 
@@ -207,21 +204,9 @@ mod VintageComponent {
                 );
         }
 
-        fn set_project_carbon(ref self: ComponentState<TContractState>, new_carbon: u128) {
-            self.assert_only_role(OWNER_ROLE);
-
-            // [Check] Project carbon is not 0
-            assert(new_carbon >= 0, 'Project carbon cannot be 0');
-            // [Effect] Update storage
-            let old_carbon = self.Vintage_project_carbon.read();
-            self.Vintage_project_carbon.write(new_carbon);
-            // [Event] Emit event
-            self.emit(ProjectCarbonUpdated { old_carbon, new_carbon, });
-        }
-
         fn set_vintages(
             ref self: ComponentState<TContractState>,
-            yearly_absorptions: Span<u128>,
+            yearly_absorptions: Span<u256>,
             start_year: u32
         ) {
             self.assert_only_role(OWNER_ROLE);
@@ -230,7 +215,6 @@ mod VintageComponent {
             let vintages_num = yearly_absorptions.len();
 
             // [Effect] Update storage
-            self.Vintage_vintages_len.write(vintages_num);
             let mut index = 0;
             loop {
                 if index == vintages_num {
@@ -269,6 +253,7 @@ mod VintageComponent {
             ref self: ComponentState<TContractState>, starting_year: u32, number_of_years: u32
         ) {
             // [Storage] Store new vintages
+            self.Vintage_vintages_len.write(number_of_years.into());
             let mut index = starting_year;
             let n = index + number_of_years;
             loop {

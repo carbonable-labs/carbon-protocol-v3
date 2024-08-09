@@ -6,11 +6,11 @@ struct CarbonVintage {
     /// The year of the vintage
     year: u32,
     /// The total supply of Carbon Credit for this vintage.
-    supply: u128,
+    supply: u256,
     /// The total amount of Carbon Credit that was failed during audits.
-    failed: u128,
+    failed: u256,
     /// The total amount of Carbon Credit that was created during audits.
-    created: u128,
+    created: u256,
     /// The status of the Carbon Credit of this Vintage. 
     status: CarbonVintageType,
 }
