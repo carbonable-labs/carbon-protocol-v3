@@ -7,7 +7,7 @@ trait IExternal<TContractState> {
     fn batch_mint(
         ref self: TContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
-    fn batch_offset(
+    fn batch_burn(
         ref self: TContractState, from: ContractAddress, token_ids: Span<u256>, values: Span<u256>
     );
     fn uri(self: @TContractState, token_id: u256) -> Span<felt252>;
@@ -223,7 +223,7 @@ mod Project {
             self._batch_mint(to, token_ids, values);
         }
 
-        fn batch_offset(
+        fn batch_burn(
             ref self: ContractState,
             from: ContractAddress,
             token_ids: Span<u256>,

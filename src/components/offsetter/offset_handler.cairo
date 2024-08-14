@@ -162,7 +162,12 @@ mod OffsetComponent {
             };
         }
 
-        fn claim(ref self: ComponentState<TContractState>, amount: u128, timestamp: u128, proof: Array::<felt252>) {
+        fn claim(
+            ref self: ComponentState<TContractState>,
+            amount: u128,
+            timestamp: u128,
+            proof: Array::<felt252>
+        ) {
             let mut merkle_tree = MerkleTreeTrait::new();
             let claimee = get_caller_address();
             // [Verify the proof]
@@ -190,10 +195,9 @@ mod OffsetComponent {
         }
 
         fn get_pending_retirement(
-            ref self: ComponentState<TContractState>, token_id: u256
+            ref self: ComponentState<TContractState>, address: ContractAddress, token_id: u256
         ) -> u256 {
-            let caller_address: ContractAddress = get_caller_address();
-            self.Offsetter_carbon_pending_retirement.read((token_id, caller_address))
+            self.Offsetter_carbon_pending_retirement.read((token_id, address))
         }
 
         fn get_carbon_retired(
@@ -203,7 +207,10 @@ mod OffsetComponent {
         }
 
         fn check_claimed(
-            ref self: ComponentState<TContractState>, claimee: ContractAddress, timestamp: u128, amount: u128
+            ref self: ComponentState<TContractState>,
+            claimee: ContractAddress,
+            timestamp: u128,
+            amount: u128
         ) -> bool {
             // check if claimee has already claimed for this timestamp, by checking in the mapping
             let allocation = Allocation {
