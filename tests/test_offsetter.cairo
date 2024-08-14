@@ -87,10 +87,10 @@ fn test_offsetter_init() {
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     start_cheat_caller_address(offsetter_address, user_address);
     let token_id: u256 = 1;
-    let carbon_pending = offsetter.get_carbon_retired(token_id);
+    let carbon_pending = offsetter.get_carbon_retired(user_address, token_id);
     assert(carbon_pending == 0, 'carbon pending should be 0');
 
-    let carbon_retired = offsetter.get_carbon_retired(token_id);
+    let carbon_retired = offsetter.get_carbon_retired(user_address, token_id);
     assert(carbon_retired == 0, 'carbon retired should be 0');
 }
 
@@ -136,7 +136,7 @@ fn test_offsetter_retire_carbon_credits() {
     let cc_value_emitted: u256 = (*transfer_event_from_offset.data.at(2)).into();
     assert(amount_to_offset == cc_value_emitted, 'Error Event emitted');
 
-    let carbon_retired = offsetter.get_carbon_retired(token_id);
+    let carbon_retired = offsetter.get_carbon_retired(user_address, token_id);
     assert(carbon_retired == amount_to_offset, 'Carbon retired is wrong');
 
     let final_balance = project.balance_of(user_address, token_id);
@@ -243,7 +243,7 @@ fn test_retire_carbon_credits_exact_balance() {
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     offsetter.retire_carbon_credits(token_id, user_balance);
 
-    let carbon_retired = offsetter.get_carbon_retired(token_id);
+    let carbon_retired = offsetter.get_carbon_retired(user_address, token_id);
     assert(carbon_retired == user_balance, 'Carbon retired is wrong');
 
     let user_balance_after = project_contract.balance_of(user_address, token_id);
@@ -283,7 +283,7 @@ fn test_retire_carbon_credits_multiple_retirements() {
     offsetter.retire_carbon_credits(token_id, 50000);
     offsetter.retire_carbon_credits(token_id, 50000);
 
-    let carbon_retired = offsetter.get_carbon_retired(token_id);
+    let carbon_retired = offsetter.get_carbon_retired(user_address, token_id);
     assert(carbon_retired == 100000, 'Error retired carbon credits');
 
     let balance_final = project.balance_of(user_address, token_id);
@@ -329,8 +329,8 @@ fn test_retire_list_carbon_credits_valid_inputs() {
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     offsetter.retire_list_carbon_credits(vintages, carbon_values);
 
-    let carbon_retired_token_id = offsetter.get_carbon_retired(vintage_2024_id);
-    let carbon_retired_2026 = offsetter.get_carbon_retired(vintage_2026_id);
+    let carbon_retired_token_id = offsetter.get_carbon_retired(user_address, vintage_2024_id);
+    let carbon_retired_2026 = offsetter.get_carbon_retired(user_address, vintage_2026_id);
     assert(carbon_retired_token_id == 50000, 'Carbon retired value error');
     assert(carbon_retired_2026 == 50000, 'Carbon retired value error');
 
@@ -440,7 +440,7 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     offsetter.retire_list_carbon_credits(vintages, carbon_values);
 
-    let carbon_retired = offsetter.get_carbon_retired(token_id);
+    let carbon_retired = offsetter.get_carbon_retired(user_address, token_id);
     assert(carbon_retired == 100000, 'Error Carbon retired');
 
     let balance_final = project.balance_of(user_address, token_id);
@@ -475,7 +475,7 @@ fn test_get_carbon_retired_no_retired() {
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     let token_id: u256 = 1;
 
-    let carbon_retired = offsetter.get_carbon_retired(token_id);
+    let carbon_retired = offsetter.get_carbon_retired(user_address, token_id);
     assert(carbon_retired == 0.into(), 'Error about carbon retired');
 }
 
