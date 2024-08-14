@@ -307,7 +307,7 @@ fn test_project_batch_offset_with_offsetter_role() {
     // let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, offsetter_address);
-    project.batch_offset(user_address, token_ids, cc_distribution);
+    project.batch_burn(user_address, token_ids, cc_distribution);
 // let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
 //     ERC1155Component::TransferBatch {
 //         operator: offsetter_address,
@@ -367,7 +367,7 @@ fn test_project_batch_offset_without_offsetter_role() {
     let token_ids = tokens.span();
 
     start_cheat_caller_address(project_address, owner_address);
-    project.batch_offset(user_address, token_ids, cc_distribution);
+    project.batch_burn(user_address, token_ids, cc_distribution);
 }
 
 /// Test balance_of

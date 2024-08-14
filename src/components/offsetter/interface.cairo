@@ -17,17 +17,19 @@ trait IOffsetHandler<TContractState> {
     fn claim(ref self: TContractState, amount: u128, timestamp: u128, proof: Array::<felt252>);
 
     /// Get the pending retirement of a vintage for the caller address.
-    fn get_pending_retirement(ref self: TContractState, token_id: u256) -> u256;
+    fn get_pending_retirement(
+        ref self: TContractState, address: ContractAddress, token_id: u256
+    ) -> u256;
 
     /// Get the carbon retirement of a vintage for the caller address.
     fn get_carbon_retired(
         ref self: TContractState, address: ContractAddress, token_id: u256
     ) -> u256;
-fn set_merkle_root(ref self: TContractState, root: felt252);
+    fn set_merkle_root(ref self: TContractState, root: felt252);
 
-fn get_merkle_root(ref self: TContractState) -> felt252;
+    fn get_merkle_root(ref self: TContractState) -> felt252;
 
-fn check_claimed(
-    ref self: TContractState, claimee: ContractAddress, timestamp: u128, amount: u128
-) -> bool;
+    fn check_claimed(
+        ref self: TContractState, claimee: ContractAddress, timestamp: u128, amount: u128
+    ) -> bool;
 }
