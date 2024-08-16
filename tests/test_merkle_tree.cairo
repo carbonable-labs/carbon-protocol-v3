@@ -48,18 +48,18 @@ fn test_set_merkle_root() {
     assert_eq!(root, MERKLE_ROOT_FIRST_WAVE);
 }
 
-// #[test]
-// #[should_panic(expected: 'Only Owner')]
-// fn test_set_merkle_root_unauthorized() { // todo change name
-//     /// Test that only the owner can set the Merkle root.
-//     let user_address: ContractAddress = contract_address_const::<'USER'>();
-//     let project_address = default_setup_and_deploy();
-//     let offsetter_address = deploy_offsetter(project_address);
-//     let contract = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+#[test]
+#[should_panic(expected: 'Caller does not have role')]
+fn test_set_merkle_root_without_owner_role() {
+    /// Test that only the owner can set the Merkle root.
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+    let contract = IOffsetHandlerDispatcher { contract_address: offsetter_address };
 
-//     start_cheat_caller_address(offsetter_address, user_address);
-//     contract.set_merkle_root(MERKLE_ROOT_FIRST_WAVE);
-// }
+    start_cheat_caller_address(offsetter_address, user_address);
+    contract.set_merkle_root(MERKLE_ROOT_FIRST_WAVE);
+}
 
 #[test]
 fn test_bob_claims_single_allocation() {
