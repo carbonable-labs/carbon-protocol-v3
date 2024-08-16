@@ -21,7 +21,9 @@ mod OffsetComponent {
     // Internal imports
 
     use carbon_v3::components::offsetter::interface::IOffsetHandler;
-    use carbon_v3::components::offsetter::merkle_tree::MerkleTreeTrait;
+    use alexandria_merkle_tree::merkle_tree::{
+        Hasher, MerkleTree, MerkleTreeImpl, pedersen::PedersenHasherImpl, MerkleTreeTrait,
+    };
     use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
     use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
     use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
@@ -168,7 +170,7 @@ mod OffsetComponent {
             timestamp: u128,
             proof: Array::<felt252>
         ) {
-            let mut merkle_tree = MerkleTreeTrait::new();
+            let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeImpl::new();
             let claimee = get_caller_address();
             // [Verify the proof]
             let amount_felt: felt252 = amount.into();

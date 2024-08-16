@@ -6,6 +6,7 @@ version = "0.1.0"
 starknet = ">=2.6.0"
 alexandria_storage = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.6.0" }
 alexandria_numeric = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.6.0" }
+alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag="cairo-v2.6.0" }
 openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.10.0" }
 erc4906 = { git = "https://github.com/carbonable-labs/cairo-erc-4906" }
 
