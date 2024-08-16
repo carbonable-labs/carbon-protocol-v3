@@ -32,6 +32,9 @@ mod OffsetComponent {
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
 
+    // Roles
+    use openzeppelin::access::accesscontrol::interface::IAccessControl;
+
     // Constants
     use carbon_v3::contracts::project::Project::OWNER_ROLE;
 
@@ -109,7 +112,10 @@ mod OffsetComponent {
 
     #[embeddable_as(OffsetHandlerImpl)]
     impl OffsetHandler<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
+        TContractState,
+        +HasComponent<TContractState>,
+        +Drop<TContractState>,
+        +IAccessControl<TContractState>
     > of IOffsetHandler<ComponentState<TContractState>> {
         fn retire_carbon_credits(
             ref self: ComponentState<TContractState>, token_id: u256, cc_value: u256
@@ -222,6 +228,7 @@ mod OffsetComponent {
         }
 
         fn set_merkle_root(ref self: ComponentState<TContractState>, root: felt252) {
+            self.assert_only_role(OWNER_ROLE);
             self.Offsetter_merkle_root.write(root);
         }
 
@@ -232,7 +239,10 @@ mod OffsetComponent {
 
     #[generate_trait]
     impl InternalImpl<
-        TContractState, +HasComponent<TContractState>, +Drop<TContractState>
+        TContractState,
+        +HasComponent<TContractState>,
+        +Drop<TContractState>,
+        +IAccessControl<TContractState>
     > of InternalTrait<TContractState> {
         fn initializer(
             ref self: ComponentState<TContractState>, carbonable_project_address: ContractAddress
@@ -330,6 +340,13 @@ mod OffsetComponent {
                         new_amount: new_retirement
                     }
                 );
+        }
+
+        fn assert_only_role(ref self: ComponentState<TContractState>, role: felt252) {
+            // [Check] Caller has role
+            let caller = get_caller_address();
+            let has_role = self.get_contract().has_role(role, caller);
+            assert(has_role, 'Caller does not have role');
         }
     }
 }
