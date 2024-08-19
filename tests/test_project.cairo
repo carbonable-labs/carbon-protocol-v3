@@ -74,7 +74,7 @@ fn test_project_mint() {
 
     let expected_event_1155_transfer_single = helper_expected_transfer_event(
         project_address,
-        project_address,
+        minter_address,
         Zeroable::zero(),
         user_address,
         array![token_id].span(),
@@ -180,7 +180,7 @@ fn test_project_batch_mint_with_minter_role() {
 }
 
 #[test]
-fn test_project_offset_with_offsetter_role() {
+fn test_project_burn_with_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -210,24 +210,21 @@ fn test_project_offset_with_offsetter_role() {
     stop_cheat_caller_address(project_address);
     let balance = project.balance_of(user_address, token_id);
 
-    // let mut spy = spy_events();
+    let mut spy = spy_events();
     start_cheat_caller_address(project_address, offsetter_address);
-    project.burn(user_address, token_id, balance);
-// let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
-//     ERC1155Component::TransferSingle {
-//         operator: offsetter_address,
-//         from: user_address,
-//         to: Zeroable::zero(),
-//         id: token_id,
-//         value: share_value
-//     }
-// );
-// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
+    let internal_value = project.cc_to_internal(balance, token_id);
+    project.burn(user_address, token_id, internal_value);
+
+    let expected_event_1155_transfer_single = helper_expected_transfer_event(
+        project_address, offsetter_address, user_address, Zeroable::zero(), array![token_id].span(), balance
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
+
 }
 
 #[test]
 #[should_panic(expected: 'Only Offsetter can burn')]
-fn test_project_offset_without_offsetter_role() {
+fn test_project_burn_without_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -258,7 +255,7 @@ fn test_project_offset_without_offsetter_role() {
 }
 
 #[test]
-fn test_project_batch_offset_with_offsetter_role() {
+fn test_project_batch_burn_with_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -283,9 +280,9 @@ fn test_project_batch_offset_with_offsetter_role() {
     stop_cheat_caller_address(project_address);
 
     start_cheat_caller_address(project_address, owner_address);
-
+    let cc_to_burn = cc_to_mint;    // burn all the minted CC
     let num_vintages = vintages.get_num_vintages();
-    let mut cc_distribution: Array<u256> = Default::default();
+    let mut cc_values: Array<u256> = Default::default();
     let mut tokens: Array<u256> = Default::default();
     let mut index = 0;
     loop {
@@ -293,32 +290,26 @@ fn test_project_batch_offset_with_offsetter_role() {
             break;
         };
 
-        cc_distribution.append(cc_to_mint / num_vintages.into());
+        cc_values.append(cc_to_burn);
         tokens.append(index.into());
         index += 1;
     };
-    let cc_distribution = cc_distribution.span();
     let token_ids = tokens.span();
 
-    // let mut spy = spy_events();
+    let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, offsetter_address);
-    project.batch_burn(user_address, token_ids, cc_distribution);
-// let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
-//     ERC1155Component::TransferBatch {
-//         operator: offsetter_address,
-//         from: user_address,
-//         to: Zeroable::zero(),
-//         ids: token_ids,
-//         values: cc_distribution
-//     }
-// );
-// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
+    project.batch_burn(user_address, token_ids, cc_values.span());
+
+    let expected_event_1155_transfer = helper_expected_transfer_event(
+        project_address, offsetter_address, user_address, Zeroable::zero(), token_ids, cc_to_burn
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);   
 }
 
 #[test]
 #[should_panic(expected: 'Only Offsetter can batch burn')]
-fn test_project_batch_offset_without_offsetter_role() {
+fn test_project_batch_burn_without_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -427,7 +418,7 @@ fn test_transfer_without_loss() {
         .safe_transfer_from(
             user_address, receiver_address, token_id, balance_user_before, array![].span()
         );
-
+     
     let expected_event = helper_expected_transfer_event(
         project_address,
         user_address,

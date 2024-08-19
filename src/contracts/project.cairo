@@ -407,7 +407,7 @@ mod Project {
                 .emit(
                     ERC1155Component::Event::TransferSingle(
                         ERC1155Component::TransferSingle {
-                            operator: get_contract_address(),
+                            operator: get_caller_address(),
                             from: Zeroable::zero(),
                             to,
                             id: token_id,
@@ -509,12 +509,11 @@ mod Project {
         ) {
             let to_send = self.cc_to_internal(value, token_id);
             self.erc1155.safe_transfer_from(from, to, token_id, to_send, data);
-            let cc_value = self.internal_to_cc(value, token_id);
             self
                 .emit(
                     ERC1155Component::Event::TransferSingle(
                         ERC1155Component::TransferSingle {
-                            operator: get_caller_address(), from, to, id: token_id, value: cc_value,
+                            operator: get_caller_address(), from, to, id: token_id, value: value,
                         }
                     )
                 );
