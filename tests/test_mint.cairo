@@ -1,7 +1,4 @@
 use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
-// TODO: 
-// - check if is_setup is needed
-// - refactor project setup into helper function?
 
 // Starknet deps
 

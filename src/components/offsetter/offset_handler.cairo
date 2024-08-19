@@ -141,11 +141,11 @@ mod OffsetComponent {
         fn retire_list_carbon_credits(
             ref self: ComponentState<TContractState>,
             vintages: Span<u256>,
-            carbon_values: Span<u256>
+            cc_values: Span<u256>
         ) {
             // [Check] vintages and carbon values are defined
             assert(vintages.len() > 0, 'Inputs cannot be empty');
-            assert(vintages.len() == carbon_values.len(), 'Vintages and Values mismatch');
+            assert(vintages.len() == cc_values.len(), 'Vintages and Values mismatch');
 
             let mut index: u32 = 0;
             loop {
@@ -154,7 +154,7 @@ mod OffsetComponent {
                     Option::Some(value) => *value.unbox(),
                     Option::None => 0,
                 };
-                let carbon_amount = match carbon_values.get(index) {
+                let carbon_amount = match cc_values.get(index) {
                     Option::Some(value) => *value.unbox(),
                     Option::None => 0,
                 };

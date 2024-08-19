@@ -11,7 +11,7 @@ trait IOffsetHandler<TContractState> {
     /// - If one of the carbon values is not enough or vintage status is not right, 
     /// the function will fail and no carbon will be retired and the function will revert.
     fn retire_list_carbon_credits(
-        ref self: TContractState, vintages: Span<u256>, carbon_values: Span<u256>
+        ref self: TContractState, vintages: Span<u256>, cc_values: Span<u256>
     );
 
     fn claim(ref self: TContractState, amount: u128, timestamp: u128, proof: Array::<felt252>);
