@@ -335,7 +335,10 @@ fn test_john_claims_multiple_allocations() {
     assert!(contract.check_claimed(john_address, timestamp2, amount2));
     assert!(!contract.check_claimed(john_address, timestamp3, amount3));
 
+    start_cheat_caller_address(offsetter_address, owner_address);
     contract.set_merkle_root(new_root);
+
+    start_cheat_caller_address(offsetter_address, john_address);
     contract.claim(amount4, timestamp4, proof4);
     assert!(contract.check_claimed(john_address, timestamp4, amount4));
     assert!(!contract.check_claimed(john_address, timestamp3, amount3));
