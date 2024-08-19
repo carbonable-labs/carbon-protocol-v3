@@ -2,7 +2,7 @@ use starknet::{ContractAddress, ClassHash};
 
 #[starknet::interface]
 trait IExternal<TContractState> {
-    // fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
+    fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
     fn burn(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
         ref self: TContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
@@ -201,12 +201,12 @@ mod Project {
     // Externals
     #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
-        // fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
-        //     // [Check] Only Minter can mint
-        //     let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
-        //     assert(isMinter, 'Only Minter can mint');
-        //     self._mint(to, token_id, value);
-        // }
+        fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+            // [Check] Only Minter can mint
+            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+            assert(isMinter, 'Only Minter can mint');
+            self._mint(to, token_id, value);
+        }
 
         fn burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
             // [Check] Only Offsetter can burn
@@ -229,7 +229,6 @@ mod Project {
             token_ids: Span<u256>,
             values: Span<u256>
         ) {
-            // TODO : Check that the caller is the owner of the value he wnt to burn
             // [Check] Only Offsetter can burn
             let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
             assert(isOffseter, 'Only Offsetter can batch burn');
@@ -409,7 +408,7 @@ mod Project {
                     ERC1155Component::Event::TransferSingle(
                         ERC1155Component::TransferSingle {
                             operator: get_contract_address(),
-                            from: get_contract_address(),
+                            from: Zeroable::zero(),
                             to,
                             id: token_id,
                             value: cc_value,
