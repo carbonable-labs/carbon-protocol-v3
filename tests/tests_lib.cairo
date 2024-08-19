@@ -435,7 +435,6 @@ fn helper_expected_transfer_event(
 ) -> ERC1155Component::Event {
     let project = IProjectDispatcher { contract_address: project_address };
     if token_ids.len() == 1 {
-        let total_cc_amount = project.internal_to_cc(total_cc_amount, *token_ids.at(0));
         ERC1155Component::Event::TransferSingle(
             ERC1155Component::TransferSingle {
                 operator, from, to, id: *token_ids.at(0), value: total_cc_amount
