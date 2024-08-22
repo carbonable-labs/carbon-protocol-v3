@@ -67,7 +67,9 @@ mod MintComponent {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct SoldOut {}
+    struct SoldOut {
+        sold_out: bool
+    }
 
     #[derive(Drop, starknet::Event)]
     struct Buy {
@@ -409,7 +411,7 @@ mod MintComponent {
                             PublicSaleClose { old_value: true, new_value: false }
                         )
                     );
-                self.emit(Event::SoldOut(SoldOut {}));
+                self.emit(Event::SoldOut(SoldOut { sold_out: true }));
             };
         }
     }
