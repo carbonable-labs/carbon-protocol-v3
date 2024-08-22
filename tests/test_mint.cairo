@@ -376,7 +376,7 @@ fn test_is_sold_out() {
     let expected_event_sale_close = MintComponent::Event::PublicSaleClose(
         MintComponent::PublicSaleClose { old_value: true, new_value: false }
     );
-    let expected_event_sold_out = MintComponent::Event::SoldOut(MintComponent::SoldOut {});
+    let expected_event_sold_out = MintComponent::Event::SoldOut(MintComponent::SoldOut { sold_out: true });
     spy.assert_emitted(@array![(minter_address, expected_event_sale_close)]);
     spy.assert_emitted(@array![(minter_address, expected_event_sold_out)]);
 }
