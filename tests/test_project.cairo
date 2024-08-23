@@ -216,10 +216,14 @@ fn test_project_burn_with_offsetter_role() {
     project.burn(user_address, token_id, internal_value);
 
     let expected_event_1155_transfer_single = helper_expected_transfer_event(
-        project_address, offsetter_address, user_address, Zeroable::zero(), array![token_id].span(), balance
+        project_address,
+        offsetter_address,
+        user_address,
+        Zeroable::zero(),
+        array![token_id].span(),
+        balance
     );
     spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
-
 }
 
 #[test]
@@ -280,7 +284,7 @@ fn test_project_batch_burn_with_offsetter_role() {
     stop_cheat_caller_address(project_address);
 
     start_cheat_caller_address(project_address, owner_address);
-    let cc_to_burn = cc_to_mint;    // burn all the minted CC
+    let cc_to_burn = cc_to_mint; // burn all the minted CC
     let num_vintages = vintages.get_num_vintages();
     let mut cc_values: Array<u256> = Default::default();
     let mut tokens: Array<u256> = Default::default();
@@ -304,7 +308,7 @@ fn test_project_batch_burn_with_offsetter_role() {
     let expected_event_1155_transfer = helper_expected_transfer_event(
         project_address, offsetter_address, user_address, Zeroable::zero(), token_ids, cc_to_burn
     );
-    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);   
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
 }
 
 #[test]

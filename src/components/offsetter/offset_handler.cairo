@@ -139,9 +139,7 @@ mod OffsetComponent {
         }
 
         fn retire_list_carbon_credits(
-            ref self: ComponentState<TContractState>,
-            vintages: Span<u256>,
-            cc_values: Span<u256>
+            ref self: ComponentState<TContractState>, vintages: Span<u256>, cc_values: Span<u256>
         ) {
             // [Check] vintages and carbon values are defined
             assert(vintages.len() > 0, 'Inputs cannot be empty');
