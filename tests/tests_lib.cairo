@@ -263,7 +263,8 @@ fn buy_utils(
     // [Prank] Use owner as caller for the ERC20 contract
     start_cheat_caller_address(erc20_address, owner_address); // Owner holds initial supply
 
-    erc20.transfer(caller_address, money_to_buy);
+    let success = erc20.transfer(caller_address, money_to_buy);
+    assert(success, 'Transfer failed');
 
     // [Prank] Use caller address (usually user) as caller for the ERC20 contract
     start_cheat_caller_address(erc20_address, caller_address);
