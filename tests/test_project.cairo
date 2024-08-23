@@ -418,7 +418,7 @@ fn test_transfer_without_loss() {
         .safe_transfer_from(
             user_address, receiver_address, token_id, balance_user_before, array![].span()
         );
-     
+
     let expected_event = helper_expected_transfer_event(
         project_address,
         user_address,
@@ -532,146 +532,92 @@ fn test_consecutive_transfers_and_rebases(
 }
 
 #[test]
-fn fuzz_test_transfer_low_supply_low_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_low_supply_low_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10 CC, so 10^9gm of CC
     let max_supply_for_vintage: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 1; // with 2 digits after the comma, so 0.01%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_low_supply_medium_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_low_supply_medium_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10 CC, so 10^9gm of CC
     let max_supply_for_vintage: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 300; // with 2 digits after the comma, so 3%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_low_supply_high_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_low_supply_high_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10 CC, so 10^9gm of CC
     let max_supply_for_vintage: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 10_000; // with 2 digits after the comma, so 100%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_medium_supply_low_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_medium_supply_low_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10k CC in mgrams
     let max_supply_for_vintage: u256 = 10_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 1; // with 2 digits after the comma, so 0.01%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_medium_supply_medium_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_medium_supply_medium_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10k CC in mgrams
     let max_supply_for_vintage: u256 = 10_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 300; // with 2 digits after the comma, so 3%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_medium_supply_high_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_medium_supply_high_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10k CC in mgrams
     let max_supply_for_vintage: u256 = 10_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 10_000; // with 2 digits after the comma, so 100%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_high_supply_low_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_high_supply_low_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10M CC in mgrams
     let max_supply_for_vintage: u256 = 10_000_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 1; // with 2 digits after the comma, so 0.01%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_high_supply_medium_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_high_supply_medium_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10M CC in mgrams
     let max_supply_for_vintage: u256 = 10_000_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 300; // with 2 digits after the comma, so 3%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_high_supply_high_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_high_supply_high_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10M CC in mgrams
     let max_supply_for_vintage: u256 = 10_000_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 10_000; // with 2 digits after the comma, so 100%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
@@ -718,17 +664,6 @@ fn test_decimals() {
     let project_decimals = project_contract.decimals();
 
     assert(project_decimals == 8, 'Decimals should be 8');
-}
-
-#[test]
-fn test_shares_of() {
-    let project_address = default_setup_and_deploy();
-    let project_contract = IProjectDispatcher { contract_address: project_address };
-
-    let token_id: u256 = 1;
-    let share_balance = project_contract.shares_of(project_address, token_id);
-
-    assert(share_balance == 0, 'Shares Balance is wrong');
 }
 
 #[test]

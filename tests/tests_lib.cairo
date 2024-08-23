@@ -242,9 +242,10 @@ fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, Contract
     (project_address, minter_address, erc20_address)
 }
 
-/// Utility function to buy a share of the total supply.
-/// The share is calculated as a percentage of the total supply. We use share instead of amount
-/// to make it easier to determine the expected values, but in practice the amount is used.
+/// Utility function to buy a certain amount of carbon credits
+/// That amount is minted across all vintages
+/// If Bob buys 100 carbon credits, and the vintage 2024 has 10% of the total supply,
+/// Bob will have 10 carbon credits in 2024
 fn buy_utils(
     owner_address: ContractAddress,
     caller_address: ContractAddress,
@@ -288,7 +289,6 @@ fn buy_utils(
 fn perform_fuzzed_transfer(
     raw_supply: u256,
     raw_cc_amount: u256,
-    raw_last_digits_share: u256,
     percentage_of_balance_to_send: u256,
     max_supply_for_vintage: u256
 ) {
