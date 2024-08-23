@@ -25,7 +25,6 @@ trait IExternal<TContractState> {
     fn balance_of_batch(
         self: @TContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
     ) -> Span<u256>;
-    fn shares_of(self: @TContractState, account: ContractAddress, token_id: u256) -> u256;
     fn safe_transfer_from(
         ref self: TContractState,
         from: ContractAddress,
@@ -319,18 +318,6 @@ mod Project {
             };
 
             batch_balances.span()
-        }
-
-        fn shares_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            let amount_cc_bought = self
-                .erc1155
-                .ERC1155_balances
-                .read((token_id, account)); // expressed in grams
-            let initial_project_supply = self.vintage.get_initial_project_cc_supply();
-            if initial_project_supply == 0 {
-                panic!("Initial project supply is not set");
-            }
-            (amount_cc_bought * CC_DECIMALS_MULTIPLIER) / initial_project_supply.into()
         }
 
         fn safe_transfer_from(
