@@ -14,7 +14,9 @@ trait IOffsetHandler<TContractState> {
         ref self: TContractState, vintages: Span<u256>, carbon_values: Span<u256>
     );
 
-    fn claim(ref self: TContractState, amount: u128, timestamp: u128, proof: Array::<felt252>);
+    fn claim(
+        ref self: TContractState, amount: u128, timestamp: u128, id: u128, proof: Array::<felt252>
+    );
 
     /// Get the pending retirement of a vintage for the caller address.
     fn get_pending_retirement(
@@ -30,6 +32,6 @@ trait IOffsetHandler<TContractState> {
     fn get_merkle_root(ref self: TContractState) -> felt252;
 
     fn check_claimed(
-        ref self: TContractState, claimee: ContractAddress, timestamp: u128, amount: u128
+        ref self: TContractState, claimee: ContractAddress, timestamp: u128, amount: u128, id: u128
     ) -> bool;
 }
