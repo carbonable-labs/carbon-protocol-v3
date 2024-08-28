@@ -1,7 +1,6 @@
 use snforge_std::cheatcodes::events::EventsFilterTrait;
 use snforge_std::cheatcodes::events::EventSpyTrait;
 use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
-// TODO: use token_ids instead of years as vintage
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const, get_caller_address, ClassHash};
@@ -47,64 +46,61 @@ use super::tests_lib::{
     helper_expected_transfer_event
 };
 
-// #[test]
-// fn test_project_mint() {
-//     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-//     let user_address: ContractAddress = contract_address_const::<'USER'>();
-//     let project_address = default_setup_and_deploy();
-//     let erc20_address = deploy_erc20();
-//     let minter_address = deploy_minter(project_address, erc20_address);
-//     let vintages = IVintageDispatcher { contract_address: project_address };
+#[test]
+fn test_project_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let vintages = IVintageDispatcher { contract_address: project_address };
 
-//     start_cheat_caller_address(project_address, owner_address);
-//     let project_contract = IProjectDispatcher { contract_address: project_address };
-//     project_contract.grant_minter_role(minter_address);
-//     start_cheat_caller_address(project_address, minter_address);
+    start_cheat_caller_address(project_address, owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(minter_address);
+    start_cheat_caller_address(project_address, minter_address);
 
-//     let mut spy: EventSpy = spy_events();
+    let mut spy: EventSpy = spy_events();
 
-//     let cc_to_mint = 1000*MULTIPLIER_TONS_TO_MGRAMS; // 10 CC
-//     // println!("CC_MULTIPLIER: {}", CC_DECIMALS_MULTIPLIER);
-//     let initial_project_supply = vintages.get_initial_project_cc_supply();
-//     // println!("initial_project_supply: {}", initial_project_supply);
+    let token_id: u256 = 1;
+    let vintage_supply = vintages.get_carbon_vintage(token_id).supply;
+    let cc_to_mint = vintage_supply / 10; // 10% of the vintage supply
 
-//     let token_id: u256 = 1;
-//     project_contract.mint(user_address, token_id, cc_to_mint);
-//     let balance = project_contract.balance_of(user_address, token_id);
+    let internal_value = project_contract.cc_to_internal(cc_to_mint, token_id);
+    project_contract.mint(user_address, token_id, internal_value);
+    let balance = project_contract.balance_of(user_address, token_id);
 
-//     // println!("balance: {}", balance);
-//     // println!("cc_to_mint: {}", cc_to_mint);
+    assert(equals_with_error(balance, cc_to_mint, 10), 'Error of balance');
 
-//     assert(equals_with_error(balance, cc_to_mint, 10), 'Error of balance');
-//     // let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
-//     //     ERC1155Component::TransferSingle {
-//     //         operator: minter_address,
-//     //         from: Zeroable::zero(),
-//     //         to: user_address,
-//     //         id: token_id,
-//     //         value: share
-//     //     }
-//     // );
-//     // spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
-// }
+    let expected_event_1155_transfer_single = helper_expected_transfer_event(
+        project_address,
+        minter_address,
+        Zeroable::zero(),
+        user_address,
+        array![token_id].span(),
+        cc_to_mint
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
+}
 
-// // #[test]
-// // #[should_panic(expected: 'Only Minter can mint')]
-// // fn test_project_mint_without_minter_role() {
-// //     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
-// //     let project_address = default_setup_and_deploy();
-// //     let erc20_address = deploy_erc20();
-// //     let minter_address = deploy_minter(project_address, erc20_address);
+#[test]
+#[should_panic(expected: 'Only Minter can mint')]
+fn test_project_mint_without_minter_role() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
-// //     start_cheat_caller_address(project_address, minter_address);
-// //     let project_contract = IProjectDispatcher { contract_address: project_address };
+    start_cheat_caller_address(project_address, minter_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
 
-// //     let initial_total_supply = vintages.get_initial_project_cc_supply();
-// //     let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
 
-// //     let token_id: u256 = 1;
-// //     project_contract.mint(owner_address, token_id, cc_to_mint);
-// // }
+    let token_id: u256 = 1;
+    project_contract.mint(owner_address, token_id, cc_to_mint);
+}
 
 #[test]
 #[should_panic(expected: 'Only Minter can batch mint')]
@@ -157,7 +153,7 @@ fn test_project_batch_mint_with_minter_role() {
     let num_vintages = vintages.get_num_vintages();
     let mut cc_values: Array<u256> = Default::default();
     let mut tokens: Array<u256> = Default::default();
-    let mut index = 0; // todo replace this loop by instant init like in rust
+    let mut index = 0;
     loop {
         if index >= num_vintages {
             break;
@@ -184,7 +180,7 @@ fn test_project_batch_mint_with_minter_role() {
 }
 
 #[test]
-fn test_project_offset_with_offsetter_role() {
+fn test_project_burn_with_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -214,24 +210,25 @@ fn test_project_offset_with_offsetter_role() {
     stop_cheat_caller_address(project_address);
     let balance = project.balance_of(user_address, token_id);
 
-    // let mut spy = spy_events();
+    let mut spy = spy_events();
     start_cheat_caller_address(project_address, offsetter_address);
-    project.burn(user_address, token_id, balance);
-// let expected_event_1155_transfer_single = ERC1155Component::Event::TransferSingle(
-//     ERC1155Component::TransferSingle {
-//         operator: offsetter_address,
-//         from: user_address,
-//         to: Zeroable::zero(),
-//         id: token_id,
-//         value: share_value
-//     }
-// );
-// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
+    let internal_value = project.cc_to_internal(balance, token_id);
+    project.burn(user_address, token_id, internal_value);
+
+    let expected_event_1155_transfer_single = helper_expected_transfer_event(
+        project_address,
+        offsetter_address,
+        user_address,
+        Zeroable::zero(),
+        array![token_id].span(),
+        balance
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer_single)]);
 }
 
 #[test]
 #[should_panic(expected: 'Only Offsetter can burn')]
-fn test_project_offset_without_offsetter_role() {
+fn test_project_burn_without_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -262,7 +259,7 @@ fn test_project_offset_without_offsetter_role() {
 }
 
 #[test]
-fn test_project_batch_offset_with_offsetter_role() {
+fn test_project_batch_burn_with_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -287,9 +284,9 @@ fn test_project_batch_offset_with_offsetter_role() {
     stop_cheat_caller_address(project_address);
 
     start_cheat_caller_address(project_address, owner_address);
-
+    let cc_to_burn = cc_to_mint; // burn all the minted CC
     let num_vintages = vintages.get_num_vintages();
-    let mut cc_distribution: Array<u256> = Default::default();
+    let mut cc_values: Array<u256> = Default::default();
     let mut tokens: Array<u256> = Default::default();
     let mut index = 0;
     loop {
@@ -297,32 +294,26 @@ fn test_project_batch_offset_with_offsetter_role() {
             break;
         };
 
-        cc_distribution.append(cc_to_mint / num_vintages.into());
+        cc_values.append(cc_to_burn);
         tokens.append(index.into());
         index += 1;
     };
-    let cc_distribution = cc_distribution.span();
     let token_ids = tokens.span();
 
-    // let mut spy = spy_events();
+    let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, offsetter_address);
-    project.batch_burn(user_address, token_ids, cc_distribution);
-// let expected_event_1155_transfer = ERC1155Component::Event::TransferBatch(
-//     ERC1155Component::TransferBatch {
-//         operator: offsetter_address,
-//         from: user_address,
-//         to: Zeroable::zero(),
-//         ids: token_ids,
-//         values: cc_distribution
-//     }
-// );
-// spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
+    project.batch_burn(user_address, token_ids, cc_values.span());
+
+    let expected_event_1155_transfer = helper_expected_transfer_event(
+        project_address, offsetter_address, user_address, Zeroable::zero(), token_ids, cc_to_burn
+    );
+    spy.assert_emitted(@array![(project_address, expected_event_1155_transfer)]);
 }
 
 #[test]
 #[should_panic(expected: 'Only Offsetter can batch burn')]
-fn test_project_batch_offset_without_offsetter_role() {
+fn test_project_batch_burn_without_offsetter_role() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -545,160 +536,92 @@ fn test_consecutive_transfers_and_rebases(
 }
 
 #[test]
-fn fuzz_test_transfer_low_supply_low_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
-    // // raw_supply: 40308303510568861685301840015848943638465596496433240935279427704959025456187, raw_share: 82052526374318839063375537267627101820709454184311168128196446873782799452311, raw_last_digits_share: 2802239975545803120466959565995984850023397563733207324335203449621603735810
-    // let raw_supply: u256 = 40308303510568861685301840015848943638465596496433240935279427704959025456187;
-    // let raw_share: u256 = 82052526374318839063375537267627101820709454184311168128196446873782799452311;
-    // let raw_last_digits_share: u256 = 2802239975545803120466959565995984850023397563733207324335203449621603735810;
+fn fuzz_test_transfer_low_supply_low_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10 CC, so 10^9gm of CC
     let max_supply_for_vintage: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 1; // with 2 digits after the comma, so 0.01%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_low_supply_medium_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_low_supply_medium_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10 CC, so 10^9gm of CC
     let max_supply_for_vintage: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 300; // with 2 digits after the comma, so 3%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_low_supply_high_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_low_supply_high_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10 CC, so 10^9gm of CC
     let max_supply_for_vintage: u256 = 10 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 10_000; // with 2 digits after the comma, so 100%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_medium_supply_low_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_medium_supply_low_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10k CC in mgrams
     let max_supply_for_vintage: u256 = 10_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 1; // with 2 digits after the comma, so 0.01%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_medium_supply_medium_amount() {
-    // raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-    let raw_supply: u256 =
-        94365046484817720939114948484448518925066696628864318182885849195794093634788;
-    let raw_share: u256 =
-        4548283413067176522814831837630882751146624989433986105735746239485922369869;
-    let raw_last_digits_share: u256 =
-        36883864587092468979195546282466206646048056734594801592409364701103152608278;
+fn fuzz_test_transfer_medium_supply_medium_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10k CC in mgrams
     let max_supply_for_vintage: u256 = 10_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 300; // with 2 digits after the comma, so 3%
-    // println!("raw_supply: {}, raw_share: {}, raw_last_digits_share: {}", raw_supply, raw_share, raw_last_digits_share);
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_medium_supply_high_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_medium_supply_high_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10k CC in mgrams
     let max_supply_for_vintage: u256 = 10_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 10_000; // with 2 digits after the comma, so 100%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_high_supply_low_amount( // raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_high_supply_low_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10M CC in mgrams
     let max_supply_for_vintage: u256 = 10_000_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 1; // with 2 digits after the comma, so 0.01%
-
-    let raw_supply = 110031889472511083670363002860459421466580476352140151480284168545104461300044;
-    let raw_share = 8705161503140068071018661352234439726289024200679691002570881155635338172122;
-    let raw_last_digits_share =
-        105445079905597346800075221358915599979072479728537949409476616114042104613629;
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_high_supply_medium_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_high_supply_medium_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10M CC in mgrams
     let max_supply_for_vintage: u256 = 10_000_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 300; // with 2 digits after the comma, so 3%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
 #[test]
-fn fuzz_test_transfer_high_supply_high_amount(
-    raw_supply: u256, raw_share: u256, raw_last_digits_share: u256
-) {
+fn fuzz_test_transfer_high_supply_high_amount(raw_supply: u256, raw_cc_amount: u256) {
     // max supply of a vintage is 10M CC in mgrams
     let max_supply_for_vintage: u256 = 10_000_000 * MULTIPLIER_TONS_TO_MGRAMS;
     let percentage_of_balance_to_send = 10_000; // with 2 digits after the comma, so 100%
     perform_fuzzed_transfer(
-        raw_supply,
-        raw_share,
-        raw_last_digits_share,
-        percentage_of_balance_to_send,
-        max_supply_for_vintage
+        raw_supply, raw_cc_amount, percentage_of_balance_to_send, max_supply_for_vintage
     );
 }
 
@@ -745,17 +668,6 @@ fn test_decimals() {
     let project_decimals = project_contract.decimals();
 
     assert(project_decimals == 8, 'Decimals should be 8');
-}
-
-#[test]
-fn test_shares_of() {
-    let project_address = default_setup_and_deploy();
-    let project_contract = IProjectDispatcher { contract_address: project_address };
-
-    let token_id: u256 = 1;
-    let share_balance = project_contract.shares_of(project_address, token_id);
-
-    assert(share_balance == 0, 'Shares Balance is wrong');
 }
 
 #[test]

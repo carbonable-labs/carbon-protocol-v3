@@ -2,7 +2,7 @@ use starknet::{ContractAddress, ClassHash};
 
 #[starknet::interface]
 trait IExternal<TContractState> {
-    // fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
+    fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
     fn burn(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
         ref self: TContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
@@ -29,7 +29,6 @@ trait IExternal<TContractState> {
     fn balanceOfBatch(
         self: @TContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
     ) -> Span<u256>;
-    fn shares_of(self: @TContractState, account: ContractAddress, token_id: u256) -> u256;
     fn safe_transfer_from(
         ref self: TContractState,
         from: ContractAddress,
@@ -224,12 +223,12 @@ mod Project {
     // Externals
     #[abi(embed_v0)]
     impl ExternalImpl of super::IExternal<ContractState> {
-        // fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
-        //     // [Check] Only Minter can mint
-        //     let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
-        //     assert(isMinter, 'Only Minter can mint');
-        //     self._mint(to, token_id, value);
-        // }
+        fn mint(ref self: ContractState, to: ContractAddress, token_id: u256, value: u256) {
+            // [Check] Only Minter can mint
+            let isMinter = self.accesscontrol.has_role(MINTER_ROLE, get_caller_address());
+            assert(isMinter, 'Only Minter can mint');
+            self._mint(to, token_id, value);
+        }
 
         fn burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
             // [Check] Only Offsetter can burn
@@ -252,7 +251,6 @@ mod Project {
             token_ids: Span<u256>,
             values: Span<u256>
         ) {
-            // TODO : Check that the caller is the owner of the value he wnt to burn
             // [Check] Only Offsetter can burn
             let isOffseter = self.accesscontrol.has_role(OFFSETTER_ROLE, get_caller_address());
             assert(isOffseter, 'Only Offsetter can batch burn');
@@ -353,18 +351,6 @@ mod Project {
             self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
         ) -> Span<u256> {
             super::IExternal::balance_of_batch(self, accounts, token_ids)
-        }
-
-        fn shares_of(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
-            let amount_cc_bought = self
-                .erc1155
-                .ERC1155_balances
-                .read((token_id, account)); // expressed in grams
-            let initial_project_supply = self.vintage.get_initial_project_cc_supply();
-            if initial_project_supply == 0 {
-                panic!("Initial project supply is not set");
-            }
-            (amount_cc_bought * CC_DECIMALS_MULTIPLIER) / initial_project_supply.into()
         }
 
         fn safe_transfer_from(
@@ -473,8 +459,8 @@ mod Project {
                 .emit(
                     ERC1155Component::Event::TransferSingle(
                         ERC1155Component::TransferSingle {
-                            operator: get_contract_address(),
-                            from: get_contract_address(),
+                            operator: get_caller_address(),
+                            from: Zeroable::zero(),
                             to,
                             id: token_id,
                             value: cc_value,
@@ -575,12 +561,11 @@ mod Project {
         ) {
             let to_send = self.cc_to_internal(value, token_id);
             self.erc1155.safe_transfer_from(from, to, token_id, to_send, data);
-            let cc_value = self.internal_to_cc(value, token_id);
             self
                 .emit(
                     ERC1155Component::Event::TransferSingle(
                         ERC1155Component::TransferSingle {
-                            operator: get_caller_address(), from, to, id: token_id, value: cc_value,
+                            operator: get_caller_address(), from, to, id: token_id, value: value,
                         }
                     )
                 );
