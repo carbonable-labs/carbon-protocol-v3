@@ -22,10 +22,22 @@ trait IExternal<TContractState> {
     fn grant_offsetter_role(ref self: TContractState, offsetter: ContractAddress);
     fn revoke_offsetter_role(ref self: TContractState, account: ContractAddress);
     fn balance_of(self: @TContractState, account: ContractAddress, token_id: u256) -> u256;
+    fn balanceOf(self: @TContractState, account: ContractAddress, token_id: u256) -> u256;
     fn balance_of_batch(
         self: @TContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
     ) -> Span<u256>;
+    fn balanceOfBatch(
+        self: @TContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
+    ) -> Span<u256>;
     fn safe_transfer_from(
+        ref self: TContractState,
+        from: ContractAddress,
+        to: ContractAddress,
+        token_id: u256,
+        value: u256,
+        data: Span<felt252>
+    );
+    fn safeTransferFrom(
         ref self: TContractState,
         from: ContractAddress,
         to: ContractAddress,
@@ -41,10 +53,22 @@ trait IExternal<TContractState> {
         values: Span<u256>,
         data: Span<felt252>
     );
+    fn safeBatchTransferFrom(
+        ref self: TContractState,
+        from: ContractAddress,
+        to: ContractAddress,
+        token_ids: Span<u256>,
+        values: Span<u256>,
+        data: Span<felt252>
+    );
+    fn set_approval_for_all(ref self: TContractState, operator: ContractAddress, approved: bool);
+    fn setApprovalForAll(ref self: TContractState, operator: ContractAddress, approved: bool);
     fn is_approved_for_all(
         self: @TContractState, owner: ContractAddress, operator: ContractAddress
     ) -> bool;
-    fn set_approval_for_all(ref self: TContractState, operator: ContractAddress, approved: bool);
+    fn isApprovedForAll(
+        self: @TContractState, owner: ContractAddress, operator: ContractAddress
+    ) -> bool;
     fn cc_to_internal(self: @TContractState, cc_value_to_send: u256, token_id: u256) -> u256;
 
     fn internal_to_cc(self: @TContractState, internal_value_to_send: u256, token_id: u256) -> u256;
@@ -88,7 +112,6 @@ mod Project {
     // #[abi(embed_v0)]
     // impl ERC1155MetadataURIImpl =
     //     ERC1155Component::ERC1155MetadataURIImpl<ContractState>;
-    #[abi(embed_v0)]
     impl ERC1155Camel = ERC1155Component::ERC1155CamelImpl<ContractState>;
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -302,6 +325,10 @@ mod Project {
             self._balance_of(account, token_id) // Internal call to avoid ambiguous call
         }
 
+        fn balanceOf(self: @ContractState, account: ContractAddress, token_id: u256) -> u256 {
+            self._balance_of(account, token_id)
+        }
+
         fn balance_of_batch(
             self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
         ) -> Span<u256> {
@@ -320,6 +347,12 @@ mod Project {
             batch_balances.span()
         }
 
+        fn balanceOfBatch(
+            self: @ContractState, accounts: Span<ContractAddress>, token_ids: Span<u256>
+        ) -> Span<u256> {
+            super::IExternal::balance_of_batch(self, accounts, token_ids)
+        }
+
         fn safe_transfer_from(
             ref self: ContractState,
             from: ContractAddress,
@@ -329,6 +362,17 @@ mod Project {
             data: Span<felt252>
         ) {
             self._safe_transfer_from(from, to, token_id, value, data);
+        }
+
+        fn safeTransferFrom(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_id: u256,
+            value: u256,
+            data: Span<felt252>
+        ) {
+            self._safe_transfer_from(from, to, token_id, value, data)
         }
 
         fn safe_batch_transfer_from(
@@ -352,16 +396,37 @@ mod Project {
             self._safe_batch_transfer_from(from, to, token_ids, to_send.span(), data);
         }
 
-        fn is_approved_for_all(
-            self: @ContractState, owner: ContractAddress, operator: ContractAddress
-        ) -> bool {
-            self.erc1155.is_approved_for_all(owner, operator)
+        fn safeBatchTransferFrom(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_ids: Span<u256>,
+            values: Span<u256>,
+            data: Span<felt252>
+        ) {
+            super::IExternal::safe_batch_transfer_from(ref self, from, to, token_ids, values, data)
         }
 
         fn set_approval_for_all(
             ref self: ContractState, operator: ContractAddress, approved: bool
         ) {
             self.erc1155.set_approval_for_all(operator, approved);
+        }
+
+        fn setApprovalForAll(ref self: ContractState, operator: ContractAddress, approved: bool) {
+            self.erc1155.set_approval_for_all(operator, approved);
+        }
+
+        fn is_approved_for_all(
+            self: @ContractState, owner: ContractAddress, operator: ContractAddress
+        ) -> bool {
+            self.erc1155.is_approved_for_all(owner, operator)
+        }
+
+        fn isApprovedForAll(
+            self: @ContractState, owner: ContractAddress, operator: ContractAddress
+        ) -> bool {
+            self.erc1155.is_approved_for_all(owner, operator)
         }
 
         fn cc_to_internal(self: @ContractState, cc_value_to_send: u256, token_id: u256) -> u256 {
