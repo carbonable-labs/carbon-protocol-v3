@@ -42,7 +42,8 @@ mod OffsetComponent {
     struct Allocation {
         claimee: ContractAddress,
         amount: u128,
-        timestamp: u128
+        timestamp: u128,
+        id: u128
     }
 
     #[storage]
@@ -51,9 +52,8 @@ mod OffsetComponent {
         Offsetter_carbon_pending_retirement: LegacyMap<(u256, ContractAddress), u256>,
         Offsetter_carbon_retired: LegacyMap<(u256, ContractAddress), u256>,
         Offsetter_merkle_root: felt252,
-        Offsetter_allocations_claimed: LegacyMap<
-            Allocation, bool
-        >, // todo: several deposit for same timestamp may cause issues
+        Offsetter_allocations_claimed: LegacyMap<Allocation, bool>,
+        Offsetter_allocation_id: LegacyMap<ContractAddress, u256>
     }
 
     #[event]
@@ -73,6 +73,8 @@ mod OffsetComponent {
         project: ContractAddress,
         #[key]
         token_id: u256,
+        #[key]
+        allocation_id: u256,
         old_amount: u256,
         new_amount: u256
     }
@@ -103,7 +105,8 @@ mod OffsetComponent {
     pub struct AllocationClaimed {
         pub claimee: ContractAddress,
         pub amount: u128,
-        pub timestamp: u128
+        pub timestamp: u128,
+        pub id: u128
     }
 
     mod Errors {
@@ -172,6 +175,7 @@ mod OffsetComponent {
             ref self: ComponentState<TContractState>,
             amount: u128,
             timestamp: u128,
+            id: u128,
             proof: Array::<felt252>
         ) {
             let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeImpl::new();
@@ -180,24 +184,34 @@ mod OffsetComponent {
             let amount_felt: felt252 = amount.into();
             let claimee_felt: felt252 = claimee.into();
             let timestamp_felt: felt252 = timestamp.into();
+            let id_felt: felt252 = id.into();
 
             let intermediate_hash = LegacyHash::hash(claimee_felt, amount_felt);
-            let leaf = LegacyHash::hash(intermediate_hash, timestamp_felt);
+            let intermediate_hash = LegacyHash::hash(intermediate_hash, timestamp_felt);
+            let leaf = LegacyHash::hash(intermediate_hash, id_felt);
 
             let root_computed = merkle_tree.compute_root(leaf, proof.span());
+
             let stored_root = self.Offsetter_merkle_root.read();
             assert(root_computed == stored_root, 'Invalid proof');
 
             // [Verify not already claimed]
-            let claimed = self.check_claimed(claimee, timestamp, amount);
+            let claimed = self.check_claimed(claimee, timestamp, amount, id);
             assert(!claimed, 'Already claimed');
 
             // [Mark as claimed]
-            let allocation = Allocation { claimee: claimee, amount: amount, timestamp: timestamp };
+            let allocation = Allocation {
+                claimee: claimee, amount: amount, timestamp: timestamp, id: id
+            };
             self.Offsetter_allocations_claimed.write(allocation, true);
 
             // [Emit event]
-            self.emit(AllocationClaimed { claimee: claimee, amount: amount, timestamp: timestamp });
+            self
+                .emit(
+                    AllocationClaimed {
+                        claimee: claimee, amount: amount, timestamp: timestamp, id: id
+                    }
+                );
         }
 
         fn get_pending_retirement(
@@ -216,11 +230,12 @@ mod OffsetComponent {
             ref self: ComponentState<TContractState>,
             claimee: ContractAddress,
             timestamp: u128,
-            amount: u128
+            amount: u128,
+            id: u128
         ) -> bool {
-            // check if claimee has already claimed for this timestamp, by checking in the mapping
+            // Check if claimee has already claimed this allocation, by checking in the mapping
             let allocation = Allocation {
-                claimee: claimee, amount: amount.into(), timestamp: timestamp.into()
+                claimee: claimee, amount: amount.into(), timestamp: timestamp.into(), id: id.into()
             };
             self.Offsetter_allocations_claimed.read(allocation)
         }
@@ -263,6 +278,10 @@ mod OffsetComponent {
                 .Offsetter_carbon_pending_retirement
                 .write((token_id, from), new_pending_retirement);
 
+            let current_allocation_id = self.Offsetter_allocation_id.read(from);
+            let new_allocation_id = current_allocation_id + 1;
+            self.Offsetter_allocation_id.write(from, new_allocation_id);
+
             // transfer the carbon credits to the project
             let project = IProjectDispatcher {
                 contract_address: self.Offsetter_carbonable_project_address.read()
@@ -278,8 +297,9 @@ mod OffsetComponent {
                         from: from,
                         project: self.Offsetter_carbonable_project_address.read(),
                         token_id: token_id,
+                        allocation_id: new_allocation_id,
                         old_amount: current_pending_retirement,
-                        new_amount: new_pending_retirement
+                        new_amount: new_pending_retirement,
                     }
                 );
         }

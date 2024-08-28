@@ -461,76 +461,86 @@ fn helper_expected_transfer_event(
 
 
 /// Mock data for merkle tree tests
+
 pub const MERKLE_ROOT_FIRST_WAVE: felt252 =
-    1586727653310658130441223142145636802822549738865763467559937699735593529518;
+    803781063426407299979325390167664109772842041387232186868510660774343066272;
 
 pub const MERKLE_ROOT_SECOND_WAVE: felt252 =
-    1254903502166521005693176785783698867375816882648399305753662436577997689730;
+    3023878233865233747692111000084174893656568287435392306059398425498163029420;
 
-pub fn get_bob_first_wave_allocation() -> (felt252, ContractAddress, u128, u128, Array<felt252>) {
-    let address: ContractAddress = contract_address_const::<
-        0x1234567890abcdef1234567890abcdef12345678
-    >();
-    let amount: u128 = 150;
-    let timestamp: u128 = 2;
-
-    let proof: Array<felt252> = array![
-        0xb93b7d65a7e5c7a15def73a61485111e2f630cc8e6683fb98f4d6ca2c7ec96,
-        0x91ca2d84afc873630898de633b3041683eea2a5d1d59ae4f3bed3551bb4294,
-        0x61c8f928bb4f7b5a3ae252cc4c78f3bdb3442733951a1de12ec01e7a4812a50,
-        0x6f0149c2ccc9a95bb64deda90572a912f85139505ea9bcd233f6d16e751af9e,
-        0x58e3b614e77af3c7256a74654907b4fe2182daf47da635a81c94629a89595b3
-    ];
-
-    (MERKLE_ROOT_FIRST_WAVE, address, amount, timestamp, proof)
-}
-
-pub fn get_bob_combined_wave_allocation() -> (
-    felt252, ContractAddress, u128, u128, Array<felt252>
+pub fn get_bob_first_wave_allocation() -> (
+    felt252, ContractAddress, u128, u128, u128, Array<felt252>
 ) {
     let address: ContractAddress = contract_address_const::<
         0x1234567890abcdef1234567890abcdef12345678
     >();
     let amount: u128 = 150;
     let timestamp: u128 = 2;
+    let id: u128 = 1;
 
     let proof: Array<felt252> = array![
-        0xb93b7d65a7e5c7a15def73a61485111e2f630cc8e6683fb98f4d6ca2c7ec96,
-        0x91ca2d84afc873630898de633b3041683eea2a5d1d59ae4f3bed3551bb4294,
-        0x61c8f928bb4f7b5a3ae252cc4c78f3bdb3442733951a1de12ec01e7a4812a50,
-        0x6f0149c2ccc9a95bb64deda90572a912f85139505ea9bcd233f6d16e751af9e,
-        0x58e3b614e77af3c7256a74654907b4fe2182daf47da635a81c94629a89595b3,
-        0x57e12be54078fb13aef7df28595941bab33c77cc04b5c74069221be888b182e
+        0x2fc0d4eecd4e047701f1a8295209d8a4d2b243836f5cf78df91bd073ce49084,
+        0x5fed9820061cf127fb1689269a6d53d72c3d1f289aff4bac0afea2103b5f229,
+        0x6ef44033073498cfd5dc97338ffe3afd139a87d56c1045ccefc3108a653b6f2,
+        0x6b04f0ca9a85505cd6cae37c678dd899f200b92639474e6e594fcf02544ed42,
+        0x1855303a4c287845b59acbe58e85df3618e6e3dbc27ffb7554e565ec3a606b0
     ];
 
-    (MERKLE_ROOT_SECOND_WAVE, address, amount, timestamp, proof)
+    (MERKLE_ROOT_FIRST_WAVE, address, amount, timestamp, id, proof)
 }
 
-pub fn get_alice_combined_wave_allocation() -> (
-    felt252, ContractAddress, u128, u128, Array<felt252>
+pub fn get_bob_second_wave_allocation() -> (
+    felt252, ContractAddress, u128, u128, u128, Array<felt252>
+) {
+    let address: ContractAddress = contract_address_const::<
+        0x1234567890abcdef1234567890abcdef12345678
+    >();
+    let amount: u128 = 150;
+    let timestamp: u128 = 2;
+    let id: u128 = 1;
+
+    let proof: Array<felt252> = array![
+        0x2fc0d4eecd4e047701f1a8295209d8a4d2b243836f5cf78df91bd073ce49084,
+        0x5fed9820061cf127fb1689269a6d53d72c3d1f289aff4bac0afea2103b5f229,
+        0x6ef44033073498cfd5dc97338ffe3afd139a87d56c1045ccefc3108a653b6f2,
+        0x6b04f0ca9a85505cd6cae37c678dd899f200b92639474e6e594fcf02544ed42,
+        0x1855303a4c287845b59acbe58e85df3618e6e3dbc27ffb7554e565ec3a606b0,
+        0x545687bbf6429d9a0664d6892ce9fc45b98f9529229358e252302434d85976c
+    ];
+
+    (MERKLE_ROOT_SECOND_WAVE, address, amount, timestamp, id, proof)
+}
+
+pub fn get_alice_second_wave_allocation() -> (
+    felt252, ContractAddress, u128, u128, u128, Array<felt252>
 ) {
     let address: ContractAddress = contract_address_const::<
         0xabcdefabcdefabcdefabcdefabcdefabcdefabc
     >();
     let amount: u128 = 800;
     let timestamp: u128 = 13;
+    let id: u128 = 1;
 
     let proof: Array<felt252> = array![
-        0x67325b9f9f8c14bc7f6e5e61e18beb7e2e413c8045b3e66474b1a9da48675ff,
-        0x22cb6a40bcd35b2f143d4fa3556ab6d161bd2d8476fd9113ff12d217a4453d3,
-        0x2e355a04aa50c953c458afd1716299e77d8df356f2a3f47a59668a13075f22a,
-        0x345b1e11be2309ccf90b7ec5b05b5987a1c4fd9ba232c17918b24144f022666,
-        0x427e1a5312507023d5cccfca1919876d1cba3c19278bed6b380722b7c86307c,
-        0x3820e57b614f240d6fd07351258ad6f626c5326cf78b8fa6dd54d59e243b0ae
+        0x387e71c3fe5c7ed5e81814e57bbdd88c9cc249b9071d626a8669bb8e6fb38bc,
+        0x3c1fa52fc063ceea9fdf3790b3d4b86698c7239ca857226957fee50f0ebc01d,
+        0x13e92543d838d5c721017891f665092a2b5558f47ac544e5c0a3867c6ba5cbf,
+        0x3b69ab80dcf08d633999db77d659e3bb7cb79270a1db1fdf5c432a950375cf7,
+        0x45c532062ad92e4bf5e4fc2b755c6cca48b03ae8c89b7eba239a21a3253ac4f,
+        0x1c6ec88a48638cc8c14e1c72767d58860a86cefbdd696d24e1253c0f6c1c2a0
     ];
 
-    (MERKLE_ROOT_SECOND_WAVE, address, amount, timestamp, proof)
+    (MERKLE_ROOT_SECOND_WAVE, address, amount, timestamp, id, proof)
 }
 
 pub fn get_john_multiple_allocations() -> (
     felt252,
     felt252,
     ContractAddress,
+    u128,
+    u128,
+    u128,
+    u128,
     u128,
     u128,
     u128,
@@ -551,46 +561,50 @@ pub fn get_john_multiple_allocations() -> (
     // Allocation 1
     let amount1: u128 = 700;
     let timestamp1: u128 = 0x6;
+    let id_1: u128 = 1;
     let proof1: Array<felt252> = array![
-        0x46d60ec37dc40ed4b156d95958274dbfb7fce273065825eb65c32d4979eb9c1,
-        0x53b3b627301bebe2ba22317925fa58814e752a9c2af25f7508a6c2546afb4af,
-        0x5c317f3f86b325fe1aed8103dafccaaafbc0f49ddaeb163b72c574abdcd43ec,
-        0x6f0149c2ccc9a95bb64deda90572a912f85139505ea9bcd233f6d16e751af9e,
-        0x58e3b614e77af3c7256a74654907b4fe2182daf47da635a81c94629a89595b3
+        0x6ac1aae7e68c4e203c00d8eff310bbca90f90ae3badaa8b6f6bf637ee52eec,
+        0x2c91a9511ef588d90f7f89f513595c75bc24ea19e18c0bb740dcda20027ca56,
+        0x431297a4c5039b6198b4ea942e06c480aa662334f252fb2941c537f458c4ca8,
+        0x6b04f0ca9a85505cd6cae37c678dd899f200b92639474e6e594fcf02544ed42,
+        0x1855303a4c287845b59acbe58e85df3618e6e3dbc27ffb7554e565ec3a606b0
     ];
 
     // Allocation 2
     let amount2: u128 = 900;
     let timestamp2: u128 = 17;
+    let id_2: u128 = 2;
     let proof2: Array<felt252> = array![
-        0x1a6e2d03ba7596b143278be0ad0a83e1a2523ee888c75c8b19343509f07e821,
-        0x17105708ca2b9efbf1a463b90528c603ed7a23a9493cf65686e36675f05f2f3,
-        0x193077a554a313efa6387d3edc11c60a34be8181b69d599e064b26f099b4949,
-        0x21ff61c9c9e525d2039631f6fa2e0a34b9de20db17438d049bd369804abb59,
-        0x58e3b614e77af3c7256a74654907b4fe2182daf47da635a81c94629a89595b3
+        0x2271d27a5469a12d5854af8d6dd19924b4ce389b347bad9660714d65d5ea849,
+        0x2d4f077932acdce076172e418dedd99d369ab390e0ecaa4441346027b280287,
+        0x11536a6a75883757f0e46fe84a6c0550c1d72f3a6e827e86c72a86bc200d73a,
+        0x2e996dca1817edb8d42d2312b9dbc9ff2f79d5ec3c029b6fe3937f8ded5d01d,
+        0x1855303a4c287845b59acbe58e85df3618e6e3dbc27ffb7554e565ec3a606b0
     ];
 
     // Allocation 3
     let amount3: u128 = 2500;
     let timestamp3: u128 = 0x18;
+    let id_3: u128 = 3;
     let proof3: Array<felt252> = array![
-        0x441810f7802690cd80d39973ba93d97a5326446ebfc01cb6e0eefb4c08e8247,
-        0x39f4c300dccca2d76be4ea9951a27045a19c2e647960625755e2b1dd8857658,
-        0x59ceaf2eada3198f6fd5ab51d9c374d5a8f0f0d057bba27ca7fb84d319413cb,
-        0x130aafa443c502bee0cae358d7d11bef44bf93e8d87df7f3958c11357d989df,
-        0x4da2c390813b19356e461046c235956b07a8cd8e914d64811d1c2293a718299
+        0x243eb22d79b86e04e2665bac9cf3a42465edba7bb8fe1630a821c4593ca781a,
+        0x26a185f92c71cf586a662182d4f5dd5ac2812be84e44a0d463bd411b2c5805e,
+        0x629b8d38174754785a8d32fee5d790a9aa644df167fc83263888fd70835295,
+        0x4d2752b3411df566e417454f8533c2a8a21f61bf6e705d33b6dc3d903c91ca2,
+        0x61bdd78c2e4b89f38ef7492670e4744a0885b7c776ffb254d1c9b73c850fdf5
     ];
 
     // Allocation 4 of the second wave
     let amount4: u128 = 287;
     let timestamp4: u128 = 0xE;
+    let id_4: u128 = 4;
     let proof4: Array<felt252> = array![
-        0x47ea9d24e7603c67574fc78a104fa2cc5cb7f4511f343b601b640c0ea6ef565,
-        0x3b832e149066bee8ec296d905fab1d1200714894a80216e5de233435066f09c,
-        0x2e355a04aa50c953c458afd1716299e77d8df356f2a3f47a59668a13075f22a,
-        0x345b1e11be2309ccf90b7ec5b05b5987a1c4fd9ba232c17918b24144f022666,
-        0x427e1a5312507023d5cccfca1919876d1cba3c19278bed6b380722b7c86307c,
-        0x3820e57b614f240d6fd07351258ad6f626c5326cf78b8fa6dd54d59e243b0ae
+        0x49118c782a2a6c1ceb9890535f1d2fcca16a8b1d916ca1af4f8eadb7f8b8e0a,
+        0x74c176d79348e16a11489735a3fb593c6bc855abed8efbfaa81a29fd9e0a893,
+        0x13e92543d838d5c721017891f665092a2b5558f47ac544e5c0a3867c6ba5cbf,
+        0x3b69ab80dcf08d633999db77d659e3bb7cb79270a1db1fdf5c432a950375cf7,
+        0x45c532062ad92e4bf5e4fc2b755c6cca48b03ae8c89b7eba239a21a3253ac4f,
+        0x1c6ec88a48638cc8c14e1c72767d58860a86cefbdd696d24e1253c0f6c1c2a0
     ];
 
     (
@@ -599,12 +613,16 @@ pub fn get_john_multiple_allocations() -> (
         address,
         amount1,
         timestamp1,
+        id_1,
         amount2,
         timestamp2,
+        id_2,
         amount3,
         timestamp3,
+        id_3,
         amount4,
         timestamp4,
+        id_4,
         proof1,
         proof2,
         proof3,
