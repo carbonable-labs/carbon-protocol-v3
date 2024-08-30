@@ -473,6 +473,7 @@ mod Project {
             ref self: ContractState, to: ContractAddress, token_ids: Span<u256>, values: Span<u256>
         ) {
             self.erc1155.batch_mint(to, token_ids, values);
+            let operator = get_caller_address();
             let mut values_to_emit: Array<u256> = Default::default();
             let self_snap = @self;
             let mut index = 0;
@@ -480,34 +481,46 @@ mod Project {
                 if index == token_ids.len() {
                     break;
                 }
-                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                let token_id = *token_ids.at(index);
+                let cc_value = self_snap.internal_to_cc(*values.at(index), token_id);
                 values_to_emit.append(cc_value);
+
+                self
+                    .emit(
+                        ERC1155Component::Event::TransferSingle(
+                            ERC1155Component::TransferSingle {
+                                operator, from: Zeroable::zero(), to, id: token_id, value: cc_value,
+                            }
+                        )
+                    );
                 index += 1;
             };
-            let values_to_emit = values_to_emit.span();
+        // TransferBatch not handled by Starkscan yet
+        // let values_to_emit = values_to_emit.span();
 
-            self
-                .emit(
-                    ERC1155Component::Event::TransferBatch(
-                        ERC1155Component::TransferBatch {
-                            operator: get_caller_address(),
-                            from: Zeroable::zero(),
-                            to,
-                            ids: token_ids,
-                            values: values_to_emit,
-                        }
-                    )
-                );
+        // self
+        //     .emit(
+        //         ERC1155Component::Event::TransferBatch(
+        //             ERC1155Component::TransferBatch {
+        //                 operator: get_caller_address(),
+        //                 from: Zeroable::zero(),
+        //                 to,
+        //                 ids: token_ids,
+        //                 values: values_to_emit,
+        //             }
+        //         )
+        //     );
         }
 
         fn _burn(ref self: ContractState, from: ContractAddress, token_id: u256, value: u256) {
             self.erc1155.burn(from, token_id, value);
+            let caller = get_caller_address();
             let cc_value = self.internal_to_cc(value, token_id);
             self
                 .emit(
                     ERC1155Component::Event::TransferSingle(
                         ERC1155Component::TransferSingle {
-                            operator: get_caller_address(),
+                            operator: caller,
                             from,
                             to: Zeroable::zero(),
                             id: token_id,
@@ -524,6 +537,7 @@ mod Project {
             values: Span<u256>
         ) {
             self.erc1155.batch_burn(from, token_ids, values);
+            let caller = get_caller_address();
             let mut values_to_emit: Array<u256> = Default::default();
             let self_snap = @self;
             let mut index = 0;
@@ -531,24 +545,38 @@ mod Project {
                 if index == token_ids.len() {
                     break;
                 }
-                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                let token_id = *token_ids.at(index);
+                let cc_value = self_snap.internal_to_cc(*values.at(index), token_id);
                 values_to_emit.append(cc_value);
+
+                self
+                    .emit(
+                        ERC1155Component::Event::TransferSingle(
+                            ERC1155Component::TransferSingle {
+                                operator: caller,
+                                from,
+                                to: Zeroable::zero(),
+                                id: token_id,
+                                value: cc_value,
+                            }
+                        )
+                    );
+
                 index += 1;
             };
-            let values_to_emit = values_to_emit.span();
-
-            self
-                .emit(
-                    ERC1155Component::Event::TransferBatch(
-                        ERC1155Component::TransferBatch {
-                            operator: get_caller_address(),
-                            from,
-                            to: Zeroable::zero(),
-                            ids: token_ids,
-                            values: values_to_emit,
-                        }
-                    )
-                );
+        // let values_to_emit = values_to_emit.span();
+        // self
+        //     .emit(
+        //         ERC1155Component::Event::TransferBatch(
+        //             ERC1155Component::TransferBatch {
+        //                 operator: get_caller_address(),
+        //                 from,
+        //                 to: Zeroable::zero(),
+        //                 ids: token_ids,
+        //                 values: values_to_emit,
+        //             }
+        //         )
+        //     );
         }
 
         fn _safe_transfer_from(
@@ -580,6 +608,7 @@ mod Project {
             data: Span<felt252>
         ) {
             self.erc1155.safe_batch_transfer_from(from, to, token_ids, values, data);
+            let caller = get_caller_address();
             let mut values_to_emit: Array<u256> = Default::default();
             let self_snap = @self;
             let mut index = 0;
@@ -587,23 +616,34 @@ mod Project {
                 if index == token_ids.len() {
                     break;
                 }
-                let cc_value = self_snap.internal_to_cc(*values.at(index), *token_ids.at(index));
+                let token_id = *token_ids.at(index);
+                let cc_value = self_snap.internal_to_cc(*values.at(index), token_id);
                 values_to_emit.append(cc_value);
+
+                self
+                    .emit(
+                        ERC1155Component::Event::TransferSingle(
+                            ERC1155Component::TransferSingle {
+                                operator: caller, from, to, id: token_id, value: cc_value,
+                            }
+                        )
+                    );
+
                 index += 1;
             };
-            let values_to_emit = values_to_emit.span();
-            self
-                .emit(
-                    ERC1155Component::Event::TransferBatch(
-                        ERC1155Component::TransferBatch {
-                            operator: get_caller_address(),
-                            from,
-                            to,
-                            ids: token_ids,
-                            values: values_to_emit,
-                        }
-                    )
-                );
+        // let values_to_emit = values_to_emit.span();
+        // self
+        //     .emit(
+        //         ERC1155Component::Event::TransferBatch(
+        //             ERC1155Component::TransferBatch {
+        //                 operator: get_caller_address(),
+        //                 from,
+        //                 to,
+        //                 ids: token_ids,
+        //                 values: values_to_emit,
+        //             }
+        //         )
+        //     );
         }
     }
 }

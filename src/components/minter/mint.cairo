@@ -372,7 +372,8 @@ mod MintComponent {
                     break;
                 }
                 values_cc.append(cc_amount.into());
-                tokens_ids.append(index.into());
+                let token_id = (index + 1).into();
+                tokens_ids.append(token_id);
                 index += 1;
             };
             // [Interaction] Pay

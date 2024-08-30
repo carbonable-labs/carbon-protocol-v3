@@ -18,7 +18,7 @@ mod VintageComponent {
     struct Storage {
         Vintage_vintages: LegacyMap<u256, CarbonVintage>,
         Vintage_vintages_len: usize,
-        Vintage_project_carbon: u128,
+        Vintage_project_carbon: u256,
     }
 
     #[event]
@@ -49,8 +49,8 @@ mod VintageComponent {
 
     #[derive(Drop, PartialEq, starknet::Event)]
     struct ProjectCarbonUpdated {
-        old_carbon: u128,
-        new_carbon: u128,
+        old_carbon: u256,
+        new_carbon: u256,
     }
 
 
@@ -82,21 +82,8 @@ mod VintageComponent {
         +Drop<TContractState>,
         +IAccessControl<TContractState>
     > of IVintage<ComponentState<TContractState>> {
-        fn get_project_carbon(self: @ComponentState<TContractState>) -> u128 {
-            let mut project_carbon: u128 = 0;
-
-            // let mut index = self.Vintage_vintages_len.read();
-            // while index > 0 {
-            //     index -= 1;
-            //     let vintage = self.Vintage_vintages.read(index.into());
-            //     if vintage.status != CarbonVintageType::Unset {
-            //         project_carbon += vintage.supply.into();
-            //     }
-            // };
-
-            project_carbon = self.Vintage_project_carbon.read();
-
-            project_carbon
+        fn get_project_carbon(self: @ComponentState<TContractState>) -> u256 {
+            self.Vintage_project_carbon.read()
         }
 
         fn get_num_vintages(self: @ComponentState<TContractState>) -> usize {
@@ -109,13 +96,14 @@ mod VintageComponent {
 
         fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<CarbonVintage> {
             let mut vintages = ArrayTrait::<CarbonVintage>::new();
-            let n = self.Vintage_vintages_len.read();
+            let num_vintages = self.Vintage_project_carbon.read();
             let mut index = 0;
             loop {
-                if index >= n {
+                if index >= num_vintages {
                     break ();
                 }
-                let vintage = self.Vintage_vintages.read(index.into());
+                let token_id = (index + 1).into();
+                let vintage = self.Vintage_vintages.read(token_id);
                 vintages.append(vintage);
                 index += 1;
             };
@@ -136,13 +124,14 @@ mod VintageComponent {
 
         fn get_initial_project_cc_supply(self: @ComponentState<TContractState>) -> u256 {
             let mut project_supply: u256 = 0;
-            let n = self.Vintage_vintages_len.read();
+            let num_vintage = self.Vintage_vintages_len.read();
             let mut index = 0;
             loop {
-                if index >= n {
+                if index >= num_vintage {
                     break ();
                 }
-                let initial_vintage_supply = self.get_initial_cc_supply(index.into());
+                let token_id = (index + 1).into();
+                let initial_vintage_supply = self.get_initial_cc_supply(token_id);
                 project_supply += initial_vintage_supply;
                 index += 1;
             };
@@ -221,16 +210,17 @@ mod VintageComponent {
                     break ();
                 }
                 let supply = *yearly_absorptions.at(index);
-
-                let old_vintage = self.Vintage_vintages.read(index.into());
-                let vintage = CarbonVintage {
+                let token_id = (index + 1).into();
+                let old_vintage = self.Vintage_vintages.read(token_id);
+                let mut vintage = CarbonVintage {
                     year: (start_year + index).into(),
                     supply: supply,
                     failed: 0,
                     created: 0,
                     status: CarbonVintageType::Projected,
                 };
-                self.Vintage_vintages.write(index.into(), vintage);
+                self.Vintage_vintages.write(token_id, vintage);
+
                 self
                     .emit(
                         VintageUpdate {
@@ -254,12 +244,14 @@ mod VintageComponent {
         ) {
             // [Storage] Store new vintages
             self.Vintage_vintages_len.write(number_of_years.into());
-            let mut index = starting_year;
-            let n = index + number_of_years;
+            let mut index = 0;
+            let n = number_of_years;
             loop {
                 if index == n {
                     break ();
                 }
+                let token_id = (index + 1).into();
+
                 let vintage: CarbonVintage = CarbonVintage {
                     year: index.into(),
                     supply: 0,
@@ -268,7 +260,7 @@ mod VintageComponent {
                     status: CarbonVintageType::Projected,
                 };
 
-                self.Vintage_vintages.write(index.into(), vintage);
+                self.Vintage_vintages.write(token_id, vintage);
                 index += 1;
             };
         }
