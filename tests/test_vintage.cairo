@@ -126,7 +126,7 @@ fn test_get_carbon_vintage() {
         if index == cc_vintages.len() {
             break;
         }
-        let token_id: u256 = index.into();
+        let token_id: u256 = (index + 1).into();
         let vintage = vintages.get_carbon_vintage(token_id);
         let expected_vintage = cc_vintages.at(index);
         assert(vintage == *expected_vintage, 'Vintage not fetched correctly');
@@ -149,7 +149,7 @@ fn test_get_initial_cc_supply() {
         if index == cc_vintages.len() {
             break;
         }
-        let token_id: u256 = index.into();
+        let token_id: u256 = (index + 1).into();
         let vintage = vintages.get_carbon_vintage(token_id);
         let initial_supply = vintages.get_initial_cc_supply(token_id);
         assert(initial_supply == vintage.supply, 'Initial supply error');
@@ -285,7 +285,7 @@ fn test_rebase_half_supply() {
         if index == num_vintages {
             break;
         }
-        let token_id: u256 = index.into();
+        let token_id: u256 = (index + 1).into();
         let old_vintage_supply = vintages.get_carbon_vintage(token_id).supply;
         let old_cc_balance = project.balance_of(owner_address, token_id);
         // Rebase
