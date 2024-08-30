@@ -42,7 +42,8 @@ use super::tests_lib::{
     get_mock_absorptions, equals_with_error, deploy_project, setup_project,
     default_setup_and_deploy, deploy_offsetter, deploy_erc20, deploy_minter, buy_utils,
     helper_get_token_ids, helper_sum_balance, DEFAULT_REMAINING_MINTABLE_CC,
-    helper_check_vintage_balances, get_mock_absorptions_times_2, helper_expected_transfer_event
+    helper_check_vintage_balances, get_mock_absorptions_times_2, helper_expected_transfer_event,
+    helper_expected_transfer_single_events, helper_get_cc_amounts
 };
 
 // Constants
@@ -147,10 +148,24 @@ fn test_public_buy() {
     minter.public_buy(cc_to_buy);
 
     let token_ids = helper_get_token_ids(project_address);
-    let expected_event = helper_expected_transfer_event(
+    // TODO: helper for amounts here?
+
+    // let mut cc_amounts: Array<u256> = Default::default();
+    // let mut index = 0;
+    // loop {
+    //     if index >= token_ids.len() {
+    //         break ();
+    //     }
+    //     let token_id = *token_ids.at(index);
+    //     let cc_value = project_contract.internal_to_cc(cc_to_buy, token_id);
+    //     cc_amounts.append(cc_value);
+    //     index += 1;
+    // };
+
+    let expected_events = helper_expected_transfer_single_events(
         project_address, minter_address, Zeroable::zero(), user_address, token_ids, cc_to_buy
     );
-    spy.assert_emitted(@array![(project_address, expected_event)]);
+    spy.assert_emitted(@expected_events);
 
     let balance_user_after = helper_sum_balance(project_address, user_address);
     assert(equals_with_error(balance_user_after, cc_to_buy, 100), 'balance should be the same');
@@ -778,7 +793,8 @@ fn integration_test_mint() {
         if index >= num_vintages {
             break;
         }
-        let vintage_balance = project_contract.balance_of(alice_address, index.into());
+        let token_id: u256 = (index + 1).into();
+        let vintage_balance = project_contract.balance_of(alice_address, token_id);
         vintage_balances_alice.append(vintage_balance);
         index += 1;
     };
@@ -841,7 +857,8 @@ fn integration_test_mint() {
         if index >= num_vintages {
             break;
         }
-        let vintage_balance = project_contract.balance_of(alice_address, index.into());
+        let token_id: u256 = (index + 1).into();
+        let vintage_balance = project_contract.balance_of(alice_address, token_id);
         assert(vintage_balance == *vintage_balances_alice.at(index), 'balance should be the same');
         index += 1;
     };

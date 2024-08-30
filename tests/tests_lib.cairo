@@ -361,7 +361,8 @@ fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
         if index >= num_vintages {
             break;
         }
-        tokens.append(index.into());
+        let token_id = (index + 1).into();
+        tokens.append(token_id);
         index += 1;
     };
     tokens.span()
@@ -378,7 +379,8 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
         if index >= num_vintages {
             break;
         }
-        let balance = project.balance_of(user_address, index.into());
+        let token_id = (index + 1).into();
+        let balance = project.balance_of(user_address, token_id);
         total_balance += balance;
         index += 1;
     };
@@ -426,6 +428,26 @@ fn helper_check_vintage_balance(
     assert(equals_with_error(balance, expected_balance, 10), 'Error vintage balance');
 }
 
+
+fn helper_get_cc_amounts(
+    project_address: ContractAddress, token_ids: Span<u256>, cc_to_buy: u256
+) -> Span<u256> {
+    let project = IProjectDispatcher { contract_address: project_address };
+    let mut cc_amounts: Array<u256> = Default::default();
+    let mut index = 0;
+    loop {
+        if index >= token_ids.len() {
+            break ();
+        }
+        let token_id = *token_ids.at(index);
+        let cc_value = project.internal_to_cc(cc_to_buy, token_id);
+        cc_amounts.append(cc_value);
+        index += 1;
+    };
+    cc_amounts.span()
+}
+
+
 fn helper_expected_transfer_event(
     project_address: ContractAddress,
     operator: ContractAddress,
@@ -457,6 +479,39 @@ fn helper_expected_transfer_event(
             ERC1155Component::TransferBatch { operator, from, to, ids: token_ids, values }
         )
     }
+}
+
+
+fn helper_expected_transfer_single_events(
+    project_address: ContractAddress,
+    operator: ContractAddress,
+    from: ContractAddress,
+    to: ContractAddress,
+    token_ids: Span<u256>,
+    cc_to_buy: u256
+) -> Array<(ContractAddress, ERC1155Component::Event)> {
+    let project = IProjectDispatcher { contract_address: project_address };
+    let mut events: Array<(ContractAddress, ERC1155Component::Event)> = Default::default();
+    let mut index = 0;
+
+    loop {
+        if index >= token_ids.len() {
+            break;
+        }
+
+        let value = project.internal_to_cc(cc_to_buy, *token_ids.at(index));
+        let token_id = *token_ids.at(index);
+
+        let event = ERC1155Component::Event::TransferSingle(
+            ERC1155Component::TransferSingle { operator, from, to, id: token_id, value }
+        );
+
+        events.append((project_address, event));
+
+        index += 1;
+    };
+
+    events
 }
 
 
