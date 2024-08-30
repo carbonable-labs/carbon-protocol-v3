@@ -3,7 +3,7 @@ use carbon_v3::models::carbon_vintage::CarbonVintage;
 #[starknet::interface]
 trait IVintage<TContractState> {
     /// Returns the project total carbon credits.
-    fn get_project_carbon(self: @TContractState) -> u128;
+    fn get_project_carbon(self: @TContractState) -> u256;
 
     /// Returns the number of vintages of the project.
     fn get_num_vintages(self: @TContractState) -> usize;

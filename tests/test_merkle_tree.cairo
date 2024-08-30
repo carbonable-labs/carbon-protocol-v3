@@ -15,12 +15,7 @@ use carbon_v3::components::offsetter::interface::{
 use carbon_v3::components::offsetter::OffsetComponent;
 
 /// Utils for testing purposes
-use super::tests_lib::{
-    equals_with_error, deploy_project, setup_project, default_setup_and_deploy,
-    perform_fuzzed_transfer, buy_utils, deploy_erc20, deploy_minter, helper_sum_balance,
-    helper_check_vintage_balances, helper_get_token_ids, helper_expected_transfer_event,
-    deploy_offsetter,
-};
+use super::tests_lib::{default_setup_and_deploy, deploy_offsetter};
 
 /// Utils to import mock data
 use super::tests_lib::{
