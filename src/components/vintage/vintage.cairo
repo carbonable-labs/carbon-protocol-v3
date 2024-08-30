@@ -96,7 +96,7 @@ mod VintageComponent {
 
         fn get_cc_vintages(self: @ComponentState<TContractState>) -> Span<CarbonVintage> {
             let mut vintages = ArrayTrait::<CarbonVintage>::new();
-            let num_vintages = self.Vintage_project_carbon.read();
+            let num_vintages = self.Vintage_vintages_len.read();
             let mut index = 0;
             loop {
                 if index >= num_vintages {
