@@ -151,14 +151,8 @@ mod OffsetComponent {
             let mut index: u32 = 0;
             loop {
                 // [Check] Vintage is defined
-                let token_id = match vintages.get(index) {
-                    Option::Some(value) => *value.unbox(),
-                    Option::None => 0,
-                };
-                let carbon_amount = match cc_values.get(index) {
-                    Option::Some(value) => *value.unbox(),
-                    Option::None => 0,
-                };
+                let token_id = *vintages.at(index);
+                let carbon_amount = *cc_values.at(index);
 
                 if token_id != 0 && carbon_amount != 0 {
                     self.retire_carbon_credits(token_id, carbon_amount);
