@@ -7,8 +7,8 @@ USAGE="Usage: ./deploy_project.sh <CLASS_HASH>"
 
 # You can change these variables
 OWNER=$DEPLOYER_ADDRESS
-FROM_TIMESTAMP=2024
-DURATION_IN_YEARS=20
+FROM_TIMESTAMP=2022
+DURATION_IN_YEARS=19
 
 if [ -z "$1" ]; then
     echo "Error: No CLASS_HASH provided.$USAGE"
