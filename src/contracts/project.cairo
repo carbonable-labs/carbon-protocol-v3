@@ -85,6 +85,7 @@ mod Project {
     use openzeppelin::access::ownable::OwnableComponent;
     // Upgradable
     use openzeppelin::upgrades::upgradeable::UpgradeableComponent;
+    use openzeppelin::upgrades::interface::IUpgradeable;
     //SRC5
     use openzeppelin::introspection::src5::SRC5Component;
     // ERC1155
@@ -441,6 +442,18 @@ mod Project {
             let vintage_supply = self.vintage.get_carbon_vintage(token_id).supply.into();
             let initial_project_supply = self.vintage.get_initial_project_cc_supply();
             internal_value_to_send * vintage_supply / initial_project_supply
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl UpgradeableImpl of IUpgradeable<ContractState> {
+        fn upgrade(ref self: ContractState, new_class_hash: ClassHash) {
+            // This function can only be called by the owner
+            let isOwner = self.accesscontrol.has_role(OWNER_ROLE, get_caller_address());
+            assert!(isOwner, "Only Owner can upgrade");
+
+            // Replace the class hash upgrading the contract
+            self.upgradeable._upgrade(new_class_hash);
         }
     }
 
