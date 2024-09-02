@@ -7,7 +7,7 @@ USAGE="Usage: ./deploy_project.sh <CLASS_HASH>"
 
 # You can change these variables
 OWNER=$DEPLOYER_ADDRESS
-FROM_TIMESTAMP=2022
+FROM_TIMESTAMP=2020
 DURATION_IN_YEARS=19
 
 if [ -z "$1" ]; then
