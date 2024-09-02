@@ -22,6 +22,7 @@ trait IMint<TContractState> {
         recipient: ContractAddress,
         amount: u256
     );
+    fn redeem_investment(ref self: TContractState);
     fn public_buy(ref self: TContractState, cc_amount: u256);
-    fn cancel_mint(ref self: TContractState, should_cancel: bool);
+    fn cancel_mint(ref self: TContractState);
 }

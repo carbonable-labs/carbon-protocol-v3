@@ -81,7 +81,6 @@ mod MintComponent {
 
     #[derive(Drop, starknet::Event)]
     struct MintCanceled {
-        old_value: bool,
         is_canceled: bool
     }
 
@@ -165,7 +164,7 @@ mod MintComponent {
             self.get_remaining_mintable_cc() == 0
         }
 
-        fn cancel_mint(ref self: ComponentState<TContractState>, should_cancel: bool) {
+        fn cancel_mint(ref self: ComponentState<TContractState>) {
             let project_address = self.Mint_carbonable_project_address.read();
             let project = IProjectDispatcher { contract_address: project_address };
 
@@ -174,10 +173,9 @@ mod MintComponent {
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
-            let old_value: bool = self.Mint_cancel.read();
-            self.Mint_cancel.write(should_cancel);
+            self.Mint_cancel.write(true);
 
-            self.emit(MintCanceled { old_value: old_value, is_canceled: should_cancel });
+            self.emit(MintCanceled { is_canceled: true });
         }
 
         fn is_canceled(self: @ComponentState<TContractState>) -> bool {
@@ -224,6 +222,9 @@ mod MintComponent {
             assert(!caller_address.is_zero(), 'Invalid caller');
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
+
+            let is_canceled = self.Mint_cancel.read();
+            assert(!is_canceled, 'Mint is canceled');
 
             let old_value = self.Mint_public_sale_open.read();
             self.Mint_public_sale_open.write(public_sale_open);
@@ -289,6 +290,57 @@ mod MintComponent {
                 .emit(
                     AmountRetrieved {
                         token_address: token_address, recipient: recipient, amount: amount
+                    }
+                );
+        }
+
+        fn redeem_investment(ref self: ComponentState<TContractState>) {
+            let project_address = self.Mint_carbonable_project_address.read();
+            let project = IProjectDispatcher { contract_address: project_address };
+            let vintages = IVintageDispatcher { contract_address: project_address };
+
+            let caller_address = get_caller_address();
+            assert(!caller_address.is_zero(), 'Invalid caller');
+
+            let is_canceled = self.Mint_cancel.read();
+            assert(is_canceled, 'Mint is not canceled');
+            let is_open = self.Mint_public_sale_open.read();
+            assert(!is_open, 'Sale is open');
+
+            let mut total_cc_balance = 0;
+            let num_vintages: usize = vintages.get_num_vintages();
+            let mut index = 0;
+            loop {
+                if index >= num_vintages {
+                    break;
+                }
+                let token_id = (index + 1).into();
+                let balance = project.balance_of(caller_address, token_id);
+                // Send cc of the vintage to minter to burn it
+                project
+                    .safe_transfer_from(
+                        caller_address, get_contract_address(), token_id, balance, array![].span()
+                    );
+                total_cc_balance += balance;
+                index += 1;
+            };
+
+            let unit_price = self.Mint_unit_price.read();
+            let money_amount = total_cc_balance * unit_price / MULTIPLIER_TONS_TO_MGRAMS;
+
+            let token_address = self.Mint_payment_token_address.read();
+            let erc20 = IERC20Dispatcher { contract_address: token_address };
+            let success = erc20.transfer(caller_address, money_amount);
+            assert(success, 'Transfer failed');
+
+            let remaining_mintable_cc = self.Mint_remaining_mintable_cc.read();
+            self.Mint_remaining_mintable_cc.write(remaining_mintable_cc - total_cc_balance);
+
+            let old_value = self.Mint_remaining_mintable_cc.read();
+            self
+                .emit(
+                    RemainingMintableCCUpdated {
+                        old_value: old_value, new_value: remaining_mintable_cc
                     }
                 );
         }

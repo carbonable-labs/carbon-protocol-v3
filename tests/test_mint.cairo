@@ -299,26 +299,44 @@ fn test_cancel_mint() {
     assert(!is_canceled, 'mint should not be canceled');
 
     // Cancel the mint
-    minter.cancel_mint(true);
+    minter.cancel_mint();
     let expected_event = MintComponent::Event::MintCanceled(
-        MintComponent::MintCanceled { old_value: false, is_canceled: true }
+        MintComponent::MintCanceled { is_canceled: true }
     );
     spy.assert_emitted(@array![(minter_address, expected_event)]);
 
     // Verify that the mint is canceled
     let is_canceled_after = minter.is_canceled();
     assert(is_canceled_after, 'mint should be canceled');
+}
 
-    // Reopen the mint
-    minter.cancel_mint(false);
-    let expected_event_reopen = MintComponent::Event::MintCanceled(
-        MintComponent::MintCanceled { old_value: true, is_canceled: false }
-    );
-    spy.assert_emitted(@array![(minter_address, expected_event_reopen)]);
+#[test]
+#[should_panic(expected: 'Caller is not the owner')]
+fn test_cancel_mint_without_owner_role() {
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
-    // Verify that the mint is reopened
-    let is_canceled_reopened = minter.is_canceled();
-    assert(!is_canceled_reopened, 'mint should be reopened')
+    let minter = IMintDispatcher { contract_address: minter_address };
+    minter.cancel_mint();
+}
+
+#[test]
+#[should_panic(expected: 'Mint is canceled')]
+fn test_reopen_sale_after_canceled_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let project_address = deploy_project();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+    start_cheat_caller_address(minter_address, owner_address);
+
+    // Cancel the mint
+    minter.cancel_mint();
+
+    // Try to reopen the sale
+    minter.set_public_sale_open(true);
 }
 
 
