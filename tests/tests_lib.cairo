@@ -154,6 +154,19 @@ fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
     contract_address
 }
 
+/// Deploys the resale contract.
+fn deploy_resale(project_address: ContractAddress) -> ContractAddress {
+    let contract = snf::declare("Resale").expect('Declaration failed');
+    let owner: ContractAddress = contract_address_const::<'OWNER'>();
+    let mut calldata: Array<felt252> = array![];
+    calldata.append(project_address.into());
+    calldata.append(owner.into());
+
+    let (contract_address, _) = contract.deploy(@calldata).expect('Resale deployment failed');
+
+    contract_address
+}
+
 /// Deploys a minter contract.
 fn deploy_minter(
     project_address: ContractAddress, payment_address: ContractAddress
