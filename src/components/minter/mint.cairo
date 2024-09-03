@@ -52,6 +52,7 @@ mod MintComponent {
         MinMoneyAmountPerTxUpdated: MinMoneyAmountPerTxUpdated,
         RemainingMintableCCUpdated: RemainingMintableCCUpdated,
         MaxMintableCCUpdated: MaxMintableCCUpdated,
+        RedeemInvestment: RedeemInvestment,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -122,6 +123,12 @@ mod MintComponent {
         new_value: u256,
     }
 
+    #[derive(Drop, starknet::Event)]
+    struct RedeemInvestment {
+        address: ContractAddress,
+        amount: u256,
+    }
+
     mod Errors {
         const INVALID_ARRAY_LENGTH: felt252 = 'Mint: invalid array length';
     }
@@ -173,6 +180,7 @@ mod MintComponent {
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
+            self.Mint_public_sale_open.write(false);
             self.Mint_cancel.write(true);
 
             self.emit(MintCanceled { is_canceled: true });
@@ -333,16 +341,17 @@ mod MintComponent {
             let success = erc20.transfer(caller_address, money_amount);
             assert(success, 'Transfer failed');
 
-            let remaining_mintable_cc = self.Mint_remaining_mintable_cc.read();
-            self.Mint_remaining_mintable_cc.write(remaining_mintable_cc - total_cc_balance);
+            let initial_remaining_mintable_cc = self.Mint_remaining_mintable_cc.read();
+            let remaining_mintable_cc = initial_remaining_mintable_cc + total_cc_balance;
+            self.Mint_remaining_mintable_cc.write(remaining_mintable_cc);
 
-            let old_value = self.Mint_remaining_mintable_cc.read();
             self
                 .emit(
                     RemainingMintableCCUpdated {
-                        old_value: old_value, new_value: remaining_mintable_cc
+                        old_value: initial_remaining_mintable_cc, new_value: remaining_mintable_cc
                     }
                 );
+            self.emit(RedeemInvestment { address: caller_address, amount: money_amount });
         }
 
         fn public_buy(ref self: ComponentState<TContractState>, cc_amount: u256) {
@@ -454,6 +463,14 @@ mod MintComponent {
                             cc_amount: cc_amount,
                         }
                     )
+                );
+
+            self
+                .emit(
+                    RemainingMintableCCUpdated {
+                        old_value: remaining_mintable_cc,
+                        new_value: remaining_mintable_cc - cc_amount,
+                    }
                 );
 
             if self.is_sold_out() {
