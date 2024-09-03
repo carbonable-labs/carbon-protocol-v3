@@ -31,8 +31,8 @@ mod Offsetter {
     impl OwnableCamelOnlyImpl =
         OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
-    impl MintImpl = OffsetComponent::OffsetHandlerImpl<ContractState>;
-    #[abi(embed_v0)]
+    impl OffsetImpl = OffsetComponent::OffsetHandlerImpl<ContractState>;
+    // #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     // Access Control
     #[abi(embed_v0)]
@@ -41,8 +41,8 @@ mod Offsetter {
 
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
-    impl MintInternalImpl = OffsetComponent::InternalImpl<ContractState>;
-    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    impl OffsetInternalImpl = OffsetComponent::InternalImpl<ContractState>;
+    // impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
     #[storage]
