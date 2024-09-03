@@ -3,6 +3,10 @@ mod components {
     mod metadata;
     mod minter;
     mod offsetter;
+    mod resale {
+        mod interface;
+        mod resale_handler;
+    }
     mod vintage;
 }
 
@@ -12,9 +16,10 @@ mod models {
 }
 
 mod contracts {
-    mod project;
     mod minter;
     mod offsetter;
+    mod project;
+    mod resale;
 }
 
 mod mock {
