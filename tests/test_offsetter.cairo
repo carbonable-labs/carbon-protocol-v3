@@ -1,15 +1,5 @@
-use snforge_std::cheatcodes::events::EventsFilterTrait;
-use snforge_std::cheatcodes::events::EventSpyTrait;
-use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
-use core::array::SpanTrait;
 // Core deps
 
-use array::ArrayTrait;
-use result::ResultTrait;
-use option::OptionTrait;
-use traits::{Into, TryInto};
-use zeroable::Zeroable;
-use debug::PrintTrait;
 use hash::HashStateTrait;
 use pedersen::PedersenTrait;
 
@@ -21,18 +11,19 @@ use starknet::testing::{set_caller_address, set_contract_address};
 
 // External deps
 
-use openzeppelin::utils::serde::SerializedAppend;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 use snforge_std as snf;
 use snforge_std::{
     ContractClassTrait, test_address, spy_events, EventSpy, start_cheat_caller_address,
-    stop_cheat_caller_address
+    stop_cheat_caller_address,
 };
+use snforge_std::cheatcodes::events::{EventsFilterTrait, EventSpyTrait, EventSpyAssertionsTrait};
+
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-use carbon_v3::components::vintage::vintage::VintageComponent::{Event};
+use carbon_v3::components::vintage::vintage::VintageComponent::Event;
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::components::vintage::VintageComponent;
 use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
