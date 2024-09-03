@@ -1,5 +1,3 @@
-use core::clone::Clone;
-use core::result::ResultTrait;
 use starknet::{ContractAddress, contract_address_const};
 use snforge_std as snf;
 use snforge_std::{
