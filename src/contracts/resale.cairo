@@ -13,7 +13,7 @@ mod Resale {
     use openzeppelin::upgrades::upgradeable::UpgradeableComponent;
     //SRC5
     use openzeppelin::introspection::src5::SRC5Component;
-    // Offsetter
+    // Resale
     use carbon_v3::components::resale::resale_handler::ResaleComponent;
     // Access Control - RBAC
     use openzeppelin::access::accesscontrol::AccessControlComponent;
@@ -21,7 +21,7 @@ mod Resale {
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
-    component!(path: ResaleComponent, storage: offsetter, event: ResaleEvent);
+    component!(path: ResaleComponent, storage: resale, event: ResaleEvent);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
 
     // ABI
@@ -31,7 +31,7 @@ mod Resale {
     impl OwnableCamelOnlyImpl =
         OwnableComponent::OwnableCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
-    impl MintImpl = OffsetComponent::OffsetHandlerImpl<ContractState>;
+    impl ResaleImpl = ResaleComponent::ResaleHandlerImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     // Access Control
@@ -41,7 +41,7 @@ mod Resale {
 
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
-    impl MintInternalImpl = OffsetComponent::InternalImpl<ContractState>;
+    impl ResaleInternalImpl = ResaleComponent::InternalImpl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
 
@@ -54,7 +54,7 @@ mod Resale {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         #[substorage(v0)]
-        offsetter: ResaleComponent::Storage,
+        resale: ResaleComponent::Storage,
         #[substorage(v0)]
         accesscontrol: AccessControlComponent::Storage,
     }
@@ -76,11 +76,17 @@ mod Resale {
 
     #[constructor]
     fn constructor(
-        ref self: ContractState, carbonable_project_address: ContractAddress, owner: ContractAddress, resale_token_address: ContractAddress, resale_account_address: ContractAddress
+        ref self: ContractState,
+        carbonable_project_address: ContractAddress,
+        owner: ContractAddress,
+        resale_token_address: ContractAddress,
+        resale_account_address: ContractAddress
     ) {
         self.ownable.initializer(owner);
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(OWNER_ROLE, owner);
-        self.resale.initializer(carbonable_project_address);
+        self
+            .resale
+            .initializer(carbonable_project_address, resale_token_address, resale_account_address);
     }
 }
