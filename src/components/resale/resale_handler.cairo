@@ -107,7 +107,14 @@ mod ResaleComponent {
     }
 
     mod Errors {
-        const INVALID_VINTAGE_STATUS: felt252 = 'vintage status is not audited';
+        const NOT_ENOUGH_CARBON: felt252 = 'Resale: Not enough carbon';
+        const NOT_ENOUGH_TOKENS: felt252 = 'Resale: Not enough tokens';
+        const NOT_ENOUGH_PENDING: felt252 = 'Resale: Not enough pending';
+        const EMPTY_INPUT: felt252 = 'Resale: Inputs cannot be empty';
+        const ARRAY_MISMATCH: felt252 = 'Resale: Array lengths mismatch';
+        const INVALID_PROOF: felt252 = 'Resale: Invalid proof';
+        const ALREADY_CLAIMED: felt252 = 'Resale: Already claimed';
+        const MISSING_ROLE: felt252 = 'Resale: Missing role';
     }
 
     #[embeddable_as(ResaleHandlerImpl)]
@@ -123,16 +130,9 @@ mod ResaleComponent {
             let caller_address: ContractAddress = get_caller_address();
             let project_address: ContractAddress = self.Resale_carbonable_project_address.read();
 
-            // [Check] Vintage got the right status
-            let vintages = IVintageDispatcher { contract_address: project_address };
-            let stored_vintage: CarbonVintage = vintages.get_carbon_vintage(token_id);
-            assert(
-                stored_vintage.status == CarbonVintageType::Audited, 'Vintage status is not audited'
-            );
-
             let erc1155 = IERC1155Dispatcher { contract_address: project_address };
             let caller_balance = erc1155.balance_of(caller_address, token_id);
-            assert(caller_balance >= cc_amount, 'Not own enough carbon credits');
+            assert(caller_balance >= cc_amount, Errors::NOT_ENOUGH_CARBON);
 
             self._add_pending_resale(caller_address, token_id, cc_amount);
         }
@@ -141,8 +141,8 @@ mod ResaleComponent {
             ref self: ComponentState<TContractState>, token_ids: Span<u256>, cc_amounts: Span<u256>
         ) {
             // [Check] vintages and carbon values are defined
-            assert(token_ids.len() > 0, 'Inputs cannot be empty');
-            assert(token_ids.len() == cc_amounts.len(), 'Vintages and Values mismatch');
+            assert(token_ids.len() > 0, Errors::EMPTY_INPUT);
+            assert(token_ids.len() == cc_amounts.len(), Errors::ARRAY_MISMATCH);
 
             let mut index: u32 = 0;
             loop {
@@ -179,7 +179,7 @@ mod ResaleComponent {
 
             // [Verify not already claimed]
             let claimed = self.check_claimed(claimee, timestamp, amount, id);
-            assert(!claimed, 'Already claimed');
+            assert(!claimed, Errors::ALREADY_CLAIMED);
 
             // [Verify the proof]
             let amount_felt: felt252 = amount.into();
@@ -194,7 +194,7 @@ mod ResaleComponent {
             let root_computed = merkle_tree.compute_root(leaf, proof.span());
 
             let stored_root = self.Resale_merkle_root.read();
-            assert(root_computed == stored_root, 'Invalid proof');
+            assert(root_computed == stored_root, Errors::INVALID_PROOF);
 
             // [Mark as claimed]
             let allocation = Allocation {
@@ -279,22 +279,27 @@ mod ResaleComponent {
             let this: ContractAddress = get_contract_address();
             let project_address: ContractAddress = self.Resale_carbonable_project_address.read();
 
-            let project = IProjectDispatcher { contract_address: project_address };
-            let DECIMALS = project.decimals();
+            // let project = IProjectDispatcher { contract_address: project_address };
+            // let DECIMALS = project.decimals();
 
             // [Check] enough carbon credits and tokens
             let erc1155 = IERC1155Dispatcher { contract_address: project_address };
-            let caller_balance = erc1155.balance_of(this, token_id);
-            assert(caller_balance >= cc_amount, 'Not enough carbon credits');
+            let this_balance = erc1155.balance_of(this, token_id);
+            assert(this_balance >= cc_amount, Errors::NOT_ENOUGH_CARBON);
 
             let token_address = self.get_resale_token();
             let token = IERC20Dispatcher { contract_address: token_address };
-            let token_amount = cc_amount * resale_price / DECIMALS.into(); // price per ton
-            let caller_balance = token.balance_of(this);
-            assert(caller_balance >= token_amount, 'Not enough tokens');
+            let token_amount = cc_amount * resale_price / 1_000_000; // USDC price per ton
+            let caller = get_caller_address();
+            let caller_balance = token.balance_of(caller);
+            assert(caller_balance >= token_amount, Errors::NOT_ENOUGH_TOKENS);
 
             // [Transfer] carbon credits and tokens
-            token.transfer_from(this, project_address, token_amount);
+            println!("Transfering tokens");
+            let allowance = token.allowance(caller, this);
+            assert(allowance >= token_amount, Errors::NOT_ENOUGH_TOKENS);
+            token.transfer_from(caller, this, token_amount);
+
             self._resale_carbon_credits(this, token_id, cc_amount);
             self.set_merkle_root(merkle_root);
         }
@@ -308,7 +313,10 @@ mod ResaleComponent {
         +IAccessControl<TContractState>
     > of InternalTrait<TContractState> {
         fn initializer(
-            ref self: ComponentState<TContractState>, carbonable_project_address: ContractAddress, resale_token_address: ContractAddress, resale_account_address: ContractAddress
+            ref self: ComponentState<TContractState>,
+            carbonable_project_address: ContractAddress,
+            resale_token_address: ContractAddress,
+            resale_account_address: ContractAddress
         ) {
             self.Resale_carbonable_project_address.write(carbonable_project_address);
             self.Resale_token_address.write(resale_token_address);
@@ -359,7 +367,7 @@ mod ResaleComponent {
             amount: u256
         ) {
             let current_pending_resale = self.Resale_carbon_pending_resale.read((token_id, from));
-            assert(current_pending_resale >= amount, 'Not enough pending retirement');
+            assert(current_pending_resale >= amount, Errors::NOT_ENOUGH_PENDING);
 
             let new_pending_resale = current_pending_resale - amount;
             self.Resale_carbon_pending_resale.write((token_id, from), new_pending_resale);
@@ -387,7 +395,6 @@ mod ResaleComponent {
             let project = IProjectDispatcher { contract_address: project_address };
             let amount_to_resale = project.cc_to_internal(amount, token_id);
 
-            // TODO: transfer the carbon credits to Carbonable resale wallet
             let to = self.get_resale_account();
             project.safe_transfer_from(from, to, token_id, amount_to_resale, array![].span());
 
@@ -411,7 +418,7 @@ mod ResaleComponent {
             // [Check] Caller has role
             let caller = get_caller_address();
             let has_role = self.get_contract().has_role(role, caller);
-            assert(has_role, 'Caller does not have role');
+            assert(has_role, Errors::MISSING_ROLE);
         }
     }
 }
