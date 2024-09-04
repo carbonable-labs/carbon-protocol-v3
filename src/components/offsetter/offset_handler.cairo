@@ -142,8 +142,9 @@ mod OffsetComponent {
             let mut index: u32 = 0;
             loop {
                 // [Check] Vintage is defined
-                let token_id = *vintages.at(index);
-                let carbon_amount = *cc_values.at(index);
+                let token_id = *token_ids.at(index);
+                let carbon_amount = *cc_amounts.at(index);
+
 
                 if token_id != 0 && carbon_amount != 0 {
                     self.retire_carbon_credits(token_id, carbon_amount);
@@ -325,8 +326,9 @@ mod OffsetComponent {
         ) {
             self._remove_pending_retirement(from, token_id, amount);
 
+            let project_address = self.Offsetter_carbonable_project_address.read();
             let project = IProjectDispatcher {
-                contract_address: self.Offsetter_carbonable_project_address.read()
+                contract_address: project_address
             };
             let amount_to_offset = project.cc_to_internal(amount, token_id);
             project.burn(from, token_id, amount_to_offset);
