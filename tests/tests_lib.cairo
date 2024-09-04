@@ -155,15 +155,18 @@ fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
 }
 
 /// Deploys the resale contract.
-fn deploy_resale(project_address: ContractAddress) -> ContractAddress {
+fn deploy_resale(
+    project_address: ContractAddress, token_address: ContractAddress
+) -> ContractAddress {
     let contract = snf::declare("Resale").expect('Declaration failed');
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
     calldata.append(project_address.into());
     calldata.append(owner.into());
+    calldata.append(token_address.into());
+    calldata.append(owner.into());
 
     let (contract_address, _) = contract.deploy(@calldata).expect('Resale deployment failed');
-
     contract_address
 }
 
