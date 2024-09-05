@@ -113,6 +113,117 @@ fn test_set_public_sale_open_with_owner_role() {
     spy.assert_emitted(@array![(minter_address, expected_event)]);
 }
 
+/// redeem_investment
+#[test]
+fn test_redeem_investment() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let mut spy = spy_events();
+
+    start_cheat_caller_address(erc20_address, owner_address);
+    start_cheat_caller_address(minter_address, owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    let vintage = IVintageDispatcher { contract_address: project_address };
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    start_cheat_caller_address(project_address, owner_address);
+    project.grant_minter_role(minter_address);
+
+    start_cheat_caller_address(project_address, minter_address);
+    let initial_project_supply = vintage.get_initial_project_cc_supply();
+    let cc_amount_to_buy: u256 = initial_project_supply / 10; // 10% of the initial supply
+    let money_to_buy = cc_amount_to_buy * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
+    buy_utils(owner_address, user_address, minter_address, cc_amount_to_buy);
+
+    let remaining_mintable_cc = minter.get_remaining_mintable_cc();
+    assert(
+        remaining_mintable_cc == initial_project_supply - cc_amount_to_buy,
+        'remaining cc wrong value'
+    );
+
+    let user_balance = erc20.balance_of(user_address);
+    assert(user_balance == 0, 'user balance should be 0'); // used everything to buy cc
+
+    start_cheat_caller_address(minter_address, owner_address);
+    minter.cancel_mint();
+
+    start_cheat_caller_address(project_address, user_address);
+    // Approve the project to spend the user's carbon credits
+    project.set_approval_for_all(minter_address, true);
+    // Redeem the investment
+    start_cheat_caller_address(minter_address, user_address);
+    minter.redeem_investment();
+
+    let remaining_mintable_cc = minter.get_remaining_mintable_cc();
+    assert(remaining_mintable_cc == initial_project_supply, 'remaining cc wrong value');
+
+    let user_balance_after = erc20.balance_of(user_address);
+    assert(user_balance_after == money_to_buy, 'user balance error after redeem');
+    let expected_event = MintComponent::Event::RedeemInvestment(
+        MintComponent::RedeemInvestment { address: user_address, amount: money_to_buy }
+    );
+    spy.assert_emitted(@array![(minter_address, expected_event)]);
+}
+
+#[test]
+#[should_panic(expected: 'Mint is not canceled')]
+fn test_redeem_without_cancel() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    let vintage = IVintageDispatcher { contract_address: project_address };
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    start_cheat_caller_address(project_address, owner_address);
+    project.grant_minter_role(minter_address);
+
+    start_cheat_caller_address(project_address, minter_address);
+    let initial_project_supply = vintage.get_initial_project_cc_supply();
+    let cc_amount_to_buy: u256 = initial_project_supply / 10; // 10% of the initial supply
+    buy_utils(owner_address, user_address, minter_address, cc_amount_to_buy);
+
+    start_cheat_caller_address(project_address, user_address);
+    project.set_approval_for_all(minter_address, true);
+    // Redeem the investment
+    start_cheat_caller_address(minter_address, user_address);
+    minter.redeem_investment();
+}
+
+#[test]
+fn test_redeem_no_investment() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    start_cheat_caller_address(project_address, owner_address);
+    project.grant_minter_role(minter_address);
+
+    start_cheat_caller_address(minter_address, owner_address);
+    minter.cancel_mint();
+
+    start_cheat_caller_address(project_address, user_address);
+    project.set_approval_for_all(minter_address, true);
+    // Redeem but no investment was made
+    start_cheat_caller_address(minter_address, user_address);
+    minter.redeem_investment();
+
+    let user_balance_after = erc20.balance_of(user_address);
+    assert(user_balance_after == 0, 'user balance error after redeem');
+}
+
 // public_buy
 
 #[test]
@@ -299,26 +410,44 @@ fn test_cancel_mint() {
     assert(!is_canceled, 'mint should not be canceled');
 
     // Cancel the mint
-    minter.cancel_mint(true);
+    minter.cancel_mint();
     let expected_event = MintComponent::Event::MintCanceled(
-        MintComponent::MintCanceled { old_value: false, is_canceled: true }
+        MintComponent::MintCanceled { is_canceled: true }
     );
     spy.assert_emitted(@array![(minter_address, expected_event)]);
 
     // Verify that the mint is canceled
     let is_canceled_after = minter.is_canceled();
     assert(is_canceled_after, 'mint should be canceled');
+}
 
-    // Reopen the mint
-    minter.cancel_mint(false);
-    let expected_event_reopen = MintComponent::Event::MintCanceled(
-        MintComponent::MintCanceled { old_value: true, is_canceled: false }
-    );
-    spy.assert_emitted(@array![(minter_address, expected_event_reopen)]);
+#[test]
+#[should_panic(expected: 'Caller is not the owner')]
+fn test_cancel_mint_without_owner_role() {
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
 
-    // Verify that the mint is reopened
-    let is_canceled_reopened = minter.is_canceled();
-    assert(!is_canceled_reopened, 'mint should be reopened')
+    let minter = IMintDispatcher { contract_address: minter_address };
+    minter.cancel_mint();
+}
+
+#[test]
+#[should_panic(expected: 'Mint is canceled')]
+fn test_reopen_sale_after_canceled_mint() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let project_address = deploy_project();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    let minter = IMintDispatcher { contract_address: minter_address };
+    start_cheat_caller_address(minter_address, owner_address);
+
+    // Cancel the mint
+    minter.cancel_mint();
+
+    // Try to reopen the sale
+    minter.set_public_sale_open(true);
 }
 
 
