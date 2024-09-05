@@ -446,16 +446,12 @@ fn test_resale__sell_carbon_nominal_case() {
 
     let amount_resell = initial_balance / 2;
 
-    // start_cheat_caller_address(resale_address, user_address);
-    // start_cheat_caller_address(project_address, resale_address);
     let resale = IResaleHandlerDispatcher { contract_address: resale_address };
-
     start_cheat_caller_address(project_address, user_address);
     project.set_approval_for_all(resale_address, true);
     stop_cheat_caller_address(erc20_address);
 
     start_cheat_caller_address(resale_address, user_address);
-    //start_cheat_caller_address(project_address, resale_address);
     resale.deposit_vintage(token_id, amount_resell);
     stop_cheat_caller_address(resale_address);
 
@@ -472,9 +468,17 @@ fn test_resale__sell_carbon_nominal_case() {
     let owner_balance = erc20_token.balance_of(owner_address);
     assert(owner_balance > 0, 'Owner balance should be >0');
     erc20_token.approve(resale_address, token_amount);
-    let allowance = erc20_token.allowance(owner_address, resale_address);
     stop_cheat_caller_address(erc20_address);
 
     start_cheat_caller_address(resale_address, owner_address);
+    start_cheat_caller_address(project_address, resale_address);
+    let cc_balance = project.balance_of(resale_address, token_id);
+    let resale_balance = erc20_token.balance_of(resale_address);
     resale.sell_carbon_credits(token_id, amount_resell, unit_price, 0);
+    let owner_balance_after = erc20_token.balance_of(owner_address);
+    let cc_balance_after = project.balance_of(resale_address, token_id);
+    let resale_balance_after = erc20_token.balance_of(resale_address);
+    assert(owner_balance_after == owner_balance - token_amount, 'Owner balance is wrong');
+    assert(cc_balance_after == cc_balance - amount_resell, 'CC balance is wrong');
+    assert(resale_balance_after == resale_balance + token_amount, 'Resale balance is wrong');
 }
