@@ -180,6 +180,9 @@ mod MintComponent {
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
+            let is_canceled = self.Mint_cancel.read();
+            assert(!is_canceled, 'Mint is already canceled');
+
             self.Mint_public_sale_open.write(false);
             self.Mint_cancel.write(true);
 
