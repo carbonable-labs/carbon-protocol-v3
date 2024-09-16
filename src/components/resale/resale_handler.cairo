@@ -2,6 +2,7 @@
 mod ResaleComponent {
     // Core imports
 
+    use core::option::OptionTrait;
     use core::num::traits::zero::Zero;
     use core::hash::LegacyHash;
     use hash::HashStateTrait;
@@ -116,6 +117,7 @@ mod ResaleComponent {
         const ALREADY_CLAIMED: felt252 = 'Resale: Already claimed';
         const MISSING_ROLE: felt252 = 'Resale: Missing role';
         const ZERO_ADDRESS: felt252 = 'Resale: Address is invalid';
+        const INVALID_DEPOSIT: felt252 = 'Resale: Invalid deposit';
     }
 
     #[embeddable_as(ResaleHandlerImpl)]
@@ -143,26 +145,24 @@ mod ResaleComponent {
         }
 
         fn deposit_vintages(
-            ref self: ComponentState<TContractState>, token_ids: Span<u256>, cc_amounts: Span<u256>
+            ref self: ComponentState<TContractState>,
+            mut token_ids: Span<u256>,
+            mut cc_amounts: Span<u256>
         ) {
             // [Check] vintages and carbon values are defined
             assert(token_ids.len() > 0, Errors::EMPTY_INPUT);
             assert(token_ids.len() == cc_amounts.len(), Errors::ARRAY_MISMATCH);
 
-            let mut index: u32 = 0;
             loop {
-                // [Check] Vintage is defined
-                let token_id = *token_ids.at(index);
-                let carbon_amount = *cc_amounts.at(index);
-
-                if token_id != 0 && carbon_amount != 0 {
-                    self.deposit_vintage(token_id, carbon_amount);
-                }
-
-                index += 1;
-                if index == token_ids.len() {
-                    break;
-                }
+                match token_ids.pop_front() {
+                    Option::Some(token_id) => {
+                        let carbon_amount = cc_amounts.pop_front().unwrap();
+                        // [Check] token_id and carbon_amount are valid
+                        assert(*token_id != 0 && *carbon_amount != 0, Errors::INVALID_DEPOSIT);
+                        self.deposit_vintage(*token_id, *carbon_amount);
+                    },
+                    Option::None => { break; },
+                };
             };
         }
 
