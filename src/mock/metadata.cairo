@@ -31,7 +31,10 @@ mod TestMetadata {
     #[abi(embed_v0)]
     impl MetadataProviderImpl of IMetadataDescriptor<ContractState> {
         fn construct_uri(self: @ContractState, token_id: u256) -> Span<felt252> {
-            array!['http://imgur.com/', 'o7a3j', '.png'].span()
+            array![
+                'http://imgur.com/', '00' + token_id.try_into().expect('token_id not felt'), '.png'
+            ]
+                .span()
         }
     }
 }
