@@ -283,7 +283,7 @@ mod Project {
             /// Emit BatchMetadataUpdate event
             self
                 .erc4906
-                ._emit_batch_metadata_update(fromTokenId: 0, toTokenId: num_vintages.into());
+                ._emit_batch_metadata_update(fromTokenId: 1, toTokenId: num_vintages.into());
         }
 
         fn get_uri(self: @ContractState) -> ClassHash {
