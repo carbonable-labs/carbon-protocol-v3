@@ -26,7 +26,7 @@ use carbon_v3::components::vintage::interface::{
 };
 use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
 use carbon_v3::components::metadata::{IMetadataHandlerDispatcher, IMetadataHandlerDispatcherTrait};
-use erc4906::erc4906_component::ERC4906Component::{Event, MetadataUpdate, BatchMetadataUpdate};
+use erc4906::erc4906_component::ERC4906Component;
 
 // Contracts
 
@@ -678,4 +678,27 @@ fn test_set_approval_for_all() {
         }
     );
     spy.assert_emitted(@array![(project_address, expected_event)]);
+}
+
+#[test]
+fn test_project_metadata_update() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let metadata_class = snf::declare("TestMetadata").expect('Declaration failed');
+    let project = IProjectDispatcher { contract_address: project_address };
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let num_vintages = vintages.get_num_vintages();
+
+    let mut spy = spy_events();
+
+    start_cheat_caller_address(project_address, owner_address);
+    project.set_uri(metadata_class.class_hash);
+    let uri_result = project.uri(token_id: 1);
+    assert!(uri_result.at(0) == @'http://imgur.com/', "Cannot get the URI");
+    assert!(uri_result.at(1) == @'01', "Cannot get the URI");
+    assert!(uri_result.at(2) == @'.png', "Cannot get the URI");
+    let expected_batch_metadata_update = ERC4906Component::Event::BatchMetadataUpdate(
+        ERC4906Component::BatchMetadataUpdate { from_token_id: 1, to_token_id: num_vintages.into() }
+    );
+    spy.assert_emitted(@array![(project_address, expected_batch_metadata_update)]);
 }
