@@ -180,7 +180,7 @@ fn deploy_minter(
     let public_sale: bool = true;
     let low: felt252 = DEFAULT_REMAINING_MINTABLE_CC.low.into();
     let high: felt252 = DEFAULT_REMAINING_MINTABLE_CC.high.into();
-    let unit_price: felt252 = 11;
+    let unit_price: felt252 = 11000000; // $11, 6 decimals like USDC
     let mut calldata: Array<felt252> = array![
         project_address.into(),
         payment_address.into(),
@@ -205,7 +205,7 @@ fn deploy_minter_specific_max_mintable(
     let high: felt252 = max_mintable_cc.high.into();
     start_cheat_caller_address(project_address, owner);
     let public_sale: bool = true;
-    let unit_price: felt252 = 11;
+    let unit_price: felt252 = 11000000;
     let mut calldata: Array<felt252> = array![
         project_address.into(),
         payment_address.into(),

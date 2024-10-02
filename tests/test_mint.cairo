@@ -1,3 +1,4 @@
+use openzeppelin::token::erc20::interface::ERC20ABIDispatcherTrait;
 use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
 
 // Starknet deps
@@ -280,6 +281,92 @@ fn test_public_buy() {
 
     let balance_user_after = helper_sum_balance(project_address, user_address);
     assert(equals_with_error(balance_user_after, cc_to_buy, 100), 'balance should be the same');
+}
+
+
+#[test]
+fn test_minimal_buy() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    start_cheat_caller_address(project_address, owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(minter_address);
+
+    stop_cheat_caller_address(project_address);
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    let cc_to_buy: u256 = MULTIPLIER_TONS_TO_MGRAMS / minter.get_unit_price() + 1;
+    let money_amount = cc_to_buy * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
+
+    start_cheat_caller_address(erc20_address, owner_address);
+    let success = erc20.transfer(user_address, money_amount);
+    assert(success, 'Transfer failed');
+
+    start_cheat_caller_address(erc20_address, user_address);
+    erc20.approve(minter_address, money_amount);
+
+    start_cheat_caller_address(minter_address, user_address);
+    start_cheat_caller_address(erc20_address, minter_address);
+
+    let mut spy = spy_events();
+    minter.public_buy(cc_to_buy);
+
+    let balance = helper_sum_balance(project_address, user_address);
+    assert(equals_with_error(balance, cc_to_buy, 100), 'balance should be the same');
+
+    let token_ids = helper_get_token_ids(project_address);
+
+    let expected_events = helper_expected_transfer_single_events(
+        project_address, minter_address, Zeroable::zero(), user_address, token_ids, cc_to_buy
+    );
+    spy.assert_emitted(@expected_events);
+}
+
+#[test]
+#[should_panic(expected: 'Value too low')]
+fn test_minimal_buy_error() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    start_cheat_caller_address(project_address, owner_address);
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    project_contract.grant_minter_role(minter_address);
+
+    stop_cheat_caller_address(project_address);
+    let minter = IMintDispatcher { contract_address: minter_address };
+    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
+    let cc_to_buy: u256 = MULTIPLIER_TONS_TO_MGRAMS / minter.get_unit_price();
+    let money_amount = cc_to_buy * minter.get_unit_price() / MULTIPLIER_TONS_TO_MGRAMS;
+
+    start_cheat_caller_address(erc20_address, owner_address);
+    let success = erc20.transfer(user_address, money_amount);
+    assert(success, 'Transfer failed');
+
+    start_cheat_caller_address(erc20_address, user_address);
+    erc20.approve(minter_address, money_amount);
+
+    start_cheat_caller_address(minter_address, user_address);
+    start_cheat_caller_address(erc20_address, minter_address);
+
+    let mut spy = spy_events();
+    minter.public_buy(cc_to_buy);
+
+    let balance = helper_sum_balance(project_address, user_address);
+    assert(equals_with_error(balance, cc_to_buy, 100), 'balance should be the same');
+
+    let token_ids = helper_get_token_ids(project_address);
+
+    let expected_events = helper_expected_transfer_single_events(
+        project_address, minter_address, Zeroable::zero(), user_address, token_ids, cc_to_buy
+    );
+    spy.assert_emitted(@expected_events);
 }
 
 // set_max_mintable_cc
@@ -664,7 +751,7 @@ fn test_set_unit_price_without_owner_role() {
     let minter_address = deploy_minter(project_address, erc20_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
-    let price: u256 = 100;
+    let price: u256 = 100000000;
     minter.set_unit_price(price);
 }
 
@@ -679,11 +766,11 @@ fn test_set_unit_price_with_owner_role() {
     start_cheat_caller_address(minter_address, owner_address);
 
     let minter = IMintDispatcher { contract_address: minter_address };
-    let price: u256 = 100;
+    let price: u256 = 100000000; // $100
     minter.set_unit_price(price);
 
     let expected_event = MintComponent::Event::UnitPriceUpdated(
-        MintComponent::UnitPriceUpdated { old_price: 11, new_price: price }
+        MintComponent::UnitPriceUpdated { old_price: 11000000, new_price: price }
     );
     spy.assert_emitted(@array![(minter_address, expected_event)]);
 }
@@ -701,7 +788,7 @@ fn test_set_unit_price_to_zero_panic() {
 
     // Ensure the unit price is not set initially
     let unit_price = minter.get_unit_price();
-    assert(unit_price == 11, 'unit price should be 11');
+    assert(unit_price == 11000000, 'unit price should be 11000000');
 
     // Set the unit price to 0 and it should panic
     let new_unit_price: u256 = 0;
@@ -722,11 +809,11 @@ fn test_get_unit_price() {
     let minter = IMintDispatcher { contract_address: minter_address };
 
     let unit_price = minter.get_unit_price();
-    assert(unit_price == 11, 'unit price should be 11');
+    assert(unit_price == 11000000, 'unit price should be 11000000');
     stop_cheat_caller_address(minter_address);
 
     start_cheat_caller_address(minter_address, owner_address);
-    let new_unit_price: u256 = 1000;
+    let new_unit_price: u256 = 100000000;
     start_cheat_caller_address(minter_address, owner_address);
     minter.set_unit_price(new_unit_price);
     stop_cheat_caller_address(minter_address);

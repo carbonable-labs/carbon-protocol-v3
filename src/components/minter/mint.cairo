@@ -2,6 +2,7 @@
 mod MintComponent {
     // Starknet imports
 
+    use openzeppelin::token::erc20::interface::ERC20ABIDispatcherTrait;
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address, get_block_timestamp};
 
@@ -416,9 +417,8 @@ mod MintComponent {
             let unit_price = self.Mint_unit_price.read();
             // If user wants to buy 1 carbon credit, the input should be 1*MULTIPLIER_TONS_TO_MGRAMS
             let money_amount = cc_amount * unit_price / MULTIPLIER_TONS_TO_MGRAMS;
-
-            let min_money_amount_per_tx = self.Mint_min_money_amount_per_tx.read();
-            assert(money_amount >= min_money_amount_per_tx, 'Value too low');
+            // let min_money_amount_per_tx = 1;
+            assert(money_amount >= 1, 'Value too low');
 
             let remaining_mintable_cc = self.Mint_remaining_mintable_cc.read();
             assert(remaining_mintable_cc >= cc_amount, 'Minting limit reached');
