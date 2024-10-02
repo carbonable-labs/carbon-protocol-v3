@@ -536,7 +536,7 @@ fn test_public_buy_exceeds_mint_limit() {
     assert(remaining_cc_after_partial_buy == 1, 'remaining cc wrong value');
 
     start_cheat_caller_address(erc20_address, user_address);
-    buy_utils(owner_address, user_address, minter_address, 2); // This should cause a panic
+    buy_utils(owner_address, user_address, minter_address, 200); // This should cause a panic
 }
 
 #[test]
