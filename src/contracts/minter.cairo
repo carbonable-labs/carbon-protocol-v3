@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 #[starknet::contract]
 mod Minter {
-    use starknet::{get_caller_address, ContractAddress, ClassHash};
+    use starknet::ContractAddress;
 
     // Ownable
     use openzeppelin::access::ownable::OwnableComponent;

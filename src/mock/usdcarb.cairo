@@ -64,7 +64,6 @@ mod USDCarb {
 
     #[abi(embed_v0)]
     impl ERC20MetadataImpl of IERC20Metadata<ContractState> {
-        /// Returns the name of the token.
         fn name(self: @ContractState) -> ByteArray {
             self.erc20.ERC20_name.read()
         }

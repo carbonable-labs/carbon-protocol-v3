@@ -1,11 +1,7 @@
 #[starknet::component]
 mod ResaleComponent {
     // Core imports
-
-    use core::option::OptionTrait;
-    use core::num::traits::zero::Zero;
     use core::hash::LegacyHash;
-    use hash::HashStateTrait;
 
     // Starknet imports
 

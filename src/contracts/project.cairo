@@ -77,9 +77,8 @@ trait IExternal<TContractState> {
 
 #[starknet::contract]
 mod Project {
-    use core::starknet::event::EventEmitter;
     use carbon_v3::components::vintage::interface::IVintageDispatcher;
-    use starknet::{get_caller_address, get_contract_address, ContractAddress, ClassHash};
+    use starknet::{get_caller_address, ContractAddress, ClassHash};
 
     // Ownable
     use openzeppelin::access::ownable::OwnableComponent;
@@ -110,10 +109,6 @@ mod Project {
 
     // ERC1155
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
-    // #[abi(embed_v0)]
-    // impl ERC1155MetadataURIImpl =
-    //     ERC1155Component::ERC1155MetadataURIImpl<ContractState>;
-    impl ERC1155Camel = ERC1155Component::ERC1155CamelImpl<ContractState>;
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     #[abi(embed_v0)]
@@ -139,9 +134,10 @@ mod Project {
     impl ERC4906InternalImpl = ERC4906Component::ERC4906HelperInternal<ContractState>;
 
     // Constants
+    use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
+
     const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
     const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
-    use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
     const MINTER_ROLE: felt252 = selector!("Minter");
     const OFFSETTER_ROLE: felt252 = selector!("Offsetter");
     const OWNER_ROLE: felt252 = selector!("Owner");

@@ -1,10 +1,8 @@
 #[starknet::component]
 mod OffsetComponent {
     // Core imports
-
     use core::hash::LegacyHash;
-    use hash::HashStateTrait;
-    use poseidon::PoseidonTrait;
+
 
     // Starknet imports
 

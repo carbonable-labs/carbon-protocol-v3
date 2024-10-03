@@ -1,17 +1,14 @@
-use snforge_std::cheatcodes::events::EventsFilterTrait;
-use snforge_std::cheatcodes::events::EventSpyTrait;
-use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
 // Starknet deps
 
-use starknet::{ContractAddress, contract_address_const, get_caller_address, ClassHash};
+use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
 // External deps
 
-use openzeppelin::utils::serde::SerializedAppend;
 use openzeppelin::token::erc1155::ERC1155Component;
 use snforge_std as snf;
 use snforge_std::{
-    ContractClassTrait, EventSpy, start_cheat_caller_address, stop_cheat_caller_address, spy_events
+    ContractClassTrait, EventSpy, start_cheat_caller_address, stop_cheat_caller_address, spy_events,
+    cheatcodes::events::{EventSpyAssertionsTrait, EventSpyTrait, EventsFilterTrait}
 };
 
 // Models 

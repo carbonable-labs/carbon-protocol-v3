@@ -1,14 +1,14 @@
 #[starknet::component]
 mod VintageComponent {
     // Starknet imports
-    use starknet::{get_block_timestamp, get_caller_address};
+    use starknet::get_caller_address;
 
     // Internal imports
     use carbon_v3::components::vintage::interface::IVintage;
     use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 
     // Constants
-    use carbon_v3::models::constants::{CC_DECIMALS};
+    use carbon_v3::models::constants::CC_DECIMALS;
     use carbon_v3::contracts::project::Project::OWNER_ROLE;
 
     // Roles
@@ -71,8 +71,8 @@ mod VintageComponent {
     }
 
     mod Errors {
-        const INVALID_ARRAY_LENGTH: felt252 = 'Absorber: invalid array length';
-        const INVALID_STARTING_YEAR: felt252 = 'Absorber: invalid starting year';
+        const INVALID_ARRAY_LENGTH: felt252 = 'Vintage: invalid array length';
+        const INVALID_STARTING_YEAR: felt252 = 'Vintage: invalid starting year';
     }
 
     #[embeddable_as(VintageImpl)]
@@ -200,7 +200,7 @@ mod VintageComponent {
         ) {
             self.assert_only_role(OWNER_ROLE);
 
-            assert(yearly_absorptions.len() > 0, 'Vintages length is 0');
+            assert(yearly_absorptions.len() > 0, Errors::INVALID_ARRAY_LENGTH);
             let vintages_num = yearly_absorptions.len();
 
             // [Effect] Update storage

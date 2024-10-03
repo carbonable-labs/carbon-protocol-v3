@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 #[starknet::contract]
 mod Offsetter {
-    use starknet::{ContractAddress, ClassHash};
+    use starknet::ContractAddress;
 
     // Constants
     const OWNER_ROLE: felt252 = selector!("Owner");

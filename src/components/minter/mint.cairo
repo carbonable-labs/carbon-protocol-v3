@@ -4,7 +4,7 @@ mod MintComponent {
 
     use openzeppelin::token::erc20::interface::ERC20ABIDispatcherTrait;
     use starknet::ContractAddress;
-    use starknet::{get_caller_address, get_contract_address, get_block_timestamp};
+    use starknet::{get_caller_address, get_contract_address};
 
     // External imports
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};

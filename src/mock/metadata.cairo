@@ -1,6 +1,5 @@
 #[starknet::contract]
 mod TestContract {
-    use starknet::ContractAddress;
     use carbon_v3::components::metadata::{MetadataComponent, IMetadataHandler};
 
     component!(path: MetadataComponent, storage: metadata_uri, event: MetadataEvent);
