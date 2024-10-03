@@ -1,30 +1,23 @@
-use openzeppelin::token::erc20::interface::ERC20ABIDispatcherTrait;
-use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
-
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
 
 // External deps
 
-use openzeppelin::utils::serde::SerializedAppend;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+use openzeppelin::token::erc20::interface::ERC20ABIDispatcherTrait;
 use openzeppelin::token::erc1155::ERC1155Component;
 
 use snforge_std as snf;
 use snforge_std::{
     ContractClassTrait, test_address, spy_events, EventSpy, CheatSpan, start_cheat_caller_address,
-    stop_cheat_caller_address
+    stop_cheat_caller_address, EventSpyAssertionsTrait
 };
 
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
 use carbon_v3::components::vintage::VintageComponent;
-use carbon_v3::components::vintage::VintageComponent::{Event};
-use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-
-
 use carbon_v3::components::minter::interface::{IMintDispatcher, IMintDispatcherTrait};
 use carbon_v3::components::minter::MintComponent;
 
@@ -182,7 +175,6 @@ fn test_redeem_without_cancel() {
     let project = IProjectDispatcher { contract_address: project_address };
     let vintage = IVintageDispatcher { contract_address: project_address };
     let minter = IMintDispatcher { contract_address: minter_address };
-    let erc20 = IERC20Dispatcher { contract_address: erc20_address };
     start_cheat_caller_address(project_address, owner_address);
     project.grant_minter_role(minter_address);
 

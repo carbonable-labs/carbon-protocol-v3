@@ -4,7 +4,6 @@ use starknet::{ContractAddress, contract_address_const};
 
 // External deps
 
-use openzeppelin::utils::serde::SerializedAppend;
 use snforge_std as snf;
 use snforge_std::{
     ContractClassTrait, EventSpy, spy_events, EventSpyTrait, EventSpyAssertionsTrait,

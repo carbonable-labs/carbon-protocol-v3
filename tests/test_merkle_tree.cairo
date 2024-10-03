@@ -1,12 +1,11 @@
 use starknet::{ContractAddress, contract_address_const};
 use snforge_std as snf;
 use snforge_std::{
-    ContractClassTrait, test_address, spy_events, EventSpy, start_cheat_caller_address,
-    stop_cheat_caller_address, EventSpyAssertionsTrait
+    ContractClassTrait, spy_events, EventSpy, start_cheat_caller_address, stop_cheat_caller_address,
+    EventSpyAssertionsTrait
 };
 
 // Contracts
-use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::components::offsetter::interface::{
     IOffsetHandlerDispatcher, IOffsetHandlerDispatcherTrait
 };

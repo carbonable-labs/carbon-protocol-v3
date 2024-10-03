@@ -1,13 +1,6 @@
-// Core deps
-
-use hash::HashStateTrait;
-use pedersen::PedersenTrait;
-
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
-use starknet::{deploy_syscall, get_block_timestamp};
-use starknet::testing::{set_caller_address, set_contract_address};
 
 // External deps
 
@@ -23,8 +16,7 @@ use snforge_std::cheatcodes::events::{EventsFilterTrait, EventSpyTrait, EventSpy
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-use carbon_v3::components::vintage::vintage::VintageComponent::Event;
-use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
+use carbon_v3::models::carbon_vintage::CarbonVintageType;
 use carbon_v3::components::vintage::VintageComponent;
 use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
 use carbon_v3::components::offsetter::interface::{

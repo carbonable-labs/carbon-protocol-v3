@@ -1,11 +1,9 @@
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
-use starknet::get_block_timestamp;
 
 // External deps
 
-use openzeppelin::utils::serde::SerializedAppend;
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use snforge_std as snf;
 use snforge_std::{
@@ -16,7 +14,6 @@ use snforge_std::{
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-use carbon_v3::components::vintage::VintageComponent::{Event};
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::components::vintage::VintageComponent;
 
