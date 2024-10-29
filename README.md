@@ -33,6 +33,29 @@ To learn more about key topics:
 - [EIP-1155](https://eips.ethereum.org/EIPS/eip-1155)
 - [EIP-6551](https://eips.ethereum.org/EIPS/eip-6551)
 
+## Project setup
+
+#### 📦 Requirements
+
+- [scarb](https://docs.swmansion.com/scarb/)
+
+### ⛏️ Compile
+
+```bash
+scarb build
+```
+
+### 💄 Code style
+
+```bash
+scarb fmt
+```
+
+### 🌡️ Test
+
+```bash
+scarb test
+```
 
 ## Roadmap
 
