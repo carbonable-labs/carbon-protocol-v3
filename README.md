@@ -65,7 +65,7 @@ See the [open issues](https://github.com/carbonable-labs/carbon-protocol-v3/issu
 
 Reach out to the maintainer at one of the following places:
 - [GitHub Discussions](https://github.com/carbonable-labs/carbon-protocol-v3/discussions)
-- [Discord](https://discord.gg/twyWfTGd6m")
+- [Discord](https://discord.gg/twyWfTGd6m)
 - [Telegram](https://t.me/carbonableOD)
 
 ## Project Assistance
@@ -80,7 +80,7 @@ Together, we can make Carbon Protocol V3 **better**!
 
 First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
 
-Please read [our contribution guidelines](CONTRIBUTING.md), and thank you for being involved!
+Please read [our contribution guidelines](Contributing.md), and thank you for being involved!
 
 ## Authors & Contributors
 
