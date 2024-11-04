@@ -105,6 +105,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Klei0",
+      "name": "Kléio",
+      "avatar_url": "https://avatars.githubusercontent.com/u/125285003?v=4",
+      "profile": "https://github.com/Klei0",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
