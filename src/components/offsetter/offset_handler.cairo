@@ -154,34 +154,55 @@ mod OffsetComponent {
             };
         }
 
-        fn claim(
+        fn confirm_for_merkle_tree(
             ref self: ComponentState<TContractState>,
+            from: ContractAddress,
             amount: u128,
             timestamp: u128,
             id: u128,
             proof: Array::<felt252>
-        ) {
+        ) -> bool {
             let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeImpl::new();
-            let claimee = get_caller_address();
-
-            // [Verify not already claimed]
-            let claimed = self.check_claimed(claimee, timestamp, amount, id);
-            assert(!claimed, 'Already claimed');
 
             // [Verify the proof]
             let amount_felt: felt252 = amount.into();
-            let claimee_felt: felt252 = claimee.into();
+            let from_felt: felt252 = from.into();
             let timestamp_felt: felt252 = timestamp.into();
             let id_felt: felt252 = id.into();
 
-            let intermediate_hash = LegacyHash::hash(claimee_felt, amount_felt);
+            let intermediate_hash = LegacyHash::hash(from_felt, amount_felt);
             let intermediate_hash = LegacyHash::hash(intermediate_hash, timestamp_felt);
             let leaf = LegacyHash::hash(intermediate_hash, id_felt);
 
             let root_computed = merkle_tree.compute_root(leaf, proof.span());
 
             let stored_root = self.Offsetter_merkle_root.read();
-            assert(root_computed == stored_root, 'Invalid proof');
+            if root_computed != stored_root{
+                assert(root_computed == stored_root, 'Invalid proof');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        fn confirm_offset(
+            ref self: ComponentState<TContractState>,
+            amount: u128,
+            timestamp: u128,
+            id: u128,
+            proof: Array::<felt252>
+        ) {
+            let claimee = get_caller_address();
+
+            // [Verify not already claimed]
+            let claimed = self.check_claimed(claimee, timestamp, amount, id);
+            assert(!claimed, 'Already claimed');
+
+            // [Verify if the merkle tree claim is possible]
+            assert!(self.confirm_for_merkle_tree(claimee, amount, timestamp, id, proof));
+
+            //If everything is correct, we offset the carbon credits
+            self._offset_carbon_credit(claimee, 1, amount.into());
 
             // [Mark as claimed]
             let allocation = Allocation {
@@ -196,7 +217,21 @@ mod OffsetComponent {
                         claimee: claimee, amount: amount, timestamp: timestamp, id: id
                     }
                 );
+
         }
+
+        fn get_allocation_id(
+            self: @ComponentState<TContractState>, from: ContractAddress
+        ) -> u256 {
+            self.Offsetter_allocation_id.read(from)
+        }
+
+        fn get_retirement(
+            self: @ComponentState<TContractState>, token_id: u256, from: ContractAddress
+        ) -> u256 {
+            self.Offsetter_carbon_retired.read((token_id, from))
+        }
+
 
         fn get_pending_retirement(
             self: @ComponentState<TContractState>, address: ContractAddress, token_id: u256
