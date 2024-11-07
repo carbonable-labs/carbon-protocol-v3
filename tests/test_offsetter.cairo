@@ -22,7 +22,7 @@ use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155Disp
 use carbon_v3::components::offsetter::interface::{
     IOffsetHandlerDispatcher, IOffsetHandlerDispatcherTrait
 };
-
+use carbon_v3::components::offsetter::OffsetComponent;
 // Contracts
 
 use carbon_v3::contracts::project::{
@@ -56,6 +56,12 @@ struct Contracts {
     offsetter: ContractAddress,
 }
 
+
+/// Utils to import mock data
+use super::tests_lib::{
+    MERKLE_ROOT_FIRST_WAVE, MERKLE_ROOT_SECOND_WAVE, get_bob_first_wave_allocation,
+    get_bob_second_wave_allocation, get_alice_second_wave_allocation, get_john_multiple_allocations
+};
 
 //
 // Tests
@@ -506,3 +512,553 @@ fn test_get_carbon_retired_no_retired() {
     assert(carbon_retired == 0.into(), 'Error about carbon retired');
 }
 
+
+/// confirm_offset
+
+#[test]
+fn test_confirm_offset() {
+    /// Test a simple confirm offset scenario where Bob claims his retirement from the first wave.
+    let owner_address = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+
+    let (root, bob_address, amount, timestamp, id, proof) = get_bob_first_wave_allocation();
+
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let token_id: u256 = 1;
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
+    stop_cheat_caller_address(project_address);
+
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, bob_address, minter_address, cc_to_mint);
+    let initial_balance = project.balance_of(bob_address, token_id);
+
+    let amount_to_offset: u256 = amount.into();
+
+    start_cheat_caller_address(project_address, owner_address);
+    vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+
+    let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+
+    start_cheat_caller_address(offsetter_address, owner_address);
+    offsetter.set_merkle_root(root);
+
+    start_cheat_caller_address(project_address, bob_address);
+    project.set_approval_for_all(offsetter_address, true);
+    stop_cheat_caller_address(erc20_address);
+
+    let mut spy = spy_events();
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+
+    let expected_event = helper_expected_transfer_event(
+        project_address,
+        offsetter_address,
+        bob_address,
+        offsetter_address,
+        array![token_id].span(),
+        amount_to_offset
+    );
+
+    spy.assert_emitted(@array![(project_address, expected_event)]);
+
+    let carbon_pending = offsetter.get_pending_retirement(bob_address, token_id);
+    assert(carbon_pending == amount_to_offset, 'Carbon pending is wrong');
+    let final_balance = project.balance_of(bob_address, token_id);
+    assert(final_balance == initial_balance - amount_to_offset, 'Balance is wrong');
+
+    let current_retirement = offsetter.get_retirement(token_id, bob_address);
+    let new_retirement = current_retirement + amount.clone().into();
+
+    assert!(!offsetter.check_claimed(bob_address, timestamp, amount, id));
+    offsetter.confirm_offset(amount, timestamp, id, proof);
+    assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
+
+    assert!(offsetter.get_retirement(token_id, bob_address) == new_retirement)
+
+}
+
+#[test]
+#[should_panic(expected: 'Already claimed')]
+fn test_bob_confirms_twice() {
+    /// Test that Bob trying to confirm the same offset twice, results in a panic.
+    let owner_address = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+
+    let (root, bob_address, amount, timestamp, id, proof) = get_bob_first_wave_allocation();
+
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let token_id: u256 = 1;
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
+    stop_cheat_caller_address(project_address);
+
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, bob_address, minter_address, cc_to_mint);
+    let initial_balance = project.balance_of(bob_address, token_id);
+
+    let amount_to_offset: u256 = amount.into();
+
+    start_cheat_caller_address(project_address, owner_address);
+    vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+
+    let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+
+    start_cheat_caller_address(offsetter_address, owner_address);
+    offsetter.set_merkle_root(root);
+
+    start_cheat_caller_address(project_address, bob_address);
+    project.set_approval_for_all(offsetter_address, true);
+    stop_cheat_caller_address(erc20_address);
+
+    let mut spy = spy_events();
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+
+    let expected_event = helper_expected_transfer_event(
+        project_address,
+        offsetter_address,
+        bob_address,
+        offsetter_address,
+        array![token_id].span(),
+        amount_to_offset
+    );
+
+    spy.assert_emitted(@array![(project_address, expected_event)]);
+
+    let carbon_pending = offsetter.get_pending_retirement(bob_address, token_id);
+    assert(carbon_pending == amount_to_offset, 'Carbon pending is wrong');
+    let final_balance = project.balance_of(bob_address, token_id);
+    assert(final_balance == initial_balance - amount_to_offset, 'Balance is wrong');
+
+    offsetter.confirm_offset(amount, timestamp, id, proof.clone());
+    assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
+
+    offsetter.confirm_offset(amount, timestamp, id, proof);
+}
+
+
+#[test]
+fn test_events_emission_on_claim_confirmation() {
+    let owner_address = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+
+    let (root, bob_address, amount, timestamp, id, proof) = get_bob_first_wave_allocation();
+
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let token_id: u256 = 1;
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
+    stop_cheat_caller_address(project_address);
+
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, bob_address, minter_address, cc_to_mint);
+    let initial_balance = project.balance_of(bob_address, token_id);
+
+    let amount_to_offset: u256 = amount.into();
+
+    start_cheat_caller_address(project_address, owner_address);
+    vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+
+    let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+
+    start_cheat_caller_address(offsetter_address, owner_address);
+    offsetter.set_merkle_root(root);
+
+    start_cheat_caller_address(project_address, bob_address);
+    project.set_approval_for_all(offsetter_address, true);
+    stop_cheat_caller_address(erc20_address);
+
+    let mut spy = spy_events();
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+
+    let expected_event = helper_expected_transfer_event(
+        project_address,
+        offsetter_address,
+        bob_address,
+        offsetter_address,
+        array![token_id].span(),
+        amount_to_offset
+    );
+
+    spy.assert_emitted(@array![(project_address, expected_event)]);
+
+    let carbon_pending = offsetter.get_pending_retirement(bob_address, token_id);
+    assert(carbon_pending == amount_to_offset, 'Carbon pending is wrong');
+    let final_balance = project.balance_of(bob_address, token_id);
+    assert(final_balance == initial_balance - amount_to_offset, 'Balance is wrong');
+
+    let current_retirement = offsetter.get_retirement(token_id, bob_address);
+    let new_retirement = current_retirement + amount.clone().into();
+
+    let mut spy = spy_events();
+    offsetter.confirm_offset(amount, timestamp, id, proof);
+
+
+    let first_expected_event = OffsetComponent::Event::Retired(
+        OffsetComponent::Retired { from: bob_address, project : project_address,
+             token_id : token_id, old_amount : current_retirement, new_amount : new_retirement }
+    );
+
+    let second_expected_event = OffsetComponent::Event::AllocationClaimed(
+        OffsetComponent::AllocationClaimed { claimee: bob_address, amount, timestamp, id }
+    );
+    
+    spy.assert_emitted(@array![(offsetter_address, first_expected_event), (offsetter_address, second_expected_event)]);
+
+    assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
+
+}
+
+
+#[test]
+#[should_panic(expected: 'Invalid proof')]
+fn test_claim_confirmation_with_invalid_amount() {
+    let owner_address = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+
+    let (root, bob_address, amount, timestamp, id, proof) = get_bob_first_wave_allocation();
+
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let token_id: u256 = 1;
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
+    stop_cheat_caller_address(project_address);
+
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, bob_address, minter_address, cc_to_mint);
+    let initial_balance = project.balance_of(bob_address, token_id);
+
+    let amount_to_offset: u256 = amount.into();
+
+    start_cheat_caller_address(project_address, owner_address);
+    vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+
+    let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+
+    start_cheat_caller_address(offsetter_address, owner_address);
+    offsetter.set_merkle_root(root);
+
+    start_cheat_caller_address(project_address, bob_address);
+    project.set_approval_for_all(offsetter_address, true);
+    stop_cheat_caller_address(erc20_address);
+
+    let mut spy = spy_events();
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+
+    let expected_event = helper_expected_transfer_event(
+        project_address,
+        offsetter_address,
+        bob_address,
+        offsetter_address,
+        array![token_id].span(),
+        amount_to_offset
+    );
+
+    spy.assert_emitted(@array![(project_address, expected_event)]);
+
+    let carbon_pending = offsetter.get_pending_retirement(bob_address, token_id);
+    assert(carbon_pending == amount_to_offset, 'Carbon pending is wrong');
+    let final_balance = project.balance_of(bob_address, token_id);
+    assert(final_balance == initial_balance - amount_to_offset, 'Balance is wrong');
+
+    let invalid_amount = 0;
+
+    offsetter.confirm_offset(invalid_amount, timestamp, id, proof);
+
+}
+
+#[test]
+fn test_alice_confirms_in_second_wawe() {
+    /// Test that Bob can confirm his offset from the first wave and Alice can confirm her offset from the second wave.
+    let owner_address = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+
+    let (root, bob_address, amount, timestamp, id, proof) = get_bob_first_wave_allocation();
+
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let token_id: u256 = 1;
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
+    stop_cheat_caller_address(project_address);
+
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, bob_address, minter_address, cc_to_mint);
+    let initial_balance = project.balance_of(bob_address, token_id);
+
+    let amount_to_offset: u256 = amount.into();
+
+    start_cheat_caller_address(project_address, owner_address);
+    vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
+
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+
+    let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+
+    start_cheat_caller_address(offsetter_address, owner_address);
+    offsetter.set_merkle_root(root);
+
+    start_cheat_caller_address(project_address, bob_address);
+    project.set_approval_for_all(offsetter_address, true);
+    stop_cheat_caller_address(erc20_address);
+
+    let mut spy = spy_events();
+    start_cheat_caller_address(offsetter_address, bob_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+
+    let expected_event = helper_expected_transfer_event(
+        project_address,
+        offsetter_address,
+        bob_address,
+        offsetter_address,
+        array![token_id].span(),
+        amount_to_offset
+    );
+
+    spy.assert_emitted(@array![(project_address, expected_event)]);
+
+    let carbon_pending = offsetter.get_pending_retirement(bob_address, token_id);
+    assert(carbon_pending == amount_to_offset, 'Carbon pending is wrong');
+    let final_balance = project.balance_of(bob_address, token_id);
+    assert(final_balance == initial_balance - amount_to_offset, 'Balance is wrong');
+
+    let current_retirement = offsetter.get_retirement(token_id, bob_address);
+    let new_retirement = current_retirement + amount.clone().into();
+
+    assert!(!offsetter.check_claimed(bob_address, timestamp, amount, id));
+    offsetter.confirm_offset(amount, timestamp, id, proof);
+    assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
+
+    assert!(offsetter.get_retirement(token_id, bob_address) == new_retirement);
+    
+    stop_cheat_caller_address(erc20_address);
+    stop_cheat_caller_address(project_address);
+
+    let (new_root, alice_address, amount, timestamp, id, proof) = get_alice_second_wave_allocation();
+
+    start_cheat_caller_address(offsetter_address, alice_address);
+    start_cheat_caller_address(project_address, owner_address);
+
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
+    stop_cheat_caller_address(project_address);
+
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, alice_address, minter_address, cc_to_mint);
+    let initial_balance = project.balance_of(alice_address, token_id);
+
+    let amount_to_offset: u256 = amount.into();
+
+
+    start_cheat_caller_address(offsetter_address, alice_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+
+    let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+
+    start_cheat_caller_address(offsetter_address, owner_address);
+    offsetter.set_merkle_root(new_root);
+
+    start_cheat_caller_address(project_address, alice_address);
+    project.set_approval_for_all(offsetter_address, true);
+    stop_cheat_caller_address(erc20_address);
+
+    let mut spy = spy_events();
+    start_cheat_caller_address(offsetter_address, alice_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+
+    let expected_event = helper_expected_transfer_event(
+        project_address,
+        offsetter_address,
+        alice_address,
+        offsetter_address,
+        array![token_id].span(),
+        amount_to_offset
+    );
+
+    spy.assert_emitted(@array![(project_address, expected_event)]);
+
+    let carbon_pending = offsetter.get_pending_retirement(alice_address, token_id);
+    assert(carbon_pending == amount_to_offset, 'Carbon pending is wrong');
+    let final_balance = project.balance_of(alice_address, token_id);
+    assert(final_balance == initial_balance - amount_to_offset, 'Balance is wrong');
+
+    let current_retirement = offsetter.get_retirement(token_id, alice_address);
+    let new_retirement = current_retirement + amount.clone().into();
+
+    assert!(!offsetter.check_claimed(alice_address, timestamp, amount, id));
+    offsetter.confirm_offset(amount, timestamp, id, proof);
+    assert!(offsetter.check_claimed(alice_address, timestamp, amount, id));
+
+    assert!(offsetter.get_retirement(token_id, alice_address) == new_retirement);
+}
+
+#[test]
+fn test_john_confirms_multiple_allocations() {
+    /// Test that John can two of his three offset from the first allocations wave, and the remaining one from the second wave.
+    let owner_address = contract_address_const::<'OWNER'>();
+    let project_address = default_setup_and_deploy();
+    let offsetter_address = deploy_offsetter(project_address);
+
+    let (
+        root,
+        new_root,
+        john_address,
+        amount1,
+        timestamp1,
+        id_1,
+        amount2,
+        timestamp2,
+        id_2,
+        _,
+        _,
+        _,
+        amount4,
+        timestamp4,
+        id_4,
+        proof1,
+        proof2,
+        _,
+        proof4
+    ) =
+        get_john_multiple_allocations();
+
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+    let token_id: u256 = 1;
+
+    start_cheat_caller_address(offsetter_address, john_address);
+    start_cheat_caller_address(project_address, owner_address);
+
+    let project = IProjectDispatcher { contract_address: project_address };
+    project.grant_minter_role(minter_address);
+    project.grant_offsetter_role(offsetter_address);
+    stop_cheat_caller_address(project_address);
+
+    let vintages = IVintageDispatcher { contract_address: project_address };
+    let initial_total_supply = vintages.get_initial_project_cc_supply();
+    let cc_to_mint = initial_total_supply / 10; // 10% of the total supply
+
+    buy_utils(owner_address, john_address, minter_address, cc_to_mint);
+
+    let amount1_to_offset: u256 = amount1.into();
+    let amount2_to_offset: u256 = amount2.into();
+    let amount4_to_offset: u256 = amount4.into();
+
+    start_cheat_caller_address(project_address, owner_address);
+    vintages.update_vintage_status(token_id, CarbonVintageType::Audited.into());
+
+    start_cheat_caller_address(offsetter_address, john_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+
+    let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
+
+    start_cheat_caller_address(offsetter_address, owner_address);
+    offsetter.set_merkle_root(root);
+
+    start_cheat_caller_address(project_address, john_address);
+    project.set_approval_for_all(offsetter_address, true);
+    stop_cheat_caller_address(erc20_address);
+
+
+    start_cheat_caller_address(offsetter_address, john_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+    
+    offsetter.retire_carbon_credits(token_id, amount1_to_offset);
+    assert!(!offsetter.check_claimed(john_address, timestamp1, amount1, id_1));
+    offsetter.confirm_offset(amount1, timestamp1, id_1, proof1);
+
+    offsetter.retire_carbon_credits(token_id, amount2_to_offset);
+    assert!(!offsetter.check_claimed(john_address, timestamp2, amount2, id_2));
+    offsetter.confirm_offset(amount2, timestamp2, id_2, proof2);
+
+    assert!(offsetter.check_claimed(john_address, timestamp1, amount1, id_1));
+    assert!(offsetter.check_claimed(john_address, timestamp2, amount2, id_2));
+
+
+    start_cheat_caller_address(offsetter_address, owner_address);
+    offsetter.set_merkle_root(new_root);
+
+    start_cheat_caller_address(offsetter_address, john_address);
+    start_cheat_caller_address(project_address, offsetter_address);
+
+    offsetter.retire_carbon_credits(token_id, amount4_to_offset);
+    assert!(!offsetter.check_claimed(john_address, timestamp4, amount4, id_4));
+    offsetter.confirm_offset(amount4, timestamp4, id_4, proof4);
+
+    assert!(offsetter.check_claimed(john_address, timestamp4, amount4, id_4));
+
+}

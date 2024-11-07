@@ -3,6 +3,7 @@ use carbon_v3::models::carbon_vintage::CarbonVintage;
 
 #[starknet::interface]
 trait IOffsetHandler<TContractState> {
+
     /// Retire carbon credits from one vintage of carbon credits.
     fn retire_carbon_credits(ref self: TContractState, token_id: u256, cc_amount: u256);
 
@@ -14,9 +15,22 @@ trait IOffsetHandler<TContractState> {
         ref self: TContractState, token_ids: Span<u256>, cc_amounts: Span<u256>
     );
 
-    fn claim(
+    fn confirm_for_merkle_tree(
+        ref self: TContractState, from: ContractAddress, amount: u128, timestamp: u128, id: u128, proof: Array::<felt252>
+    ) -> bool;
+
+    fn confirm_offset(
         ref self: TContractState, amount: u128, timestamp: u128, id: u128, proof: Array::<felt252>
     );
+
+    fn get_allocation_id(
+        self: @TContractState, from: ContractAddress
+    ) -> u256;
+
+
+    fn get_retirement(
+        self: @TContractState, token_id: u256, from: ContractAddress
+    ) -> u256;
 
     /// Get the pending retirement of a vintage for the caller address.
     fn get_pending_retirement(
