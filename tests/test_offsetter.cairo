@@ -589,7 +589,6 @@ fn test_confirm_offset() {
     assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
 
     assert!(offsetter.get_retirement(token_id, bob_address) == new_retirement)
-
 }
 
 #[test]
@@ -737,20 +736,29 @@ fn test_events_emission_on_claim_confirmation() {
     let mut spy = spy_events();
     offsetter.confirm_offset(amount, timestamp, id, proof);
 
-
     let first_expected_event = OffsetComponent::Event::Retired(
-        OffsetComponent::Retired { from: bob_address, project : project_address,
-             token_id : token_id, old_amount : current_retirement, new_amount : new_retirement }
+        OffsetComponent::Retired {
+            from: bob_address,
+            project: project_address,
+            token_id: token_id,
+            old_amount: current_retirement,
+            new_amount: new_retirement
+        }
     );
 
     let second_expected_event = OffsetComponent::Event::AllocationClaimed(
         OffsetComponent::AllocationClaimed { claimee: bob_address, amount, timestamp, id }
     );
-    
-    spy.assert_emitted(@array![(offsetter_address, first_expected_event), (offsetter_address, second_expected_event)]);
+
+    spy
+        .assert_emitted(
+            @array![
+                (offsetter_address, first_expected_event),
+                (offsetter_address, second_expected_event)
+            ]
+        );
 
     assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
-
 }
 
 
@@ -823,7 +831,6 @@ fn test_claim_confirmation_with_invalid_amount() {
     let invalid_amount = 0;
 
     offsetter.confirm_offset(invalid_amount, timestamp, id, proof);
-
 }
 
 #[test]
@@ -900,11 +907,12 @@ fn test_alice_confirms_in_second_wawe() {
     assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
 
     assert!(offsetter.get_retirement(token_id, bob_address) == new_retirement);
-    
+
     stop_cheat_caller_address(erc20_address);
     stop_cheat_caller_address(project_address);
 
-    let (new_root, alice_address, amount, timestamp, id, proof) = get_alice_second_wave_allocation();
+    let (new_root, alice_address, amount, timestamp, id, proof) =
+        get_alice_second_wave_allocation();
 
     start_cheat_caller_address(offsetter_address, alice_address);
     start_cheat_caller_address(project_address, owner_address);
@@ -921,7 +929,6 @@ fn test_alice_confirms_in_second_wawe() {
     let initial_balance = project.balance_of(alice_address, token_id);
 
     let amount_to_offset: u256 = amount.into();
-
 
     start_cheat_caller_address(offsetter_address, alice_address);
     start_cheat_caller_address(project_address, offsetter_address);
@@ -1033,10 +1040,9 @@ fn test_john_confirms_multiple_allocations() {
     project.set_approval_for_all(offsetter_address, true);
     stop_cheat_caller_address(erc20_address);
 
-
     start_cheat_caller_address(offsetter_address, john_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    
+
     offsetter.retire_carbon_credits(token_id, amount1_to_offset);
     assert!(!offsetter.check_claimed(john_address, timestamp1, amount1, id_1));
     offsetter.confirm_offset(amount1, timestamp1, id_1, proof1);
@@ -1047,7 +1053,6 @@ fn test_john_confirms_multiple_allocations() {
 
     assert!(offsetter.check_claimed(john_address, timestamp1, amount1, id_1));
     assert!(offsetter.check_claimed(john_address, timestamp2, amount2, id_2));
-
 
     start_cheat_caller_address(offsetter_address, owner_address);
     offsetter.set_merkle_root(new_root);
@@ -1060,5 +1065,4 @@ fn test_john_confirms_multiple_allocations() {
     offsetter.confirm_offset(amount4, timestamp4, id_4, proof4);
 
     assert!(offsetter.check_claimed(john_address, timestamp4, amount4, id_4));
-
 }

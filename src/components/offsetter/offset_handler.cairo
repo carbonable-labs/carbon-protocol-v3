@@ -177,14 +177,14 @@ mod OffsetComponent {
             let root_computed = merkle_tree.compute_root(leaf, proof.span());
 
             let stored_root = self.Offsetter_merkle_root.read();
-            if root_computed != stored_root{
+            if root_computed != stored_root {
                 assert(root_computed == stored_root, 'Invalid proof');
                 return false;
             }
-            
+
             return true;
         }
-        
+
         fn confirm_offset(
             ref self: ComponentState<TContractState>,
             amount: u128,
@@ -217,12 +217,9 @@ mod OffsetComponent {
                         claimee: claimee, amount: amount, timestamp: timestamp, id: id
                     }
                 );
-
         }
 
-        fn get_allocation_id(
-            self: @ComponentState<TContractState>, from: ContractAddress
-        ) -> u256 {
+        fn get_allocation_id(self: @ComponentState<TContractState>, from: ContractAddress) -> u256 {
             self.Offsetter_allocation_id.read(from)
         }
 
