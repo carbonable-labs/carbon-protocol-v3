@@ -199,7 +199,7 @@ mod OffsetComponent {
             assert(!claimed, 'Already claimed');
 
             // [Verify if the merkle tree claim is possible]
-            assert!(self.confirm_for_merkle_tree(claimee, amount, timestamp, id, proof));
+            assert(self.confirm_for_merkle_tree(claimee, amount, timestamp, id, proof), 'Invalid proof');
 
             //If everything is correct, we offset the carbon credits
             self._offset_carbon_credit(claimee, 1, amount.into());

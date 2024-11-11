@@ -13,7 +13,8 @@ trait IOffsetHandler<TContractState> {
     fn retire_list_carbon_credits(
         ref self: TContractState, token_ids: Span<u256>, cc_amounts: Span<u256>
     );
-
+    
+    ///Verify and validate the proof on the Merkle tree side to confirm the offset.
     fn confirm_for_merkle_tree(
         ref self: TContractState,
         from: ContractAddress,
@@ -23,6 +24,7 @@ trait IOffsetHandler<TContractState> {
         proof: Array::<felt252>
     ) -> bool;
 
+    ///Verify on the business logic side, confirm on the Merkle tree side, and perform the offset action.
     fn confirm_offset(
         ref self: TContractState, amount: u128, timestamp: u128, id: u128, proof: Array::<felt252>
     );
