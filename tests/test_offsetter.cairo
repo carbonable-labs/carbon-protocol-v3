@@ -834,7 +834,7 @@ fn test_claim_confirmation_with_invalid_amount() {
 }
 
 #[test]
-fn test_alice_confirms_in_second_wawe() {
+fn test_alice_confirms_in_second_wave() {
     /// Test that Bob can confirm his offset from the first wave and Alice can confirm her offset from the second wave.
     let owner_address = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
