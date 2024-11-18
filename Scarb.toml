@@ -19,3 +19,5 @@ test = "snforge test --max-n-steps 30000000"
 [[target.starknet-contract]]
 sierra = true
 casm = true
+
+[lib]
