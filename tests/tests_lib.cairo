@@ -6,11 +6,11 @@ use starknet::{ContractAddress, contract_address_const};
 
 use snforge_std as snf;
 use snforge_std::{
-    ContractClassTrait, EventSpy, spy_events, EventSpyTrait, EventSpyAssertionsTrait,
-    start_cheat_caller_address, stop_cheat_caller_address
+    ContractClassTrait, DeclareResultTrait, EventSpy, spy_events, EventSpyTrait,
+    EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address
 };
 
-// Models 
+// Models
 
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::models::constants::{CC_DECIMALS_MULTIPLIER, MULTIPLIER_TONS_TO_MGRAMS};
@@ -98,7 +98,7 @@ fn get_mock_absorptions_times_2() -> Span<u256> {
 
 ///
 /// Math functions
-/// 
+///
 
 fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
     let diff = if a > b {
@@ -111,10 +111,10 @@ fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
 
 ///
 /// Deploy and setup functions
-/// 
+///
 
 fn deploy_project() -> ContractAddress {
-    let contract = snf::declare("Project").expect('Declaration failed');
+    let contract = snf::declare("Project").expect('Declaration failed').contract_class();
     let number_of_years: u64 = 20;
     let mut calldata: Array<felt252> = array![
         contract_address_const::<'OWNER'>().into(), STARTING_YEAR.into(), number_of_years.into()
@@ -142,7 +142,7 @@ fn default_setup_and_deploy() -> ContractAddress {
 
 /// Deploys the offsetter contract.
 fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
-    let contract = snf::declare("Offsetter").expect('Declaration failed');
+    let contract = snf::declare("Offsetter").expect('Declaration failed').contract_class();
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
     calldata.append(project_address.into());
@@ -157,7 +157,7 @@ fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
 fn deploy_resale(
     project_address: ContractAddress, token_address: ContractAddress
 ) -> ContractAddress {
-    let contract = snf::declare("Resale").expect('Declaration failed');
+    let contract = snf::declare("Resale").expect('Declaration failed').contract_class();
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
     calldata.append(project_address.into());
@@ -173,7 +173,7 @@ fn deploy_resale(
 fn deploy_minter(
     project_address: ContractAddress, payment_address: ContractAddress
 ) -> ContractAddress {
-    let contract = snf::declare("Minter").expect('Declaration failed');
+    let contract = snf::declare("Minter").expect('Declaration failed').contract_class();
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     start_cheat_caller_address(project_address, owner);
     let public_sale: bool = true;
@@ -198,7 +198,7 @@ fn deploy_minter(
 fn deploy_minter_specific_max_mintable(
     project_address: ContractAddress, payment_address: ContractAddress, max_mintable_cc: u256
 ) -> ContractAddress {
-    let contract = snf::declare("Minter").expect('Declaration failed');
+    let contract = snf::declare("Minter").expect('Declaration failed').contract_class();
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let low: felt252 = max_mintable_cc.low.into();
     let high: felt252 = max_mintable_cc.high.into();
@@ -222,7 +222,7 @@ fn deploy_minter_specific_max_mintable(
 
 /// Deploy erc20 contract.
 fn deploy_erc20() -> ContractAddress {
-    let contract = snf::declare("USDCarb").expect('Declaration failed');
+    let contract = snf::declare("USDCarb").expect('Declaration failed').contract_class();
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
     calldata.append(owner.into());
@@ -240,7 +240,6 @@ fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, Contract
     );
 
     // Tests are done on a single vintage, thus the yearly supply are the same
-    let mut total_absorption = 0;
     let mut index = 0;
     let num_vintages: usize = 20;
     let mut yearly_absorptions: Array<u256> = Default::default();
@@ -249,7 +248,6 @@ fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, Contract
         if index >= num_vintages {
             break;
         }
-        total_absorption += cc_supply;
         yearly_absorptions.append(cc_supply);
         index += 1;
     };
@@ -299,7 +297,7 @@ fn buy_utils(
 
 ///
 /// Tests functions to be called by the test runner
-/// 
+///
 
 fn perform_fuzzed_transfer(
     raw_supply: u256,

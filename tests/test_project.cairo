@@ -7,11 +7,12 @@ use starknet::{ContractAddress, contract_address_const, get_caller_address};
 use openzeppelin::token::erc1155::ERC1155Component;
 use snforge_std as snf;
 use snforge_std::{
-    ContractClassTrait, EventSpy, start_cheat_caller_address, stop_cheat_caller_address, spy_events,
+    ContractClassTrait, DeclareResultTrait, EventSpy, start_cheat_caller_address,
+    stop_cheat_caller_address, spy_events,
     cheatcodes::events::{EventSpyAssertionsTrait, EventSpyTrait, EventsFilterTrait}
 };
 
-// Models 
+// Models
 
 use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
 use carbon_v3::models::constants::{CC_DECIMALS_MULTIPLIER, MULTIPLIER_TONS_TO_MGRAMS};
@@ -35,7 +36,7 @@ use carbon_v3::contracts::project::{
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 /// Utils for testing purposes
-/// 
+///
 use super::tests_lib::{
     equals_with_error, deploy_project, setup_project, default_setup_and_deploy,
     perform_fuzzed_transfer, buy_utils, deploy_erc20, deploy_minter, deploy_offsetter,
@@ -681,7 +682,7 @@ fn test_set_approval_for_all() {
 fn test_project_metadata_update() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
-    let metadata_class = snf::declare("TestMetadata").expect('Declaration failed');
+    let metadata_class = snf::declare("TestMetadata").expect('Declaration failed').contract_class();
     let project = IProjectDispatcher { contract_address: project_address };
     let vintages = IVintageDispatcher { contract_address: project_address };
     let num_vintages = vintages.get_num_vintages();
@@ -689,7 +690,7 @@ fn test_project_metadata_update() {
     let mut spy = spy_events();
 
     start_cheat_caller_address(project_address, owner_address);
-    project.set_uri(metadata_class.class_hash);
+    project.set_uri(*metadata_class.class_hash);
     let uri_result = project.uri(token_id: 1);
     assert!(uri_result.at(0) == @'http://imgur.com/', "Cannot get the URI");
     assert!(uri_result.at(1) == @'01', "Cannot get the URI");

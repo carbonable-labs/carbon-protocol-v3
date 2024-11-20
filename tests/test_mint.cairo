@@ -10,8 +10,8 @@ use openzeppelin::token::erc1155::ERC1155Component;
 
 use snforge_std as snf;
 use snforge_std::{
-    ContractClassTrait, test_address, spy_events, EventSpy, CheatSpan, start_cheat_caller_address,
-    stop_cheat_caller_address, EventSpyAssertionsTrait
+    ContractClassTrait, DeclareResultTrait, test_address, spy_events, EventSpy, CheatSpan,
+    start_cheat_caller_address, stop_cheat_caller_address, EventSpyAssertionsTrait
 };
 
 // Components
@@ -892,7 +892,7 @@ fn test_retrieve_amount() {
     let project_address = deploy_project();
 
     // Deploy erc20 used for the minter, and a second erc20 that isn't used
-    let contract = snf::declare("USDCarb").expect('Failed to declare contract');
+    let contract = snf::declare("USDCarb").expect('Failed to declare contract').contract_class();
     let mut calldata: Array<felt252> = array![user_address.into(), user_address.into()];
     let (erc20_address, _) = contract.deploy(@calldata).expect('Failed to deploy contract');
     calldata = array![user_address.into(), user_address.into()];
@@ -930,7 +930,7 @@ fn test_retrieve_amount_without_owner_role() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = deploy_project();
     // Deploy erc20 used for the minter, and a second erc20 that isn't used
-    let contract = snf::declare("USDCarb").expect('Failed to declare contract');
+    let contract = snf::declare("USDCarb").expect('Failed to declare contract').contract_class();
     let mut calldata: Array<felt252> = array![user_address.into(), user_address.into()];
     let (erc20_address, _) = contract.deploy(@calldata).expect('Failed to deploy contract');
     calldata = array![user_address.into(), user_address.into()];
@@ -954,8 +954,8 @@ fn test_retrieve_amount_without_owner_role() {
 // Integration tests
 
 // 1. Contracts are deployed. Yearly absorptions (vintage supplies) are not set yet. Sale is open.
-// 2. Users buy all the available carbon credits. The mint is sold out. 
-// 3. The maximum amount of carbon mintable is raised and the mint reopened. 
+// 2. Users buy all the available carbon credits. The mint is sold out.
+// 3. The maximum amount of carbon mintable is raised and the mint reopened.
 // 4. Users buy all the available carbon credits. The mint is closed again.
 // 5. Set vintage supplies. Check correct values of the mint.
 // 6. Some users transfers some of their tokens to others. Check correct values of transfers.
@@ -1059,7 +1059,8 @@ fn integration_test_mint() {
     // [Step 4]
     start_cheat_caller_address(minter_address, owner_address);
 
-    // Alice didn't buy after the max mintable cc was raised, so she should still have the same balance for each vintage
+    // Alice didn't buy after the max mintable cc was raised, so she should still have the same
+    // balance for each vintage
     let mut index = 0;
     loop {
         if index >= num_vintages {
