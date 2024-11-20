@@ -74,17 +74,18 @@ mod TestMetadataComponent {
     use super::MetadataComponent;
     use super::{IMetadataHandlerDispatcherTrait, IMetadataHandlerDispatcher};
     use carbon_v3::mock::metadata::TestMetadata;
-    use snforge_std::{declare, ContractClassTrait};
+    use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 
     #[test]
     fn test_metadata() {
-        let class = declare("TestContract").expect('Declaration failed');
-        let metadata_class = declare("TestMetadata").expect('Declaration failed');
+        let class = declare("TestContract").expect('Declaration failed').contract_class();
+        let metadata_class = declare("TestMetadata").expect('Declaration failed').contract_class();
 
         let (contract_address, _) = class.deploy(@array![]).expect('Deployment failed');
+
         let dispatcher = IMetadataHandlerDispatcher { contract_address };
 
-        dispatcher.set_uri(metadata_class.class_hash);
-        assert_eq!(dispatcher.get_uri(), metadata_class.class_hash);
+        dispatcher.set_uri(*metadata_class.class_hash);
+        assert_eq!(@dispatcher.get_uri(), metadata_class.class_hash);
     }
 }
