@@ -7,8 +7,8 @@ trait IOffsetHandler<TContractState> {
     fn retire_carbon_credits(ref self: TContractState, token_id: u256, cc_amount: u256);
 
     /// Retire carbon credits from the list of carbon credits.
-    /// Behaviour is : 
-    /// - If one of the carbon values is not enough or vintage status is not right, 
+    /// Behaviour is :
+    /// - If one of the carbon values is not enough or vintage status is not right,
     /// the function will fail and no carbon will be retired and the function will revert.
     fn retire_list_carbon_credits(
         ref self: TContractState, token_ids: Span<u256>, cc_amounts: Span<u256>
@@ -24,7 +24,8 @@ trait IOffsetHandler<TContractState> {
         proof: Array::<felt252>
     ) -> bool;
 
-    ///Verify on the business logic side, confirm on the Merkle tree side, and perform the offset action.
+    ///Verify on the business logic side, confirm on the Merkle tree side, and perform the offset
+    ///action.
     fn confirm_offset(
         ref self: TContractState, amount: u128, timestamp: u128, id: u128, proof: Array::<felt252>
     );

@@ -247,7 +247,7 @@ fn test_update_vintage_status_without_owner_role() {
 // #[test]  todo, what do we expect here?
 // fn test_update_vintage_status_non_existent_token_id() {
 //     let project_address = default_setup_and_deploy();
-// 
+//
 //     let token_id: u64 = 999; // Assuming 999 does not exist
 //     let new_status: u8 = 2;
 //     vintages.update_vintage_status(token_id, new_status);
