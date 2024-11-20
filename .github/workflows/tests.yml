@@ -17,14 +17,10 @@ jobs:
 
       - name: Setup Scarb
         uses: software-mansion/setup-scarb@v1
-        with:
-          scarb-version: "2.6.0"
-      
+
       - name: Setup snfoundry
         uses: foundry-rs/setup-snfoundry@v3
-        with:
-          starknet-foundry-version: "0.26.0"
-          
+
       - name: Run Cairo tests
         id: cairo_tests
         run: bash scripts/run_tests.sh
