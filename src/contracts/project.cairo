@@ -88,7 +88,7 @@ mod Project {
     //SRC5
     use openzeppelin::introspection::src5::SRC5Component;
     // ERC1155
-    use carbon_v3::components::erc1155::ERC1155Component;
+    use carbon_v3::components::erc1155::{ERC1155Component, erc1155::ERC1155HooksEmptyImpl};
     // Vintage
     use carbon_v3::components::vintage::VintageComponent;
     // Metadata
@@ -107,7 +107,6 @@ mod Project {
     component!(path: ERC4906Component, storage: erc4906, event: ERC4906Event);
     component!(path: MetadataComponent, storage: metadata, event: MetadataEvent);
 
-    // ERC1155
     impl ERC1155Impl = ERC1155Component::ERC1155Impl<ContractState>;
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -118,11 +117,9 @@ mod Project {
     impl VintageImpl = VintageComponent::VintageImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
-    // Access Control
     #[abi(embed_v0)]
     impl AccessControlImpl =
         AccessControlComponent::AccessControlImpl<ContractState>;
-    // Metadata
     impl CarbonV3MetadataImpl = MetadataComponent::CarbonV3MetadataImpl<ContractState>;
 
     impl ERC1155InternalImpl = ERC1155Component::InternalImpl<ContractState>;
@@ -131,7 +128,7 @@ mod Project {
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
     impl VintageInternalImpl = VintageComponent::InternalImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
-    impl ERC4906InternalImpl = ERC4906Component::ERC4906HelperInternal<ContractState>;
+    impl ERC4906InternalImpl = ERC4906Component::InternalImpl<ContractState>;
 
     // Constants
     use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
@@ -206,9 +203,9 @@ mod Project {
     ) {
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(OWNER_ROLE, owner);
-        self.accesscontrol._set_role_admin(MINTER_ROLE, OWNER_ROLE);
-        self.accesscontrol._set_role_admin(OFFSETTER_ROLE, OWNER_ROLE);
-        self.accesscontrol._set_role_admin(OWNER_ROLE, OWNER_ROLE);
+        self.accesscontrol.set_role_admin(MINTER_ROLE, OWNER_ROLE);
+        self.accesscontrol.set_role_admin(OFFSETTER_ROLE, OWNER_ROLE);
+        self.accesscontrol.set_role_admin(OWNER_ROLE, OWNER_ROLE);
         self.erc1155.initializer("");
         self.ownable.initializer(owner);
         self.vintage.initializer(starting_year, number_of_years);
@@ -279,7 +276,7 @@ mod Project {
             /// Emit BatchMetadataUpdate event
             self
                 .erc4906
-                ._emit_batch_metadata_update(fromTokenId: 1, toTokenId: num_vintages.into());
+                ._emit_batch_metadata_update(from_token_id: 1, to_token_id: num_vintages.into());
         }
 
         fn get_uri(self: @ContractState) -> ClassHash {
@@ -449,7 +446,7 @@ mod Project {
             assert!(isOwner, "Only Owner can upgrade");
 
             // Replace the class hash upgrading the contract
-            self.upgradeable._upgrade(new_class_hash);
+            self.upgradeable.upgrade(new_class_hash);
         }
     }
 
@@ -504,10 +501,10 @@ mod Project {
                     );
                 index += 1;
             };
-        // TransferBatch not handled by Starkscan yet
+            // TransferBatch not handled by Starkscan yet
         // let values_to_emit = values_to_emit.span();
 
-        // self
+            // self
         //     .emit(
         //         ERC1155Component::Event::TransferBatch(
         //             ERC1155Component::TransferBatch {
@@ -573,7 +570,7 @@ mod Project {
 
                 index += 1;
             };
-        // let values_to_emit = values_to_emit.span();
+            // let values_to_emit = values_to_emit.span();
         // self
         //     .emit(
         //         ERC1155Component::Event::TransferBatch(
@@ -640,7 +637,7 @@ mod Project {
 
                 index += 1;
             };
-        // let values_to_emit = values_to_emit.span();
+            // let values_to_emit = values_to_emit.span();
         // self
         //     .emit(
         //         ERC1155Component::Event::TransferBatch(
