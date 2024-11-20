@@ -139,7 +139,8 @@ fn test_claim_with_invalid_proof() {
 
 #[test]
 fn test_claim_after_root_update() {
-    /// Test that an unclaimed allocation from the first wave can still be claimed after setting a new Merkle root.
+    /// Test that an unclaimed allocation from the first wave can still be claimed after setting a
+    /// new Merkle root.
     let owner_address = contract_address_const::<'OWNER'>();
     let (root, bob_address, amount, timestamp, id, _) = get_bob_first_wave_allocation();
     let project_address = default_setup_and_deploy();
@@ -159,7 +160,8 @@ fn test_claim_after_root_update() {
 
 #[test]
 fn test_alice_claims_in_second_wave() {
-    /// Test that Bob can confirm his allocation from the first wave and Alice can confirm her allocation from the second wave.
+    /// Test that Bob can confirm his allocation from the first wave and Alice can confirm her
+    /// allocation from the second wave.
     let (root, bob_address, amount, timestamp, id, proof) = get_bob_first_wave_allocation();
     let owner_address = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
@@ -183,7 +185,8 @@ fn test_alice_claims_in_second_wave() {
 
 #[test]
 fn test_john_claims_multiple_allocations() {
-    /// Test that John can confirm_for_merkle_tree two of his three allocations from the first wave, and the remaining one from the second wave.
+    /// Test that John can confirm_for_merkle_tree two of his three allocations from the first wave,
+    /// and the remaining one from the second wave.
     let (
         root,
         new_root,
