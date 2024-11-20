@@ -2,10 +2,10 @@ name: Build
 on:
   pull_request:
     branches:
-    - main
+      - main
   push:
     branches:
-    - main
+      - main
 
 jobs:
   check:
@@ -13,8 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
-        with:
-          scarb-version: "2.6.0"
       - name: Cairo lint
         run: scarb fmt --check
       - name: Cairo build
