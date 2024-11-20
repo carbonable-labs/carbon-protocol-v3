@@ -1,23 +1,28 @@
 [package]
 name = "carbon_v3"
 version = "0.1.0"
+authors = ["Tekkac <tekkac@proton.me>"]
+description = "Carbonable - Carbon Protocol V3"
+license = "Apache-2.0"
+repository = "https://github.com/carbonable-labs/carbon-protocol-v3"
+keywords = ["starknet", "carbon credits", "carbonable", "protocol"]
+readme = "README.md"
+documentation = "https://github.com/carbonable-labs/carbon-protocol-v3"
 
 [dependencies]
-starknet = ">=2.6.0"
-alexandria_storage = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.6.0" }
-alexandria_numeric = { git = "https://github.com/keep-starknet-strange/alexandria", tag = "cairo-v2.6.0" }
-alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "cairo-v2.6.0" }
-openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.10.0" }
-erc4906 = { git = "https://github.com/carbonable-labs/cairo-erc-4906", tag = "cairo-v2.6.0-pre" }
+starknet = ">=2.8.4"
+alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexandria.git" }
+openzeppelin = '0.19'
+erc4906 = { git = "https://github.com/carbonable-labs/cairo-erc-4906" }
 
 [dev-dependencies]
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.26.0" }
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.33.0" }
+assert_macros = "2.8.4"
 
 [scripts]
 test = "snforge test --max-n-steps 30000000"
 
 [[target.starknet-contract]]
-sierra = true
-casm = true
+casm = false
 
 [lib]
