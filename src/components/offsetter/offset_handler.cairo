@@ -213,7 +213,7 @@ mod OffsetComponent {
             let allocation = Allocation {
                 claimee: claimee, amount: amount, timestamp: timestamp, id: id
             };
-            self.Offsetter_allocations_claimed.write(allocation, true);
+            self.Offsetter_allocations_claimed.entry(allocation).write(true);
 
             // [Emit event]
             self
@@ -225,26 +225,26 @@ mod OffsetComponent {
         }
 
         fn get_allocation_id(self: @ComponentState<TContractState>, from: ContractAddress) -> u256 {
-            self.Offsetter_allocation_id.read(from)
+            self.Offsetter_allocation_id.entry(from).read()
         }
 
         fn get_retirement(
             self: @ComponentState<TContractState>, token_id: u256, from: ContractAddress
         ) -> u256 {
-            self.Offsetter_carbon_retired.read((token_id, from))
+            self.Offsetter_carbon_retired.entry((token_id, from)).read()
         }
 
 
         fn get_pending_retirement(
             self: @ComponentState<TContractState>, address: ContractAddress, token_id: u256
         ) -> u256 {
-            self.Offsetter_carbon_pending_retirement.read((token_id, address))
+            self.Offsetter_carbon_pending_retirement.entry((token_id, address)).read()
         }
 
         fn get_carbon_retired(
             self: @ComponentState<TContractState>, address: ContractAddress, token_id: u256
         ) -> u256 {
-            self.Offsetter_carbon_retired.read((token_id, address))
+            self.Offsetter_carbon_retired.entry((token_id, address)).read()
         }
 
         fn check_claimed(
@@ -258,7 +258,7 @@ mod OffsetComponent {
             let allocation = Allocation {
                 claimee: claimee, amount: amount.into(), timestamp: timestamp.into(), id: id.into()
             };
-            self.Offsetter_allocations_claimed.read(allocation)
+            self.Offsetter_allocations_claimed.entry(allocation).read()
         }
 
         fn set_merkle_root(ref self: ComponentState<TContractState>, root: felt252) {
@@ -292,16 +292,18 @@ mod OffsetComponent {
         ) {
             let current_pending_retirement = self
                 .Offsetter_carbon_pending_retirement
-                .read((token_id, from));
+                .entry((token_id, from))
+                .read();
 
             let new_pending_retirement = current_pending_retirement + amount;
             self
                 .Offsetter_carbon_pending_retirement
-                .write((token_id, from), new_pending_retirement);
+                .entry((token_id, from))
+                .write(new_pending_retirement);
 
-            let current_allocation_id = self.Offsetter_allocation_id.read(from);
+            let current_allocation_id = self.Offsetter_allocation_id.entry(from).read();
             let new_allocation_id = current_allocation_id + 1;
-            self.Offsetter_allocation_id.write(from, new_allocation_id);
+            self.Offsetter_allocation_id.entry(from).write(new_allocation_id);
 
             // transfer the carbon credits to the project
             let project = IProjectDispatcher {
@@ -333,13 +335,15 @@ mod OffsetComponent {
         ) {
             let current_pending_retirement = self
                 .Offsetter_carbon_pending_retirement
-                .read((token_id, from));
+                .entry((token_id, from))
+                .read();
             assert(current_pending_retirement >= amount, 'Not enough pending retirement');
 
             let new_pending_retirement = current_pending_retirement - amount;
             self
                 .Offsetter_carbon_pending_retirement
-                .write((token_id, from), new_pending_retirement);
+                .entry((token_id, from))
+                .write(new_pending_retirement);
 
             self
                 .emit(
@@ -364,9 +368,9 @@ mod OffsetComponent {
             let project = IProjectDispatcher { contract_address: project_address };
             let amount_to_offset = project.cc_to_internal(amount, token_id);
             project.burn(from, token_id, amount_to_offset);
-            let current_retirement = self.Offsetter_carbon_retired.read((token_id, from));
+            let current_retirement = self.Offsetter_carbon_retired.entry((token_id, from)).read();
             let new_retirement = current_retirement + amount;
-            self.Offsetter_carbon_retired.write((token_id, from), new_retirement);
+            self.Offsetter_carbon_retired.entry((token_id, from)).write(new_retirement);
 
             self
                 .emit(
