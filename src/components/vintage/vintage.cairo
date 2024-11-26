@@ -117,7 +117,7 @@ mod VintageComponent {
         fn get_carbon_vintage(
             self: @ComponentState<TContractState>, token_id: u256
         ) -> CarbonVintage {
-            self.Vintage_vintages.read(token_id)
+            self.Vintage_vintages.entry(token_id).read()
         }
 
         fn get_initial_cc_supply(self: @ComponentState<TContractState>, token_id: u256) -> u256 {
@@ -148,7 +148,7 @@ mod VintageComponent {
         ) {
             self.assert_only_role(OWNER_ROLE);
 
-            let mut vintage: CarbonVintage = self.Vintage_vintages.read(token_id);
+            let mut vintage: CarbonVintage = self.Vintage_vintages.entry(token_id).read();
             let old_supply = vintage.supply;
 
             if (new_cc_supply == old_supply) {
@@ -167,7 +167,7 @@ mod VintageComponent {
                 vintage.created = vintage.created + diff;
             }
             vintage.supply = new_cc_supply;
-            self.Vintage_vintages.write(token_id, vintage);
+            self.Vintage_vintages.entry(token_id).write(vintage);
 
             self
                 .emit(
@@ -184,10 +184,10 @@ mod VintageComponent {
             self.assert_only_role(OWNER_ROLE);
 
             let new_status: CarbonVintageType = status.try_into().expect('Invalid status');
-            let mut vintage: CarbonVintage = self.Vintage_vintages.read(token_id);
+            let mut vintage: CarbonVintage = self.Vintage_vintages.entry(token_id).read();
             let old_status = vintage.status;
             vintage.status = new_status;
-            self.Vintage_vintages.write(token_id, vintage);
+            self.Vintage_vintages.entry(token_id).write(vintage);
 
             self
                 .emit(
@@ -215,7 +215,7 @@ mod VintageComponent {
                 }
                 let supply = *yearly_absorptions.at(index);
                 let token_id = (index + 1).into();
-                let old_vintage = self.Vintage_vintages.read(token_id);
+                let old_vintage = self.Vintage_vintages.entry(token_id).read();
                 let mut vintage = CarbonVintage {
                     year: (start_year + index).into(),
                     supply: supply,
@@ -223,7 +223,7 @@ mod VintageComponent {
                     created: 0,
                     status: CarbonVintageType::Projected,
                 };
-                self.Vintage_vintages.write(token_id, vintage);
+                self.Vintage_vintages.entry(token_id).write(vintage);
 
                 self
                     .emit(
@@ -264,7 +264,7 @@ mod VintageComponent {
                     status: CarbonVintageType::Projected,
                 };
 
-                self.Vintage_vintages.write(token_id, vintage);
+                self.Vintage_vintages.entry(token_id).write(vintage);
                 index += 1;
             };
         }
