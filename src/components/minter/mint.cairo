@@ -2,12 +2,14 @@
 mod MintComponent {
     // Starknet imports
 
-    use openzeppelin::token::erc20::interface::ERC20ABIDispatcherTrait;
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address};
+    use starknet::storage::{
+        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
+    };
 
     // External imports
-    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use openzeppelin::token::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
 
     // Internal imports
@@ -33,7 +35,7 @@ mod MintComponent {
         Mint_public_sale_open: bool,
         Mint_min_money_amount_per_tx: u256,
         Mint_unit_price: u256,
-        Mint_claimed_value: LegacyMap::<ContractAddress, u256>,
+        Mint_claimed_value: Map<ContractAddress, u256>,
         Mint_max_mintable_cc: u256,
         Mint_remaining_mintable_cc: u256,
         Mint_cancel: bool,
@@ -270,7 +272,7 @@ mod MintComponent {
             assert(isOwner, 'Caller is not the owner');
 
             let token_address = self.Mint_payment_token_address.read();
-            let erc20 = IERC20Dispatcher { contract_address: token_address };
+            let erc20 = ERC20ABIDispatcher { contract_address: token_address };
             let contract_address = get_contract_address();
             let balance = erc20.balance_of(contract_address);
 
@@ -294,7 +296,7 @@ mod MintComponent {
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
-            let erc20 = IERC20Dispatcher { contract_address: token_address };
+            let erc20 = ERC20ABIDispatcher { contract_address: token_address };
             let success = erc20.transfer(recipient, amount);
             assert(success, 'Transfer failed');
 
@@ -341,7 +343,7 @@ mod MintComponent {
             let money_amount = total_cc_balance * unit_price / MULTIPLIER_TONS_TO_MGRAMS;
 
             let token_address = self.Mint_payment_token_address.read();
-            let erc20 = IERC20Dispatcher { contract_address: token_address };
+            let erc20 = ERC20ABIDispatcher { contract_address: token_address };
             let success = erc20.transfer(caller_address, money_amount);
             assert(success, 'Transfer failed');
 
@@ -442,7 +444,7 @@ mod MintComponent {
             };
             // [Interaction] Pay
             let token_address = self.Mint_payment_token_address.read();
-            let erc20 = IERC20Dispatcher { contract_address: token_address };
+            let erc20 = ERC20ABIDispatcher { contract_address: token_address };
             let minter_address = get_contract_address();
 
             let success = erc20.transfer_from(caller_address, minter_address, money_amount);

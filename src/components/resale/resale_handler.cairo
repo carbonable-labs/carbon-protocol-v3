@@ -6,19 +6,23 @@ mod ResaleComponent {
     // Starknet imports
 
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use starknet::storage::{
+        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
+    };
 
     // Internal imports
 
     use carbon_v3::components::resale::interface::IResaleHandler;
-    use alexandria_merkle_tree::merkle_tree::{
-        Hasher, MerkleTree, MerkleTreeImpl, pedersen::PedersenHasherImpl, MerkleTreeTrait,
-    };
     use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
     use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
     use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
     use carbon_v3::contracts::project::{
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
+    };
+
+    use alexandria_merkle_tree::merkle_tree::{
+        Hasher, MerkleTree, MerkleTreeImpl, pedersen::PedersenHasherImpl, MerkleTreeTrait,
     };
 
     // Roles
@@ -41,11 +45,11 @@ mod ResaleComponent {
     #[storage]
     struct Storage {
         Resale_carbonable_project_address: ContractAddress,
-        Resale_carbon_pending_resale: LegacyMap<(u256, ContractAddress), u256>,
-        Resale_carbon_sold: LegacyMap<(u256, ContractAddress), u256>,
+        Resale_carbon_pending_resale: Map<(u256, ContractAddress), u256>,
+        Resale_carbon_sold: Map<(u256, ContractAddress), u256>,
         Resale_merkle_root: felt252,
-        Resale_allocations_claimed: LegacyMap<Allocation, bool>,
-        Resale_allocation_id: LegacyMap<ContractAddress, u256>,
+        Resale_allocations_claimed: Map<Allocation, bool>,
+        Resale_allocation_id: Map<ContractAddress, u256>,
         Resale_token_address: ContractAddress,
         Resale_account_address: ContractAddress,
     }

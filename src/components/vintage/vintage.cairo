@@ -2,6 +2,10 @@
 mod VintageComponent {
     // Starknet imports
     use starknet::get_caller_address;
+    use starknet::storage::{
+        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
+    };
+
 
     // Internal imports
     use carbon_v3::components::vintage::interface::IVintage;
@@ -16,7 +20,7 @@ mod VintageComponent {
 
     #[storage]
     struct Storage {
-        Vintage_vintages: LegacyMap<u256, CarbonVintage>,
+        Vintage_vintages: Map<u256, CarbonVintage>,
         Vintage_vintages_len: usize,
         Vintage_project_carbon: u256,
     }

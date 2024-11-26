@@ -7,6 +7,9 @@ mod OffsetComponent {
     // Starknet imports
 
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use starknet::storage::{
+        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
+    };
 
     // Internal imports
 
@@ -39,11 +42,11 @@ mod OffsetComponent {
     #[storage]
     struct Storage {
         Offsetter_carbonable_project_address: ContractAddress,
-        Offsetter_carbon_pending_retirement: LegacyMap<(u256, ContractAddress), u256>,
-        Offsetter_carbon_retired: LegacyMap<(u256, ContractAddress), u256>,
+        Offsetter_carbon_pending_retirement: Map<(u256, ContractAddress), u256>,
+        Offsetter_carbon_retired: Map<(u256, ContractAddress), u256>,
         Offsetter_merkle_root: felt252,
-        Offsetter_allocations_claimed: LegacyMap<Allocation, bool>,
-        Offsetter_allocation_id: LegacyMap<ContractAddress, u256>
+        Offsetter_allocations_claimed: Map<Allocation, bool>,
+        Offsetter_allocation_id: Map<ContractAddress, u256>
     }
 
     #[event]
