@@ -199,7 +199,7 @@ mod ResaleComponent {
             let allocation = Allocation {
                 claimee: claimee, amount: amount, timestamp: timestamp, id: id
             };
-            self.Resale_allocations_claimed.write(allocation, true);
+            self.Resale_allocations_claimed.entry(allocation).write(true);
 
             self._claim_tokens(claimee, id.into(), amount.into());
 
@@ -215,13 +215,13 @@ mod ResaleComponent {
         fn get_pending_resale(
             self: @ComponentState<TContractState>, address: ContractAddress, token_id: u256
         ) -> u256 {
-            self.Resale_carbon_pending_resale.read((token_id, address))
+            self.Resale_carbon_pending_resale.entry((token_id, address)).read()
         }
 
         fn get_carbon_sold(
             self: @ComponentState<TContractState>, address: ContractAddress, token_id: u256
         ) -> u256 {
-            self.Resale_carbon_sold.read((token_id, address))
+            self.Resale_carbon_sold.entry((token_id, address)).read()
         }
 
         fn check_claimed(
@@ -235,7 +235,7 @@ mod ResaleComponent {
             let allocation = Allocation {
                 claimee: claimee, amount: amount.into(), timestamp: timestamp.into(), id: id.into()
             };
-            self.Resale_allocations_claimed.read(allocation)
+            self.Resale_allocations_claimed.entry(allocation).read()
         }
 
         fn set_merkle_root(ref self: ComponentState<TContractState>, root: felt252) {
@@ -335,14 +335,17 @@ mod ResaleComponent {
             token_id: u256,
             amount: u256
         ) {
-            let current_pending_resale = self.Resale_carbon_pending_resale.read((token_id, from));
+            let current_pending_resale = self
+                .Resale_carbon_pending_resale
+                .entry((token_id, from))
+                .read();
 
             let new_pending_resale = current_pending_resale + amount;
-            self.Resale_carbon_pending_resale.write((token_id, from), new_pending_resale);
+            self.Resale_carbon_pending_resale.entry((token_id, from)).write(new_pending_resale);
 
-            let current_allocation_id = self.Resale_allocation_id.read(from);
+            let current_allocation_id = self.Resale_allocation_id.entry(from).read();
             let new_allocation_id = current_allocation_id + 1;
-            self.Resale_allocation_id.write(from, new_allocation_id);
+            self.Resale_allocation_id.entry(from).write(new_allocation_id);
 
             // transfer the carbon credits to the project
             let project = IProjectDispatcher {
@@ -372,11 +375,14 @@ mod ResaleComponent {
             token_id: u256,
             amount: u256
         ) {
-            let current_pending_resale = self.Resale_carbon_pending_resale.read((token_id, from));
+            let current_pending_resale = self
+                .Resale_carbon_pending_resale
+                .entry((token_id, from))
+                .read();
             assert(current_pending_resale >= amount, Errors::NOT_ENOUGH_PENDING);
 
             let new_pending_resale = current_pending_resale - amount;
-            self.Resale_carbon_pending_resale.write((token_id, from), new_pending_resale);
+            self.Resale_carbon_pending_resale.entry((token_id, from)).write(new_pending_resale);
 
             self
                 .emit(
@@ -399,9 +405,9 @@ mod ResaleComponent {
             self._remove_pending_resale(user, token_id, amount);
 
             // [Effect] Update the carbon credits sold
-            let current_resale = self.Resale_carbon_sold.read((token_id, user));
+            let current_resale = self.Resale_carbon_sold.entry((token_id, user)).read();
             let new_resale = current_resale + amount;
-            self.Resale_carbon_sold.write((token_id, user), new_resale);
+            self.Resale_carbon_sold.entry((token_id, user)).write(new_resale);
 
             // [Effect] Transfer the tokens to the user
             let token_address = self.Resale_token_address.read();
