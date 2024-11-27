@@ -20,19 +20,13 @@ mod ResaleComponent {
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
+    use carbon_v3::contracts::project::Project::OWNER_ROLE;
 
     use alexandria_merkle_tree::merkle_tree::{
         Hasher, MerkleTree, MerkleTreeImpl, pedersen::PedersenHasherImpl, MerkleTreeTrait,
     };
-
-    // Roles
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
-
-    // ERC20
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-
-    // Constants
-    use carbon_v3::contracts::project::Project::OWNER_ROLE;
 
     #[derive(Copy, Drop, Debug, Hash, starknet::Store, Serde, PartialEq)]
     struct Allocation {
@@ -112,7 +106,7 @@ mod ResaleComponent {
         const NOT_ENOUGH_TOKENS: felt252 = 'Resale: Not enough tokens';
         const NOT_ENOUGH_PENDING: felt252 = 'Resale: Not enough pending';
         const EMPTY_INPUT: felt252 = 'Resale: Inputs cannot be empty';
-        const ARRAY_MISMATCH: felt252 = 'Resale: Array lengths mismatch';
+        const ARRAY_MISMATCH: felt252 = 'Resale: Array length mismatch';
         const INVALID_PROOF: felt252 = 'Resale: Invalid proof';
         const ALREADY_CLAIMED: felt252 = 'Resale: Already claimed';
         const MISSING_ROLE: felt252 = 'Resale: Missing role';

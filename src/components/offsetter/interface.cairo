@@ -3,20 +3,17 @@ use carbon_v3::models::carbon_vintage::CarbonVintage;
 
 #[starknet::interface]
 trait IOffsetHandler<TContractState> {
-    /// Retire carbon credits from one vintage of carbon credits.
-    fn retire_carbon_credits(ref self: TContractState, token_id: u256, cc_amount: u256);
+    /// Deposit carbon credits from one vintage for offset.
+    fn deposit_vintage(ref self: TContractState, token_id: u256, cc_amount: u256);
 
-    /// Retire carbon credits from the list of carbon credits.
-    /// Behaviour is :
-    /// - If one of the carbon values is not enough or vintage status is not right,
-    /// the function will fail and no carbon will be retired and the function will revert.
-    fn retire_list_carbon_credits(
+    /// Deposit carbon credits from a list of vintage for resale.
+    fn deposit_vintages(
         ref self: TContractState, token_ids: Span<u256>, cc_amounts: Span<u256>
     );
 
     ///Verify and validate the proof on the Merkle tree side to confirm the offset.
     fn confirm_for_merkle_tree(
-        ref self: TContractState,
+        self: @TContractState,
         from: ContractAddress,
         amount: u128,
         timestamp: u128,
