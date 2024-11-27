@@ -10,14 +10,14 @@ readme = "README.md"
 documentation = "https://github.com/carbonable-labs/carbon-protocol-v3"
 
 [dependencies]
-starknet = ">=2.8.4"
-alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexandria.git" }
+starknet = ">=2.8.5"
+alexandria_merkle_tree = "0.1.0"
 openzeppelin = '0.19'
-erc4906 = { git = "https://github.com/carbonable-labs/cairo-erc-4906" }
+erc4906 = "0.3.0"
 
 [dev-dependencies]
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.33.0" }
-assert_macros = "2.8.4"
+assert_macros = "2.8.5"
 
 [scripts]
 test = "snforge test --max-n-steps 30000000"
