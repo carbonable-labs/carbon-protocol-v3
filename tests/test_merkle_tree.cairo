@@ -38,7 +38,7 @@ fn test_set_merkle_root() {
 }
 
 #[test]
-#[should_panic(expected: 'Caller does not have role')]
+#[should_panic(expected: 'Offset: Missing role')]
 fn test_set_merkle_root_without_owner_role() {
     /// Test that only the owner can set the Merkle root.
     let user_address: ContractAddress = contract_address_const::<'USER'>();
@@ -70,7 +70,7 @@ fn test_bob_claims_single_allocation() {
 }
 
 #[test]
-#[should_panic(expected: 'Invalid proof')]
+#[should_panic(expected: 'Offset: Invalid proof')]
 fn test_claim_with_invalid_address() {
     let owner_address = contract_address_const::<'OWNER'>();
     let (root, _, amount, timestamp, id, proof) = get_bob_first_wave_allocation();
@@ -87,7 +87,7 @@ fn test_claim_with_invalid_address() {
 }
 
 #[test]
-#[should_panic(expected: 'Invalid proof')]
+#[should_panic(expected: 'Offset: Invalid proof')]
 fn test_claim_with_invalid_amount() {
     let owner_address = contract_address_const::<'OWNER'>();
     let (root, bob_address, _, timestamp, id, proof) = get_bob_first_wave_allocation();
@@ -104,7 +104,7 @@ fn test_claim_with_invalid_amount() {
 }
 
 #[test]
-#[should_panic(expected: 'Invalid proof')]
+#[should_panic(expected: 'Offset: Invalid proof')]
 fn test_claim_with_invalid_timestamp() {
     let owner_address = contract_address_const::<'OWNER'>();
     let (root, bob_address, amount, _, id, proof) = get_bob_first_wave_allocation();
@@ -121,7 +121,7 @@ fn test_claim_with_invalid_timestamp() {
 }
 
 #[test]
-#[should_panic(expected: 'Invalid proof')]
+#[should_panic(expected: 'Offset: Invalid proof')]
 fn test_claim_with_invalid_proof() {
     let owner_address = contract_address_const::<'OWNER'>();
     let (root, bob_address, amount, timestamp, id, _) = get_bob_first_wave_allocation();

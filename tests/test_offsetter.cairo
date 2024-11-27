@@ -83,10 +83,10 @@ fn test_offsetter_init() {
     assert(carbon_retired == 0, 'carbon retired should be 0');
 }
 
-// test_offsetter_retire_carbon_credits
+// test_offsetter_deposit_vintage
 
 #[test]
-fn test_offsetter_retire_carbon_credits() {
+fn test_offsetter_deposit_vintage() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -126,7 +126,7 @@ fn test_offsetter_retire_carbon_credits() {
     let mut spy = spy_events();
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+    offsetter.deposit_vintage(token_id, amount_to_offset);
 
     let expected_event = helper_expected_transfer_event(
         project_address,
@@ -146,7 +146,7 @@ fn test_offsetter_retire_carbon_credits() {
 }
 
 #[test]
-#[should_panic(expected: 'Vintage status is not audited')]
+#[should_panic(expected: 'Offset: Invalid vintage')]
 fn test_offsetter_wrong_status() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
@@ -176,12 +176,12 @@ fn test_offsetter_wrong_status() {
 
     // [Effect] try to retire carbon credits
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
-    offsetter.retire_carbon_credits(token_id, 1000000);
+    offsetter.deposit_vintage(token_id, 1000000);
 }
 
 #[test]
-#[should_panic(expected: 'Not own enough carbon credits')]
-fn test_retire_carbon_credits_insufficient_credits() {
+#[should_panic(expected: 'Offset: Not enough carbon')]
+fn test_deposit_vintage_insufficient_credits() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -210,11 +210,11 @@ fn test_retire_carbon_credits_insufficient_credits() {
 
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
     let user_balance = project_contract.balance_of(user_address, token_id);
-    offsetter.retire_carbon_credits(token_id, user_balance + 1);
+    offsetter.deposit_vintage(token_id, user_balance + 1);
 }
 
 #[test]
-fn test_retire_carbon_credits_exact_balance() {
+fn test_deposit_vintage_exact_balance() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -249,7 +249,7 @@ fn test_retire_carbon_credits_exact_balance() {
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, user_balance);
+    offsetter.deposit_vintage(token_id, user_balance);
 
     let carbon_pending = offsetter.get_pending_retirement(user_address, token_id);
     assert(carbon_pending == user_balance, 'Carbon pending is wrong');
@@ -259,7 +259,7 @@ fn test_retire_carbon_credits_exact_balance() {
 }
 
 #[test]
-fn test_retire_carbon_credits_multiple_retirements() {
+fn test_deposit_vintage_multiple_retirements() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -294,8 +294,8 @@ fn test_retire_carbon_credits_multiple_retirements() {
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, 50000);
-    offsetter.retire_carbon_credits(token_id, 50000);
+    offsetter.deposit_vintage(token_id, 50000);
+    offsetter.deposit_vintage(token_id, 50000);
 
     let carbon_pending = offsetter.get_pending_retirement(user_address, token_id);
     assert(carbon_pending == 100000, 'Error pending carbon credits');
@@ -304,10 +304,10 @@ fn test_retire_carbon_credits_multiple_retirements() {
     assert(balance_final == balance_initial - 100000, 'Error balance');
 }
 
-/// retire_list_carbon_credits
+/// deposit_vintages
 
 #[test]
-fn test_retire_list_carbon_credits_valid_inputs() {
+fn test_deposit_vintages_valid_inputs() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -347,7 +347,7 @@ fn test_retire_list_carbon_credits_valid_inputs() {
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_list_carbon_credits(vintages, carbon_values);
+    offsetter.deposit_vintages(vintages, carbon_values);
 
     let carbon_pending_token_id = offsetter.get_pending_retirement(user_address, vintage_2024_id);
     let carbon_pending_2026 = offsetter.get_pending_retirement(user_address, vintage_2026_id);
@@ -361,8 +361,8 @@ fn test_retire_list_carbon_credits_valid_inputs() {
 }
 
 #[test]
-#[should_panic(expected: 'Inputs cannot be empty')]
-fn test_retire_list_carbon_credits_empty_inputs() {
+#[should_panic(expected: 'Offset: Inputs cannot be empty')]
+fn test_deposit_vintages_empty_inputs() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
     let offsetter_address = deploy_offsetter(project_address);
@@ -370,12 +370,12 @@ fn test_retire_list_carbon_credits_empty_inputs() {
     start_cheat_caller_address(offsetter_address, user_address);
 
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
-    offsetter.retire_list_carbon_credits(array![].span(), array![].span());
+    offsetter.deposit_vintages(array![].span(), array![].span());
 }
 
 #[test]
-#[should_panic(expected: 'Vintages and Values mismatch')]
-fn test_retire_list_carbon_credits_mismatched_lengths() {
+#[should_panic(expected: 'Offset: Array length mismatch')]
+fn test_deposit_vintages_mismatched_lengths() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
     let offsetter_address = deploy_offsetter(project_address);
@@ -386,12 +386,12 @@ fn test_retire_list_carbon_credits_mismatched_lengths() {
     let vintages: Span<u256> = array![token_id, token_id + 1].span();
     let carbon_values: Span<u256> = array![100000].span();
     let offsetter = IOffsetHandlerDispatcher { contract_address: offsetter_address };
-    offsetter.retire_list_carbon_credits(vintages, carbon_values);
+    offsetter.deposit_vintages(vintages, carbon_values);
 }
 
 #[test]
-#[should_panic(expected: 'Vintage status is not audited')]
-fn test_retire_list_carbon_credits_partial_valid_inputs() {
+#[should_panic(expected: 'Offset: Invalid vintage')]
+fn test_deposit_vintages_partial_valid_inputs() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -429,11 +429,11 @@ fn test_retire_list_carbon_credits_partial_valid_inputs() {
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_list_carbon_credits(vintages, carbon_values);
+    offsetter.deposit_vintages(vintages, carbon_values);
 }
 
 #[test]
-fn test_retire_list_carbon_credits_multiple_same_vintage() {
+fn test_deposit_vintages_multiple_same_vintage() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
@@ -471,7 +471,7 @@ fn test_retire_list_carbon_credits_multiple_same_vintage() {
 
     start_cheat_caller_address(offsetter_address, user_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_list_carbon_credits(vintages, carbon_values);
+    offsetter.deposit_vintages(vintages, carbon_values);
 
     let carbon_pending = offsetter.get_pending_retirement(user_address, token_id);
     assert(carbon_pending == 100000, 'Error Carbon pending');
@@ -563,7 +563,7 @@ fn test_confirm_offset() {
     let mut spy = spy_events();
     start_cheat_caller_address(offsetter_address, bob_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+    offsetter.deposit_vintage(token_id, amount_to_offset);
 
     let expected_event = helper_expected_transfer_event(
         project_address,
@@ -592,7 +592,7 @@ fn test_confirm_offset() {
 }
 
 #[test]
-#[should_panic(expected: 'Already claimed')]
+#[should_panic(expected: 'Offset: Already claimed')]
 fn test_bob_confirms_twice() {
     /// Test that Bob trying to confirm the same offset twice, results in a panic.
     let owner_address = contract_address_const::<'OWNER'>();
@@ -640,7 +640,7 @@ fn test_bob_confirms_twice() {
     let mut spy = spy_events();
     start_cheat_caller_address(offsetter_address, bob_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+    offsetter.deposit_vintage(token_id, amount_to_offset);
 
     let expected_event = helper_expected_transfer_event(
         project_address,
@@ -712,7 +712,7 @@ fn test_events_emission_on_claim_confirmation() {
     let mut spy = spy_events();
     start_cheat_caller_address(offsetter_address, bob_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+    offsetter.deposit_vintage(token_id, amount_to_offset);
 
     let expected_event = helper_expected_transfer_event(
         project_address,
@@ -763,7 +763,7 @@ fn test_events_emission_on_claim_confirmation() {
 
 
 #[test]
-#[should_panic(expected: 'Invalid proof')]
+#[should_panic(expected: 'Offset: Invalid proof')]
 fn test_claim_confirmation_with_invalid_amount() {
     let owner_address = contract_address_const::<'OWNER'>();
     let project_address = default_setup_and_deploy();
@@ -810,7 +810,7 @@ fn test_claim_confirmation_with_invalid_amount() {
     let mut spy = spy_events();
     start_cheat_caller_address(offsetter_address, bob_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+    offsetter.deposit_vintage(token_id, amount_to_offset);
 
     let expected_event = helper_expected_transfer_event(
         project_address,
@@ -882,7 +882,7 @@ fn test_alice_confirms_in_second_wave() {
     let mut spy = spy_events();
     start_cheat_caller_address(offsetter_address, bob_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+    offsetter.deposit_vintage(token_id, amount_to_offset);
 
     let expected_event = helper_expected_transfer_event(
         project_address,
@@ -946,7 +946,7 @@ fn test_alice_confirms_in_second_wave() {
     let mut spy = spy_events();
     start_cheat_caller_address(offsetter_address, alice_address);
     start_cheat_caller_address(project_address, offsetter_address);
-    offsetter.retire_carbon_credits(token_id, amount_to_offset);
+    offsetter.deposit_vintage(token_id, amount_to_offset);
 
     let expected_event = helper_expected_transfer_event(
         project_address,
@@ -1045,11 +1045,11 @@ fn test_john_confirms_multiple_allocations() {
     start_cheat_caller_address(offsetter_address, john_address);
     start_cheat_caller_address(project_address, offsetter_address);
 
-    offsetter.retire_carbon_credits(token_id, amount1_to_offset);
+    offsetter.deposit_vintage(token_id, amount1_to_offset);
     assert!(!offsetter.check_claimed(john_address, timestamp1, amount1, id_1));
     offsetter.confirm_offset(amount1, timestamp1, id_1, proof1);
 
-    offsetter.retire_carbon_credits(token_id, amount2_to_offset);
+    offsetter.deposit_vintage(token_id, amount2_to_offset);
     assert!(!offsetter.check_claimed(john_address, timestamp2, amount2, id_2));
     offsetter.confirm_offset(amount2, timestamp2, id_2, proof2);
 
@@ -1062,7 +1062,7 @@ fn test_john_confirms_multiple_allocations() {
     start_cheat_caller_address(offsetter_address, john_address);
     start_cheat_caller_address(project_address, offsetter_address);
 
-    offsetter.retire_carbon_credits(token_id, amount4_to_offset);
+    offsetter.deposit_vintage(token_id, amount4_to_offset);
     assert!(!offsetter.check_claimed(john_address, timestamp4, amount4, id_4));
     offsetter.confirm_offset(amount4, timestamp4, id_4, proof4);
 

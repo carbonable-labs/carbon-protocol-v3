@@ -1,8 +1,7 @@
 #[starknet::component]
-mod OffsetComponent {
+pub mod OffsetComponent {
     // Core imports
     use core::hash::LegacyHash;
-
 
     // Starknet imports
 
@@ -14,9 +13,6 @@ mod OffsetComponent {
     // Internal imports
 
     use carbon_v3::components::offsetter::interface::IOffsetHandler;
-    use alexandria_merkle_tree::merkle_tree::{
-        Hasher, MerkleTree, MerkleTreeImpl, pedersen::PedersenHasherImpl, MerkleTreeTrait,
-    };
     use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
     use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
     use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
@@ -24,12 +20,12 @@ mod OffsetComponent {
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
-
-    // Roles
-    use openzeppelin::access::accesscontrol::interface::IAccessControl;
-
-    // Constants
     use carbon_v3::contracts::project::Project::OWNER_ROLE;
+
+    use alexandria_merkle_tree::merkle_tree::{
+        Hasher, MerkleTree, MerkleTreeImpl, pedersen::PedersenHasherImpl, MerkleTreeTrait,
+    };
+    use openzeppelin::access::accesscontrol::interface::IAccessControl;
 
     #[derive(Copy, Drop, Debug, Hash, starknet::Store, Serde, PartialEq)]
     struct Allocation {
@@ -102,8 +98,17 @@ mod OffsetComponent {
         pub id: u128
     }
 
-    mod Errors {
-        const INVALID_VINTAGE_STATUS: felt252 = 'vintage status is not audited';
+    pub mod Errors {
+        const INVALID_VINTAGE: felt252 = 'Offset: Invalid vintage';
+        const NOT_ENOUGH_CARBON: felt252 = 'Offset: Not enough carbon';
+        const NOT_ENOUGH_PENDING: felt252 = 'Offset: Not enough pending';
+        const EMPTY_INPUT: felt252 = 'Offset: Inputs cannot be empty';
+        const ARRAY_MISMATCH: felt252 = 'Offset: Array length mismatch';
+        const INVALID_PROOF: felt252 = 'Offset: Invalid proof';
+        const ALREADY_CLAIMED: felt252 = 'Offset: Already claimed';
+        const MISSING_ROLE: felt252 = 'Offset: Missing role';
+        const ZERO_ADDRESS: felt252 = 'Offset: Address is invalid';
+        const INVALID_DEPOSIT: felt252 = 'Offset: Invalid deposit';
     }
 
     #[embeddable_as(OffsetHandlerImpl)]
@@ -113,7 +118,7 @@ mod OffsetComponent {
         +Drop<TContractState>,
         +IAccessControl<TContractState>
     > of IOffsetHandler<ComponentState<TContractState>> {
-        fn retire_carbon_credits(
+        fn deposit_vintage(
             ref self: ComponentState<TContractState>, token_id: u256, cc_amount: u256
         ) {
             let caller_address: ContractAddress = get_caller_address();
@@ -122,43 +127,39 @@ mod OffsetComponent {
             // [Check] Vintage got the right status
             let vintages = IVintageDispatcher { contract_address: project_address };
             let stored_vintage: CarbonVintage = vintages.get_carbon_vintage(token_id);
-            assert(
-                stored_vintage.status == CarbonVintageType::Audited, 'Vintage status is not audited'
-            );
+            assert(stored_vintage.status == CarbonVintageType::Audited, Errors::INVALID_VINTAGE);
 
             let erc1155 = IERC1155Dispatcher { contract_address: project_address };
             let caller_balance = erc1155.balance_of(caller_address, token_id);
-            assert(caller_balance >= cc_amount, 'Not own enough carbon credits');
+            assert(caller_balance >= cc_amount, Errors::NOT_ENOUGH_CARBON);
 
             self._add_pending_retirement(caller_address, token_id, cc_amount);
         }
 
-        fn retire_list_carbon_credits(
-            ref self: ComponentState<TContractState>, token_ids: Span<u256>, cc_amounts: Span<u256>
+        fn deposit_vintages(
+            ref self: ComponentState<TContractState>,
+            mut token_ids: Span<u256>,
+            mut cc_amounts: Span<u256>
         ) {
             // [Check] vintages and carbon values are defined
-            assert(token_ids.len() > 0, 'Inputs cannot be empty');
-            assert(token_ids.len() == cc_amounts.len(), 'Vintages and Values mismatch');
+            assert(token_ids.len() > 0, Errors::EMPTY_INPUT);
+            assert(token_ids.len() == cc_amounts.len(), Errors::ARRAY_MISMATCH);
 
-            let mut index: u32 = 0;
             loop {
-                // [Check] Vintage is defined
-                let token_id = *token_ids.at(index);
-                let carbon_amount = *cc_amounts.at(index);
-
-                if token_id != 0 && carbon_amount != 0 {
-                    self.retire_carbon_credits(token_id, carbon_amount);
-                }
-
-                index += 1;
-                if index == token_ids.len() {
-                    break;
-                }
+                match token_ids.pop_front() {
+                    Option::Some(token_id) => {
+                        let carbon_amount = cc_amounts.pop_front().unwrap();
+                        // [Check] token_id and carbon_amount are valid
+                        assert(*token_id != 0 && *carbon_amount != 0, Errors::INVALID_DEPOSIT);
+                        self.deposit_vintage(*token_id, *carbon_amount);
+                    },
+                    Option::None => { break; },
+                };
             };
         }
 
         fn confirm_for_merkle_tree(
-            ref self: ComponentState<TContractState>,
+            self: @ComponentState<TContractState>,
             from: ContractAddress,
             amount: u128,
             timestamp: u128,
@@ -178,14 +179,10 @@ mod OffsetComponent {
             let leaf = LegacyHash::hash(intermediate_hash, id_felt);
 
             let root_computed = merkle_tree.compute_root(leaf, proof.span());
-
             let stored_root = self.Offsetter_merkle_root.read();
-            if root_computed != stored_root {
-                assert(root_computed == stored_root, 'Invalid proof');
-                return false;
-            }
 
-            return true;
+            assert(root_computed == stored_root, Errors::INVALID_PROOF);
+            true
         }
 
         fn confirm_offset(
@@ -199,12 +196,10 @@ mod OffsetComponent {
 
             // [Verify not already claimed]
             let claimed = self.check_claimed(claimee, timestamp, amount, id);
-            assert(!claimed, 'Already claimed');
+            assert(!claimed, Errors::ALREADY_CLAIMED);
 
             // [Verify if the merkle tree claim is possible]
-            assert(
-                self.confirm_for_merkle_tree(claimee, amount, timestamp, id, proof), 'Invalid proof'
-            );
+            let _ = self.confirm_for_merkle_tree(claimee, amount, timestamp, id, proof);
 
             //If everything is correct, we offset the carbon credits
             self._offset_carbon_credit(claimee, 1, amount.into());
@@ -281,6 +276,7 @@ mod OffsetComponent {
         fn initializer(
             ref self: ComponentState<TContractState>, carbonable_project_address: ContractAddress
         ) {
+            assert(carbonable_project_address.into() != 0, Errors::ZERO_ADDRESS);
             self.Offsetter_carbonable_project_address.write(carbonable_project_address);
         }
 
@@ -337,7 +333,7 @@ mod OffsetComponent {
                 .Offsetter_carbon_pending_retirement
                 .entry((token_id, from))
                 .read();
-            assert(current_pending_retirement >= amount, 'Not enough pending retirement');
+            assert(current_pending_retirement >= amount, Errors::NOT_ENOUGH_PENDING);
 
             let new_pending_retirement = current_pending_retirement - amount;
             self
@@ -388,7 +384,7 @@ mod OffsetComponent {
             // [Check] Caller has role
             let caller = get_caller_address();
             let has_role = self.get_contract().has_role(role, caller);
-            assert(has_role, 'Caller does not have role');
+            assert(has_role, Errors::MISSING_ROLE);
         }
     }
 }

@@ -322,8 +322,8 @@ fn test_resale__deposit_vintages_empty_inputs() {
 }
 
 #[test]
-#[should_panic(expected: 'Resale: Array lengths mismatch')]
-fn test_resale__deposit_vintages_mismatched_lengths() {
+#[should_panic(expected: 'Resale: Array length mismatch')]
+fn test_resale__deposit_vintages_mismatched_length() {
     let user_address: ContractAddress = contract_address_const::<'USER'>();
     let project_address = default_setup_and_deploy();
     let erc20_address = deploy_erc20();
