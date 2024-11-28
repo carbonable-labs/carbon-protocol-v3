@@ -6,7 +6,7 @@ trait IOffsetHandler<TContractState> {
     /// Deposit carbon credits from one vintage for offset.
     fn deposit_vintage(ref self: TContractState, token_id: u256, cc_amount: u256);
 
-    /// Deposit carbon credits from a list of vintage for resale.
+    /// Deposit carbon credits from a list of vintage for offset.
     fn deposit_vintages(ref self: TContractState, token_ids: Span<u256>, cc_amounts: Span<u256>);
 
     ///Verify and validate the proof on the Merkle tree side to confirm the offset.
