@@ -8,6 +8,7 @@ repository = "https://github.com/carbonable-labs/carbon-protocol-v3"
 keywords = ["starknet", "carbon credits", "carbonable", "protocol"]
 readme = "README.md"
 documentation = "https://github.com/carbonable-labs/carbon-protocol-v3"
+edition = "2024_07"
 
 [dependencies]
 starknet = ">=2.8.5"

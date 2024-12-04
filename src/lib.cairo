@@ -1,29 +1,41 @@
-mod components {
-    mod erc1155;
-    mod metadata;
-    mod minter;
-    mod offsetter;
-    mod resale {
-        mod interface;
-        mod resale_handler;
+pub mod components {
+    pub mod erc1155 {
+        pub mod interface;
+        pub mod erc1155;
+        pub mod erc1155_receiver;
     }
-    mod vintage;
+    pub mod metadata;
+    pub mod minter {
+        pub mod booking;
+        pub mod interface;
+        pub mod mint;
+    }
+    pub mod offsetter {
+        pub mod interface;
+        pub mod offset_handler;
+    }
+    pub mod resale {
+        pub mod interface;
+        pub mod resale_handler;
+    }
+    pub mod vintage {
+        pub mod interface;
+        pub mod vintage;
+    }
 }
 
-mod models {
-    mod carbon_vintage;
-    mod constants;
+pub mod models;
+pub mod constants;
+
+pub mod contracts {
+    pub mod minter;
+    pub mod offsetter;
+    pub mod project;
+    pub mod resale;
 }
 
-mod contracts {
-    mod minter;
-    mod offsetter;
-    mod project;
-    mod resale;
-}
-
-mod mock {
-    mod usdcarb;
-    mod metadata;
+pub mod mock {
+    pub mod usdcarb;
+    pub mod metadata;
 }
 
