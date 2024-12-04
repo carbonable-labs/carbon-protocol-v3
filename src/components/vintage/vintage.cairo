@@ -1,5 +1,5 @@
 #[starknet::component]
-mod VintageComponent {
+pub mod VintageComponent {
     // Starknet imports
     use starknet::get_caller_address;
     use starknet::storage::{
@@ -9,17 +9,17 @@ mod VintageComponent {
 
     // Internal imports
     use carbon_v3::components::vintage::interface::IVintage;
-    use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::models::{CarbonVintage, CarbonVintageType};
 
     // Constants
-    use carbon_v3::models::constants::CC_DECIMALS;
-    use carbon_v3::contracts::project::Project::OWNER_ROLE;
+    use carbon_v3::constants::{CC_DECIMALS, OWNER_ROLE};
+
 
     // Roles
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
 
     #[storage]
-    struct Storage {
+    pub struct Storage {
         Vintage_vintages: Map<u256, CarbonVintage>,
         Vintage_vintages_len: usize,
         Vintage_project_carbon: u256,
@@ -27,7 +27,7 @@ mod VintageComponent {
 
     #[event]
     #[derive(Drop, PartialEq, starknet::Event)]
-    enum Event {
+    pub enum Event {
         ProjectCarbonUpdated: ProjectCarbonUpdated,
         VintageUpdate: VintageUpdate,
         VintageRebased: VintageRebased,
@@ -74,9 +74,9 @@ mod VintageComponent {
         new_vintage: CarbonVintage,
     }
 
-    mod Errors {
-        const INVALID_ARRAY_LENGTH: felt252 = 'Vintage: invalid array length';
-        const INVALID_STARTING_YEAR: felt252 = 'Vintage: invalid starting year';
+    pub mod Errors {
+        pub const INVALID_ARRAY_LENGTH: felt252 = 'Vintage: invalid array length';
+        pub const INVALID_STARTING_YEAR: felt252 = 'Vintage: invalid starting year';
     }
 
     #[embeddable_as(VintageImpl)]
@@ -106,8 +106,8 @@ mod VintageComponent {
                 if index >= num_vintages {
                     break ();
                 }
-                let token_id = (index + 1).into();
-                let vintage = self.Vintage_vintages.read(token_id);
+                let token_id: u256 = (index + 1).into();
+                let vintage = self.Vintage_vintages.entry(token_id).read();
                 vintages.append(vintage);
                 index += 1;
             };
@@ -237,7 +237,7 @@ mod VintageComponent {
     }
 
     #[generate_trait]
-    impl InternalImpl<
+    pub impl InternalImpl<
         TContractState,
         +HasComponent<TContractState>,
         +Drop<TContractState>,

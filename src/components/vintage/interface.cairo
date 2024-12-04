@@ -1,7 +1,7 @@
-use carbon_v3::models::carbon_vintage::CarbonVintage;
+use carbon_v3::models::CarbonVintage;
 
 #[starknet::interface]
-trait IVintage<TContractState> {
+pub trait IVintage<TContractState> {
     /// Returns the project total carbon credits.
     fn get_project_carbon(self: @TContractState) -> u256;
 

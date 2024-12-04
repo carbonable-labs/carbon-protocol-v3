@@ -1,7 +1,7 @@
 // Core imports
 
 #[derive(Drop, Copy)]
-enum BookingStatus {
+pub enum BookingStatus {
     Unknown: (),
     Booked: (),
     Failed: (),
@@ -10,13 +10,13 @@ enum BookingStatus {
 }
 
 #[derive(Drop, Copy, Serde, starknet::Store)]
-struct Booking {
+pub struct Booking {
     value: u256,
     amount: u256,
     status: u8,
 }
 
-trait BookingTrait {
+pub trait BookingTrait {
     fn new(value: u256, amount: u256, status: BookingStatus) -> Booking;
     fn get_status(ref self: Booking) -> BookingStatus;
     fn set_status(ref self: Booking, status: BookingStatus);

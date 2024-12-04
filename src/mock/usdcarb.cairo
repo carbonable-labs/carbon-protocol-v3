@@ -2,16 +2,18 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IExternal<ContractState> {
+pub trait IExternal<ContractState> {
     fn mint(ref self: ContractState, recipient: ContractAddress, amount: u256);
 }
 
 #[starknet::contract]
-mod USDCarb {
+pub mod USDCarb {
+    use starknet::storage::StoragePointerReadAccess;
+    use starknet::ContractAddress;
+
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use openzeppelin::token::erc20::interface::IERC20Metadata;
     use openzeppelin::access::ownable::OwnableComponent;
-    use starknet::ContractAddress;
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);

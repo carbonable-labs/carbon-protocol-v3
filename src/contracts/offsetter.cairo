@@ -1,5 +1,3 @@
-use starknet::ContractAddress;
-
 #[starknet::contract]
 mod Offsetter {
     use starknet::ContractAddress;

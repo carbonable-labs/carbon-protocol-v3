@@ -1,8 +1,8 @@
-mod tests_lib;
-mod test_merkle_tree;
-mod test_mint;
-mod test_offsetter;
-mod test_project;
-mod test_resale;
-mod test_vintage;
+pub mod tests_lib;
+pub mod test_merkle_tree;
+pub mod test_mint;
+pub mod test_offsetter;
+pub mod test_project;
+pub mod test_resale;
+pub mod test_vintage;
 

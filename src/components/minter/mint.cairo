@@ -1,35 +1,30 @@
 #[starknet::component]
-mod MintComponent {
+pub mod MintComponent {
     // Starknet imports
 
+    use core::num::traits::Zero;
     use starknet::ContractAddress;
     use starknet::{get_caller_address, get_contract_address};
-    use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map
-    };
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, Map};
 
     // External imports
     use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-    use openzeppelin::token::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
 
     // Internal imports
 
     use carbon_v3::components::minter::interface::IMint;
-    use carbon_v3::components::minter::booking::{Booking, BookingStatus, BookingTrait};
     use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
     use carbon_v3::contracts::project::{
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
-    use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-    use carbon_v3::contracts::project::Project::{OWNER_ROLE};
 
     // Constants
 
-    use carbon_v3::models::constants::{MULTIPLIER_TONS_TO_MGRAMS};
+    use carbon_v3::constants::{MULTIPLIER_TONS_TO_MGRAMS};
 
     #[storage]
-    struct Storage {
+    pub struct Storage {
         Mint_carbonable_project_address: ContractAddress,
         Mint_payment_token_address: ContractAddress,
         Mint_public_sale_open: bool,
@@ -43,7 +38,7 @@ mod MintComponent {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         PublicSaleOpen: PublicSaleOpen,
         PublicSaleClose: PublicSaleClose,
         SoldOut: SoldOut,
@@ -59,81 +54,81 @@ mod MintComponent {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct PublicSaleOpen {
-        old_value: bool,
-        new_value: bool
+    pub struct PublicSaleOpen {
+        pub old_value: bool,
+        pub new_value: bool
     }
 
     #[derive(Drop, starknet::Event)]
-    struct PublicSaleClose {
-        old_value: bool,
-        new_value: bool
+    pub struct PublicSaleClose {
+        pub old_value: bool,
+        pub new_value: bool
     }
 
     #[derive(Drop, starknet::Event)]
-    struct SoldOut {
-        sold_out: bool
+    pub struct SoldOut {
+        pub sold_out: bool
     }
 
     #[derive(Drop, starknet::Event)]
-    struct Buy {
+    pub struct Buy {
         #[key]
-        address: ContractAddress,
-        cc_amount: u256,
-        vintages: Span<u256>,
+        pub address: ContractAddress,
+        pub cc_amount: u256,
+        pub vintages: Span<u256>,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct MintCanceled {
-        is_canceled: bool
+    pub struct MintCanceled {
+        pub is_canceled: bool
     }
 
     #[derive(Drop, starknet::Event)]
-    struct UnitPriceUpdated {
-        old_price: u256,
-        new_price: u256,
+    pub struct UnitPriceUpdated {
+        pub old_price: u256,
+        pub new_price: u256,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct Withdraw {
-        recipient: ContractAddress,
-        amount: u256,
+    pub struct Withdraw {
+        pub recipient: ContractAddress,
+        pub amount: u256,
     }
 
 
     #[derive(Drop, starknet::Event)]
-    struct AmountRetrieved {
-        token_address: ContractAddress,
-        recipient: ContractAddress,
-        amount: u256,
+    pub struct AmountRetrieved {
+        pub token_address: ContractAddress,
+        pub recipient: ContractAddress,
+        pub amount: u256,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct MinMoneyAmountPerTxUpdated {
-        old_amount: u256,
-        new_amount: u256,
+    pub struct MinMoneyAmountPerTxUpdated {
+        pub old_amount: u256,
+        pub new_amount: u256,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct MaxMintableCCUpdated {
-        old_value: u256,
-        new_value: u256,
+    pub struct MaxMintableCCUpdated {
+        pub old_value: u256,
+        pub new_value: u256,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct RemainingMintableCCUpdated {
-        old_value: u256,
-        new_value: u256,
+    pub struct RemainingMintableCCUpdated {
+        pub old_value: u256,
+        pub new_value: u256,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct RedeemInvestment {
-        address: ContractAddress,
-        amount: u256,
+    pub struct RedeemInvestment {
+        pub address: ContractAddress,
+        pub amount: u256,
     }
 
-    mod Errors {
-        const INVALID_ARRAY_LENGTH: felt252 = 'Mint: invalid array length';
+    pub mod Errors {
+        pub const INVALID_ARRAY_LENGTH: felt252 = 'Mint: invalid array length';
     }
 
     #[embeddable_as(MintImpl)]
@@ -179,7 +174,7 @@ mod MintComponent {
             let project = IProjectDispatcher { contract_address: project_address };
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
@@ -201,7 +196,7 @@ mod MintComponent {
             let project = IProjectDispatcher { contract_address: project_address };
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
@@ -233,7 +228,7 @@ mod MintComponent {
             let project = IProjectDispatcher { contract_address: project_address };
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
@@ -251,7 +246,7 @@ mod MintComponent {
             let project = IProjectDispatcher { contract_address: project_address };
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
             assert(unit_price > 0, 'Invalid unit price');
@@ -267,7 +262,7 @@ mod MintComponent {
             let project = IProjectDispatcher { contract_address: project_address };
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
@@ -292,7 +287,7 @@ mod MintComponent {
             let project = IProjectDispatcher { contract_address: project_address };
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
@@ -314,7 +309,7 @@ mod MintComponent {
             let vintages = IVintageDispatcher { contract_address: project_address };
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
 
             let is_canceled = self.Mint_cancel.read();
             assert(is_canceled, 'Mint is not canceled');
@@ -374,7 +369,7 @@ mod MintComponent {
             let project = IProjectDispatcher { contract_address: project_address };
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
             let isOwner = project.only_owner(caller_address);
             assert(isOwner, 'Caller is not the owner');
 
@@ -390,7 +385,7 @@ mod MintComponent {
     }
 
     #[generate_trait]
-    impl InternalImpl<
+    pub impl InternalImpl<
         TContractState, +HasComponent<TContractState>, +Drop<TContractState>
     > of InternalTrait<TContractState> {
         fn initializer(
@@ -414,7 +409,7 @@ mod MintComponent {
             assert(cc_amount > 0, 'Invalid carbon credit amount');
 
             let caller_address = get_caller_address();
-            assert(!caller_address.is_zero(), 'Invalid caller');
+            assert(caller_address.is_non_zero(), 'Invalid caller');
 
             let unit_price = self.Mint_unit_price.read();
             // If user wants to buy 1 carbon credit, the input should be 1*MULTIPLIER_TONS_TO_MGRAMS

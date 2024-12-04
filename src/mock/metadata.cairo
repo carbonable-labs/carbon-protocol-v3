@@ -1,6 +1,6 @@
 #[starknet::contract]
-mod TestContract {
-    use carbon_v3::components::metadata::{MetadataComponent, IMetadataHandler};
+pub mod TestContract {
+    use carbon_v3::components::metadata::MetadataComponent;
 
     component!(path: MetadataComponent, storage: metadata_uri, event: MetadataEvent);
 
@@ -21,7 +21,7 @@ mod TestContract {
 }
 
 #[starknet::contract]
-mod TestMetadata {
+pub mod TestMetadata {
     use carbon_v3::components::metadata::IMetadataDescriptor;
 
     #[storage]

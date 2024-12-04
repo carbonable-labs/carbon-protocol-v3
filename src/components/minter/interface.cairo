@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IMint<TContractState> {
+pub trait IMint<TContractState> {
     fn get_carbonable_project_address(self: @TContractState) -> ContractAddress;
     fn get_payment_token_address(self: @TContractState) -> ContractAddress;
     fn get_unit_price(self: @TContractState) -> u256;

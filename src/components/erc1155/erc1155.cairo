@@ -7,6 +7,7 @@
 /// See https://eips.ethereum.org/EIPS/eip-1155.
 #[starknet::component]
 pub mod ERC1155Component {
+    use core::num::traits::Zero;
     use crate::components::erc1155::interface::{
         IERC1155ReceiverDispatcher, IERC1155ReceiverDispatcherTrait
     };
@@ -222,8 +223,8 @@ pub mod ERC1155Component {
             values: Span<u256>,
             data: Span<felt252>
         ) {
-            assert(Zeroable::is_non_zero(from), Errors::INVALID_SENDER);
-            assert(Zeroable::is_non_zero(to), Errors::INVALID_RECEIVER);
+            assert(from.is_non_zero(), Errors::INVALID_SENDER);
+            assert(to.is_non_zero(), Errors::INVALID_RECEIVER);
 
             let operator = get_caller_address();
             if from != operator {
@@ -496,11 +497,11 @@ pub mod ERC1155Component {
             value: u256,
             data: Span<felt252>
         ) {
-            assert(Zeroable::is_non_zero(to), Errors::INVALID_RECEIVER);
+            assert(to.is_non_zero(), Errors::INVALID_RECEIVER);
 
             let token_ids = array![token_id].span();
             let values = array![value].span();
-            self.update_with_acceptance_check(Zeroable::zero(), to, token_ids, values, data);
+            self.update_with_acceptance_check(Zero::zero(), to, token_ids, values, data);
         }
 
         /// Batched version of `mint_with_acceptance_check`.
@@ -521,8 +522,8 @@ pub mod ERC1155Component {
             values: Span<u256>,
             data: Span<felt252>
         ) {
-            assert(Zeroable::is_non_zero(to), Errors::INVALID_RECEIVER);
-            self.update_with_acceptance_check(Zeroable::zero(), to, token_ids, values, data);
+            assert(to.is_non_zero(), Errors::INVALID_RECEIVER);
+            self.update_with_acceptance_check(Zero::zero(), to, token_ids, values, data);
         }
 
         /// Destroys a `value` amount of tokens of type `token_id` from `from`.
@@ -539,11 +540,11 @@ pub mod ERC1155Component {
             token_id: u256,
             value: u256
         ) {
-            assert(Zeroable::is_non_zero(from), Errors::INVALID_SENDER);
+            assert(from.is_non_zero(), Errors::INVALID_SENDER);
 
             let token_ids = array![token_id].span();
             let values = array![value].span();
-            self.update(from, Zeroable::zero(), token_ids, values);
+            self.update(from, Zero::zero(), token_ids, values);
         }
 
         /// Batched version of `burn`.
@@ -561,8 +562,8 @@ pub mod ERC1155Component {
             token_ids: Span<u256>,
             values: Span<u256>
         ) {
-            assert(Zeroable::is_non_zero(from), Errors::INVALID_SENDER);
-            self.update(from, Zeroable::zero(), token_ids, values);
+            assert(from.is_non_zero(), Errors::INVALID_SENDER);
+            self.update(from, Zero::zero(), token_ids, values);
         }
 
         /// Version of `update` that performs the token acceptance check by calling
@@ -626,12 +627,12 @@ pub mod ERC1155Component {
                 }
                 let token_id = *token_ids.at(index);
                 let value = *values.at(index);
-                if Zeroable::is_non_zero(from) {
+                if from.is_non_zero() {
                     let from_balance = self.ERC1155_balances.read((token_id, from));
                     assert(from_balance >= value, Errors::INSUFFICIENT_BALANCE);
                     self.ERC1155_balances.write((token_id, from), from_balance - value);
                 }
-                if Zeroable::is_non_zero(to) {
+                if to.is_non_zero() {
                     let to_balance = self.ERC1155_balances.read((token_id, to));
                     self.ERC1155_balances.write((token_id, to), to_balance + value);
                 }
@@ -673,7 +674,7 @@ pub mod ERC1155Component {
 
             let token_ids = array![token_id].span();
             let values = array![value].span();
-            self.update(Zeroable::zero(), to, token_ids, values);
+            self.update(Zero::zero(), to, token_ids, values);
         }
 
         /// Batched version of `mint_with_acceptance_check`.
@@ -694,7 +695,7 @@ pub mod ERC1155Component {
             values: Span<u256>
         ) {
             assert(to.is_non_zero(), Errors::INVALID_RECEIVER);
-            self.update(Zeroable::zero(), to, token_ids, values);
+            self.update(Zero::zero(), to, token_ids, values);
         }
 
         /// Sets a new URI for all token types, by relying on the token type ID
