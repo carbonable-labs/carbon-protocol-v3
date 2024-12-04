@@ -1,8 +1,7 @@
 use starknet::ContractAddress;
-use carbon_v3::models::carbon_vintage::CarbonVintage;
 
 #[starknet::interface]
-trait IResaleHandler<TContractState> {
+pub trait IResaleHandler<TContractState> {
     /// Deposit carbon credits from one vintage for resale.
     fn deposit_vintage(ref self: TContractState, token_id: u256, cc_amount: u256);
 
@@ -12,7 +11,12 @@ trait IResaleHandler<TContractState> {
 
     // Claim a reward assigned to caller
     fn claim(
-        ref self: TContractState, amount: u128, timestamp: u128, id: u128, proof: Array::<felt252>
+        ref self: TContractState,
+        amount: u128,
+        timestamp: u128,
+        vintage: u256,
+        id: u128,
+        proof: Array::<felt252>
     );
 
     /// Get the pending amount of resale of a vintage for the caller address.
@@ -29,7 +33,12 @@ trait IResaleHandler<TContractState> {
 
     /// Check if a reward has been claimed
     fn check_claimed(
-        self: @TContractState, claimee: ContractAddress, timestamp: u128, amount: u128, id: u128
+        self: @TContractState,
+        claimee: ContractAddress,
+        timestamp: u128,
+        amount: u128,
+        vintage: u256,
+        id: u128
     ) -> bool;
 
     /// Resale strategy for carbon credits

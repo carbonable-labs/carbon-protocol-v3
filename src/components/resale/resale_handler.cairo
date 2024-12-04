@@ -1,5 +1,5 @@
 #[starknet::component]
-mod ResaleComponent {
+pub mod ResaleComponent {
     // Core imports
     use core::hash::LegacyHash;
 
@@ -13,14 +13,13 @@ mod ResaleComponent {
     // Internal imports
 
     use carbon_v3::components::resale::interface::IResaleHandler;
-    use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::models::{CarbonVintage, CarbonVintageType, Allocation};
     use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-    use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
     use carbon_v3::contracts::project::{
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
-    use carbon_v3::contracts::project::Project::OWNER_ROLE;
+    use carbon_v3::constants::OWNER_ROLE;
 
     use alexandria_merkle_tree::merkle_tree::{
         Hasher, MerkleTree, MerkleTreeImpl, pedersen::PedersenHasherImpl, MerkleTreeTrait,
@@ -28,16 +27,8 @@ mod ResaleComponent {
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
-    #[derive(Copy, Drop, Debug, Hash, starknet::Store, Serde, PartialEq)]
-    struct Allocation {
-        claimee: ContractAddress,
-        amount: u128,
-        timestamp: u128,
-        id: u128
-    }
-
     #[storage]
-    struct Storage {
+    pub struct Storage {
         Resale_carbonable_project_address: ContractAddress,
         Resale_carbon_pending_resale: Map<(u256, ContractAddress), u256>,
         Resale_carbon_sold: Map<(u256, ContractAddress), u256>,
@@ -50,7 +41,7 @@ mod ResaleComponent {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         RequestedResale: RequestedResale,
         Resale: Resale,
         PendingResaleRemoved: PendingResaleRemoved,
@@ -101,17 +92,18 @@ mod ResaleComponent {
         pub id: u128
     }
 
-    mod Errors {
-        const NOT_ENOUGH_CARBON: felt252 = 'Resale: Not enough carbon';
-        const NOT_ENOUGH_TOKENS: felt252 = 'Resale: Not enough tokens';
-        const NOT_ENOUGH_PENDING: felt252 = 'Resale: Not enough pending';
-        const EMPTY_INPUT: felt252 = 'Resale: Inputs cannot be empty';
-        const ARRAY_MISMATCH: felt252 = 'Resale: Array length mismatch';
-        const INVALID_PROOF: felt252 = 'Resale: Invalid proof';
-        const ALREADY_CLAIMED: felt252 = 'Resale: Already claimed';
-        const MISSING_ROLE: felt252 = 'Resale: Missing role';
-        const ZERO_ADDRESS: felt252 = 'Resale: Address is invalid';
-        const INVALID_DEPOSIT: felt252 = 'Resale: Invalid deposit';
+    pub mod Errors {
+        pub const INVALID_VINTAGE: felt252 = 'Resale: Invalid vintage';
+        pub const NOT_ENOUGH_CARBON: felt252 = 'Resale: Not enough carbon';
+        pub const NOT_ENOUGH_TOKENS: felt252 = 'Resale: Not enough tokens';
+        pub const NOT_ENOUGH_PENDING: felt252 = 'Resale: Not enough pending';
+        pub const EMPTY_INPUT: felt252 = 'Resale: Inputs cannot be empty';
+        pub const ARRAY_MISMATCH: felt252 = 'Resale: Array length mismatch';
+        pub const INVALID_PROOF: felt252 = 'Resale: Invalid proof';
+        pub const ALREADY_CLAIMED: felt252 = 'Resale: Already claimed';
+        pub const MISSING_ROLE: felt252 = 'Resale: Missing role';
+        pub const ZERO_ADDRESS: felt252 = 'Resale: Address is invalid';
+        pub const INVALID_DEPOSIT: felt252 = 'Resale: Invalid deposit';
     }
 
     #[embeddable_as(ResaleHandlerImpl)]
@@ -129,7 +121,8 @@ mod ResaleComponent {
 
             let vintages = IVintageDispatcher { contract_address: project_address };
             let stored_vintage: CarbonVintage = vintages.get_carbon_vintage(token_id);
-            assert(stored_vintage.status != CarbonVintageType::Unset, 'Vintage status is not set');
+            let status: CarbonVintageType = stored_vintage.status;
+            assert(status != CarbonVintageType::Unset, Errors::INVALID_VINTAGE);
 
             let project = IProjectDispatcher { contract_address: project_address };
             let caller_balance = project.balance_of(caller_address, token_id);
@@ -164,6 +157,7 @@ mod ResaleComponent {
             ref self: ComponentState<TContractState>,
             amount: u128,
             timestamp: u128,
+            vintage: u256,
             id: u128,
             proof: Array::<felt252>
         ) {
@@ -171,7 +165,7 @@ mod ResaleComponent {
             let claimee = get_caller_address();
 
             // [Verify not already claimed]
-            let claimed = self.check_claimed(claimee, timestamp, amount, id);
+            let claimed = self.check_claimed(claimee, timestamp, amount, vintage, id);
             assert(!claimed, Errors::ALREADY_CLAIMED);
 
             // [Verify the proof]
@@ -191,7 +185,7 @@ mod ResaleComponent {
 
             // [Mark as claimed]
             let allocation = Allocation {
-                claimee: claimee, amount: amount, timestamp: timestamp, id: id
+                claimee: claimee, amount: amount, timestamp: timestamp, vintage: 'todo', id: id
             };
             self.Resale_allocations_claimed.entry(allocation).write(true);
 
@@ -223,11 +217,16 @@ mod ResaleComponent {
             claimee: ContractAddress,
             timestamp: u128,
             amount: u128,
+            vintage: u256,
             id: u128
         ) -> bool {
             // Check if claimee has already claimed this allocation, by checking in the mapping
             let allocation = Allocation {
-                claimee: claimee, amount: amount.into(), timestamp: timestamp.into(), id: id.into()
+                claimee: claimee,
+                amount: amount.into(),
+                timestamp: timestamp.into(),
+                vintage: 'toto',
+                id: id.into()
             };
             self.Resale_allocations_claimed.entry(allocation).read()
         }
@@ -303,7 +302,7 @@ mod ResaleComponent {
     }
 
     #[generate_trait]
-    impl InternalImpl<
+    pub impl InternalImpl<
         TContractState,
         +HasComponent<TContractState>,
         +Drop<TContractState>,

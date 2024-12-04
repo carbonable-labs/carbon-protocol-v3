@@ -1,8 +1,7 @@
 use starknet::ContractAddress;
-use carbon_v3::models::carbon_vintage::CarbonVintage;
 
 #[starknet::interface]
-trait IOffsetHandler<TContractState> {
+pub trait IOffsetHandler<TContractState> {
     /// Deposit carbon credits from one vintage for offset.
     fn deposit_vintage(ref self: TContractState, token_id: u256, cc_amount: u256);
 
@@ -15,6 +14,7 @@ trait IOffsetHandler<TContractState> {
         from: ContractAddress,
         amount: u128,
         timestamp: u128,
+        vintage: u256,
         id: u128,
         proof: Array::<felt252>
     ) -> bool;
@@ -22,7 +22,12 @@ trait IOffsetHandler<TContractState> {
     ///Verify on the business logic side, confirm on the Merkle tree side, and perform the offset
     ///action.
     fn confirm_offset(
-        ref self: TContractState, amount: u128, timestamp: u128, id: u128, proof: Array::<felt252>
+        ref self: TContractState,
+        amount: u128,
+        timestamp: u128,
+        vintage: u256,
+        id: u128,
+        proof: Array::<felt252>
     );
 
     fn get_allocation_id(self: @TContractState, from: ContractAddress) -> u256;
@@ -42,6 +47,11 @@ trait IOffsetHandler<TContractState> {
     fn get_merkle_root(self: @TContractState) -> felt252;
 
     fn check_claimed(
-        self: @TContractState, claimee: ContractAddress, timestamp: u128, amount: u128, id: u128
+        self: @TContractState,
+        claimee: ContractAddress,
+        timestamp: u128,
+        amount: u128,
+        vintage: u256,
+        id: u128
     ) -> bool;
 }

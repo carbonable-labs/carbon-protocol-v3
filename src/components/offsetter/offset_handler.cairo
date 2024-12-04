@@ -13,30 +13,22 @@ pub mod OffsetComponent {
     // Internal imports
 
     use carbon_v3::components::offsetter::interface::IOffsetHandler;
-    use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
+    use carbon_v3::models::{Allocation, CarbonVintage, CarbonVintageType};
     use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
     use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
     use carbon_v3::contracts::project::{
         IExternalDispatcher as IProjectDispatcher,
         IExternalDispatcherTrait as IProjectDispatcherTrait
     };
-    use carbon_v3::contracts::project::Project::OWNER_ROLE;
+    use carbon_v3::constants::OWNER_ROLE;
 
     use alexandria_merkle_tree::merkle_tree::{
         Hasher, MerkleTree, MerkleTreeImpl, pedersen::PedersenHasherImpl, MerkleTreeTrait,
     };
     use openzeppelin::access::accesscontrol::interface::IAccessControl;
 
-    #[derive(Copy, Drop, Debug, Hash, starknet::Store, Serde, PartialEq)]
-    struct Allocation {
-        claimee: ContractAddress,
-        amount: u128,
-        timestamp: u128,
-        id: u128
-    }
-
     #[storage]
-    struct Storage {
+    pub struct Storage {
         Offsetter_carbonable_project_address: ContractAddress,
         Offsetter_carbon_pending_retirement: Map<(u256, ContractAddress), u256>,
         Offsetter_carbon_retired: Map<(u256, ContractAddress), u256>,
@@ -47,7 +39,7 @@ pub mod OffsetComponent {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         RequestedRetirement: RequestedRetirement,
         Retired: Retired,
         PendingRetirementRemoved: PendingRetirementRemoved,
@@ -55,39 +47,39 @@ pub mod OffsetComponent {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct RequestedRetirement {
+    pub struct RequestedRetirement {
         #[key]
-        from: ContractAddress,
+        pub from: ContractAddress,
         #[key]
-        project: ContractAddress,
+        pub project: ContractAddress,
         #[key]
-        token_id: u256,
+        pub token_id: u256,
         #[key]
-        allocation_id: u256,
-        old_amount: u256,
-        new_amount: u256
+        pub allocation_id: u256,
+        pub old_amount: u256,
+        pub new_amount: u256
     }
 
     #[derive(Drop, starknet::Event)]
-    struct Retired {
+    pub struct Retired {
         #[key]
-        from: ContractAddress,
+        pub from: ContractAddress,
         #[key]
-        project: ContractAddress,
+        pub project: ContractAddress,
         #[key]
-        token_id: u256,
-        old_amount: u256,
-        new_amount: u256
+        pub token_id: u256,
+        pub old_amount: u256,
+        pub new_amount: u256
     }
 
     #[derive(Drop, starknet::Event)]
-    struct PendingRetirementRemoved {
+    pub struct PendingRetirementRemoved {
         #[key]
-        from: ContractAddress,
+        pub from: ContractAddress,
         #[key]
-        token_id: u256,
-        old_amount: u256,
-        new_amount: u256
+        pub token_id: u256,
+        pub old_amount: u256,
+        pub new_amount: u256
     }
 
     #[derive(Drop, starknet::Event)]
@@ -99,16 +91,16 @@ pub mod OffsetComponent {
     }
 
     pub mod Errors {
-        const INVALID_VINTAGE: felt252 = 'Offset: Invalid vintage';
-        const NOT_ENOUGH_CARBON: felt252 = 'Offset: Not enough carbon';
-        const NOT_ENOUGH_PENDING: felt252 = 'Offset: Not enough pending';
-        const EMPTY_INPUT: felt252 = 'Offset: Inputs cannot be empty';
-        const ARRAY_MISMATCH: felt252 = 'Offset: Array length mismatch';
-        const INVALID_PROOF: felt252 = 'Offset: Invalid proof';
-        const ALREADY_CLAIMED: felt252 = 'Offset: Already claimed';
-        const MISSING_ROLE: felt252 = 'Offset: Missing role';
-        const ZERO_ADDRESS: felt252 = 'Offset: Address is invalid';
-        const INVALID_DEPOSIT: felt252 = 'Offset: Invalid deposit';
+        pub const INVALID_VINTAGE: felt252 = 'Offset: Invalid vintage';
+        pub const NOT_ENOUGH_CARBON: felt252 = 'Offset: Not enough carbon';
+        pub const NOT_ENOUGH_PENDING: felt252 = 'Offset: Not enough pending';
+        pub const EMPTY_INPUT: felt252 = 'Offset: Inputs cannot be empty';
+        pub const ARRAY_MISMATCH: felt252 = 'Offset: Array length mismatch';
+        pub const INVALID_PROOF: felt252 = 'Offset: Invalid proof';
+        pub const ALREADY_CLAIMED: felt252 = 'Offset: Already claimed';
+        pub const MISSING_ROLE: felt252 = 'Offset: Missing role';
+        pub const ZERO_ADDRESS: felt252 = 'Offset: Address is invalid';
+        pub const INVALID_DEPOSIT: felt252 = 'Offset: Invalid deposit';
     }
 
     #[embeddable_as(OffsetHandlerImpl)]
@@ -163,9 +155,11 @@ pub mod OffsetComponent {
             from: ContractAddress,
             amount: u128,
             timestamp: u128,
+            vintage: u256,
             id: u128,
             proof: Array::<felt252>
         ) -> bool {
+            // TODO: add vintage in leaf
             let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeImpl::new();
 
             // [Verify the proof]
@@ -189,25 +183,24 @@ pub mod OffsetComponent {
             ref self: ComponentState<TContractState>,
             amount: u128,
             timestamp: u128,
+            vintage: u256,
             id: u128,
             proof: Array::<felt252>
         ) {
             let claimee = get_caller_address();
 
             // [Verify not already claimed]
-            let claimed = self.check_claimed(claimee, timestamp, amount, id);
+            let claimed = self.check_claimed(claimee, timestamp, amount, vintage, id);
             assert(!claimed, Errors::ALREADY_CLAIMED);
 
             // [Verify if the merkle tree claim is possible]
-            let _ = self.confirm_for_merkle_tree(claimee, amount, timestamp, id, proof);
+            let _ = self.confirm_for_merkle_tree(claimee, amount, timestamp, vintage, id, proof);
 
             //If everything is correct, we offset the carbon credits
             self._offset_carbon_credit(claimee, 1, amount.into());
 
             // [Mark as claimed]
-            let allocation = Allocation {
-                claimee: claimee, amount: amount, timestamp: timestamp, id: id
-            };
+            let allocation = Allocation { claimee, amount, timestamp, vintage, id };
             self.Offsetter_allocations_claimed.entry(allocation).write(true);
 
             // [Emit event]
@@ -247,12 +240,11 @@ pub mod OffsetComponent {
             claimee: ContractAddress,
             timestamp: u128,
             amount: u128,
+            vintage: u256,
             id: u128
         ) -> bool {
             // Check if claimee has already claimed this allocation, by checking in the mapping
-            let allocation = Allocation {
-                claimee: claimee, amount: amount.into(), timestamp: timestamp.into(), id: id.into()
-            };
+            let allocation = Allocation { claimee, amount, timestamp, vintage, id };
             self.Offsetter_allocations_claimed.entry(allocation).read()
         }
 
@@ -267,7 +259,7 @@ pub mod OffsetComponent {
     }
 
     #[generate_trait]
-    impl InternalImpl<
+    pub impl InternalImpl<
         TContractState,
         +HasComponent<TContractState>,
         +Drop<TContractState>,
