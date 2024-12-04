@@ -3,35 +3,22 @@
 use starknet::{ContractAddress, contract_address_const};
 
 // External deps
-
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-
-use snforge_std as snf;
-use snforge_std::{
-    ContractClassTrait, test_address, spy_events, EventSpy, start_cheat_caller_address,
-    stop_cheat_caller_address,
-};
-use snforge_std::cheatcodes::events::{EventsFilterTrait, EventSpyTrait, EventSpyAssertionsTrait};
+use snforge_std::{spy_events, start_cheat_caller_address, stop_cheat_caller_address,};
+use snforge_std::cheatcodes::events::EventSpyAssertionsTrait;
 
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-use carbon_v3::models::carbon_vintage::CarbonVintageType;
-use carbon_v3::components::vintage::VintageComponent;
-use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
+use carbon_v3::models::CarbonVintageType;
 use carbon_v3::components::offsetter::interface::{
     IOffsetHandlerDispatcher, IOffsetHandlerDispatcherTrait
 };
-use carbon_v3::components::offsetter::OffsetComponent;
+use carbon_v3::components::offsetter::offset_handler::OffsetComponent;
 // Contracts
 
 use carbon_v3::contracts::project::{
-    Project, IExternalDispatcher as IProjectDispatcher,
-    IExternalDispatcherTrait as IProjectDispatcherTrait
+    IExternalDispatcher as IProjectDispatcher, IExternalDispatcherTrait as IProjectDispatcherTrait
 };
-use carbon_v3::contracts::minter::Minter;
-use carbon_v3::mock::usdcarb::USDCarb;
-
 // Utils for testing purposes
 
 use super::tests_lib::{
@@ -59,8 +46,7 @@ struct Contracts {
 
 /// Utils to import mock data
 use super::tests_lib::{
-    MERKLE_ROOT_FIRST_WAVE, MERKLE_ROOT_SECOND_WAVE, get_bob_first_wave_allocation,
-    get_bob_second_wave_allocation, get_alice_second_wave_allocation, get_john_multiple_allocations
+    get_bob_first_wave_allocation, get_alice_second_wave_allocation, get_john_multiple_allocations
 };
 
 //
@@ -584,9 +570,9 @@ fn test_confirm_offset() {
     let current_retirement = offsetter.get_retirement(token_id, bob_address);
     let new_retirement = current_retirement + amount.clone().into();
 
-    assert!(!offsetter.check_claimed(bob_address, timestamp, amount, id));
-    offsetter.confirm_offset(amount, timestamp, id, proof);
-    assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
+    assert!(!offsetter.check_claimed(bob_address, timestamp, amount, token_id, id));
+    offsetter.confirm_offset(amount, timestamp, token_id, id, proof);
+    assert!(offsetter.check_claimed(bob_address, timestamp, amount, token_id, id));
 
     assert!(offsetter.get_retirement(token_id, bob_address) == new_retirement)
 }
@@ -658,10 +644,10 @@ fn test_bob_confirms_twice() {
     let final_balance = project.balance_of(bob_address, token_id);
     assert(final_balance == initial_balance - amount_to_offset, 'Balance is wrong');
 
-    offsetter.confirm_offset(amount, timestamp, id, proof.clone());
-    assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
+    offsetter.confirm_offset(amount, timestamp, token_id, id, proof.clone());
+    assert!(offsetter.check_claimed(bob_address, timestamp, amount, token_id, id));
 
-    offsetter.confirm_offset(amount, timestamp, id, proof);
+    offsetter.confirm_offset(amount, timestamp, token_id, id, proof);
 }
 
 
@@ -734,7 +720,7 @@ fn test_events_emission_on_claim_confirmation() {
     let new_retirement = current_retirement + amount.clone().into();
 
     let mut spy = spy_events();
-    offsetter.confirm_offset(amount, timestamp, id, proof);
+    offsetter.confirm_offset(amount, timestamp, token_id, id, proof);
 
     let first_expected_event = OffsetComponent::Event::Retired(
         OffsetComponent::Retired {
@@ -758,7 +744,7 @@ fn test_events_emission_on_claim_confirmation() {
             ]
         );
 
-    assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
+    assert!(offsetter.check_claimed(bob_address, timestamp, amount, token_id, id));
 }
 
 
@@ -830,7 +816,7 @@ fn test_claim_confirmation_with_invalid_amount() {
 
     let invalid_amount = 0;
 
-    offsetter.confirm_offset(invalid_amount, timestamp, id, proof);
+    offsetter.confirm_offset(invalid_amount, timestamp, token_id, id, proof);
 }
 
 #[test]
@@ -903,9 +889,9 @@ fn test_alice_confirms_in_second_wave() {
     let current_retirement = offsetter.get_retirement(token_id, bob_address);
     let new_retirement = current_retirement + amount.clone().into();
 
-    assert!(!offsetter.check_claimed(bob_address, timestamp, amount, id));
-    offsetter.confirm_offset(amount, timestamp, id, proof);
-    assert!(offsetter.check_claimed(bob_address, timestamp, amount, id));
+    assert!(!offsetter.check_claimed(bob_address, timestamp, amount, token_id, id));
+    offsetter.confirm_offset(amount, timestamp, token_id, id, proof);
+    assert!(offsetter.check_claimed(bob_address, timestamp, amount, token_id, id));
 
     assert!(offsetter.get_retirement(token_id, bob_address) == new_retirement);
 
@@ -967,9 +953,9 @@ fn test_alice_confirms_in_second_wave() {
     let current_retirement = offsetter.get_retirement(token_id, alice_address);
     let new_retirement = current_retirement + amount.clone().into();
 
-    assert!(!offsetter.check_claimed(alice_address, timestamp, amount, id));
-    offsetter.confirm_offset(amount, timestamp, id, proof);
-    assert!(offsetter.check_claimed(alice_address, timestamp, amount, id));
+    assert!(!offsetter.check_claimed(alice_address, timestamp, amount, token_id, id));
+    offsetter.confirm_offset(amount, timestamp, token_id, id, proof);
+    assert!(offsetter.check_claimed(alice_address, timestamp, amount, token_id, id));
 
     assert!(offsetter.get_retirement(token_id, alice_address) == new_retirement);
 }
@@ -1046,15 +1032,15 @@ fn test_john_confirms_multiple_allocations() {
     start_cheat_caller_address(project_address, offsetter_address);
 
     offsetter.deposit_vintage(token_id, amount1_to_offset);
-    assert!(!offsetter.check_claimed(john_address, timestamp1, amount1, id_1));
-    offsetter.confirm_offset(amount1, timestamp1, id_1, proof1);
+    assert!(!offsetter.check_claimed(john_address, timestamp1, amount1, token_id, id_1));
+    offsetter.confirm_offset(amount1, timestamp1, token_id, id_1, proof1);
 
     offsetter.deposit_vintage(token_id, amount2_to_offset);
-    assert!(!offsetter.check_claimed(john_address, timestamp2, amount2, id_2));
-    offsetter.confirm_offset(amount2, timestamp2, id_2, proof2);
+    assert!(!offsetter.check_claimed(john_address, timestamp2, amount2, token_id, id_2));
+    offsetter.confirm_offset(amount2, timestamp2, token_id, id_2, proof2);
 
-    assert!(offsetter.check_claimed(john_address, timestamp1, amount1, id_1));
-    assert!(offsetter.check_claimed(john_address, timestamp2, amount2, id_2));
+    assert!(offsetter.check_claimed(john_address, timestamp1, amount1, token_id, id_1));
+    assert!(offsetter.check_claimed(john_address, timestamp2, amount2, token_id, id_2));
 
     start_cheat_caller_address(offsetter_address, owner_address);
     offsetter.set_merkle_root(new_root);
@@ -1063,8 +1049,8 @@ fn test_john_confirms_multiple_allocations() {
     start_cheat_caller_address(project_address, offsetter_address);
 
     offsetter.deposit_vintage(token_id, amount4_to_offset);
-    assert!(!offsetter.check_claimed(john_address, timestamp4, amount4, id_4));
-    offsetter.confirm_offset(amount4, timestamp4, id_4, proof4);
+    assert!(!offsetter.check_claimed(john_address, timestamp4, amount4, token_id, id_4));
+    offsetter.confirm_offset(amount4, timestamp4, token_id, id_4, proof4);
 
-    assert!(offsetter.check_claimed(john_address, timestamp4, amount4, id_4));
+    assert!(offsetter.check_claimed(john_address, timestamp4, amount4, token_id, id_4));
 }

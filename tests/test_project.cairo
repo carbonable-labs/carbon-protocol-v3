@@ -1,5 +1,6 @@
 // Starknet deps
 
+use core::num::traits::Zero;
 use starknet::{ContractAddress, contract_address_const, get_caller_address};
 
 // External deps
@@ -7,41 +8,33 @@ use starknet::{ContractAddress, contract_address_const, get_caller_address};
 use openzeppelin::token::erc1155::ERC1155Component;
 use snforge_std as snf;
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, EventSpy, start_cheat_caller_address,
-    stop_cheat_caller_address, spy_events,
-    cheatcodes::events::{EventSpyAssertionsTrait, EventSpyTrait, EventsFilterTrait}
+    DeclareResultTrait, EventSpy, start_cheat_caller_address, stop_cheat_caller_address, spy_events,
+    cheatcodes::events::{EventSpyAssertionsTrait}
 };
 
 // Models
 
-use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::models::constants::{CC_DECIMALS_MULTIPLIER, MULTIPLIER_TONS_TO_MGRAMS};
+use carbon_v3::models::CarbonVintageType;
+use carbon_v3::constants::MULTIPLIER_TONS_TO_MGRAMS;
 
 // Components
 
-use carbon_v3::components::vintage::interface::{
-    IVintage, IVintageDispatcher, IVintageDispatcherTrait
-};
-use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
-use carbon_v3::components::metadata::{IMetadataHandlerDispatcher, IMetadataHandlerDispatcherTrait};
+use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
 use erc4906::erc4906_component::ERC4906Component;
 
 // Contracts
 
 use carbon_v3::contracts::project::{
-    Project, IExternalDispatcher as IProjectDispatcher,
-    IExternalDispatcherTrait as IProjectDispatcherTrait
+    IExternalDispatcher as IProjectDispatcher, IExternalDispatcherTrait as IProjectDispatcherTrait
 };
 
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
 /// Utils for testing purposes
 ///
 use super::tests_lib::{
-    equals_with_error, deploy_project, setup_project, default_setup_and_deploy,
-    perform_fuzzed_transfer, buy_utils, deploy_erc20, deploy_minter, deploy_offsetter,
-    helper_sum_balance, helper_check_vintage_balances, helper_get_token_ids,
-    helper_expected_transfer_event, helper_expected_transfer_single_events, helper_get_cc_amounts
+    equals_with_error, default_setup_and_deploy, perform_fuzzed_transfer, buy_utils, deploy_erc20,
+    deploy_minter, deploy_offsetter, helper_sum_balance, helper_check_vintage_balances,
+    helper_get_token_ids, helper_expected_transfer_event, helper_expected_transfer_single_events
 };
 
 #[test]
@@ -73,7 +66,7 @@ fn test_project_mint() {
     let expected_event_1155_transfer_single = helper_expected_transfer_event(
         project_address,
         minter_address,
-        Zeroable::zero(),
+        Zero::zero(),
         user_address,
         array![token_id].span(),
         cc_to_mint
@@ -163,7 +156,7 @@ fn test_project_batch_mint_with_minter_role() {
     project.batch_mint(user_address, token_ids, values.span());
 
     let expected_events = helper_expected_transfer_single_events(
-        project_address, minter_address, Zeroable::zero(), user_address, token_ids, cc_to_mint
+        project_address, minter_address, Zero::zero(), user_address, token_ids, cc_to_mint
     );
     spy.assert_emitted(@expected_events);
 
@@ -213,7 +206,7 @@ fn test_project_burn_with_offsetter_role() {
         project_address,
         offsetter_address,
         user_address,
-        Zeroable::zero(),
+        Zero::zero(),
         array![token_id].span(),
         balance
     );
@@ -295,7 +288,7 @@ fn test_project_batch_burn_with_offsetter_role() {
     project.batch_burn(user_address, token_ids, values.span());
 
     let expected_events = helper_expected_transfer_single_events(
-        project_address, offsetter_address, user_address, Zeroable::zero(), token_ids, cc_to_burn
+        project_address, offsetter_address, user_address, Zero::zero(), token_ids, cc_to_burn
     );
     spy.assert_emitted(@expected_events);
 }

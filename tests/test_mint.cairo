@@ -1,3 +1,5 @@
+use core::num::traits::Zero;
+
 // Starknet deps
 
 use starknet::{ContractAddress, contract_address_const};
@@ -5,44 +7,38 @@ use starknet::{ContractAddress, contract_address_const};
 // External deps
 
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use openzeppelin::token::erc20::interface::ERC20ABIDispatcherTrait;
-use openzeppelin::token::erc1155::ERC1155Component;
 
 use snforge_std as snf;
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, test_address, spy_events, EventSpy, CheatSpan,
-    start_cheat_caller_address, stop_cheat_caller_address, EventSpyAssertionsTrait
+    ContractClassTrait, DeclareResultTrait, spy_events, start_cheat_caller_address,
+    stop_cheat_caller_address, EventSpyAssertionsTrait
 };
 
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-use carbon_v3::components::vintage::VintageComponent;
 use carbon_v3::components::minter::interface::{IMintDispatcher, IMintDispatcherTrait};
-use carbon_v3::components::minter::MintComponent;
+use carbon_v3::components::minter::mint::MintComponent;
 
 // Contracts
 
 use carbon_v3::contracts::project::{
-    Project, IExternalDispatcher as IProjectDispatcher,
-    IExternalDispatcherTrait as IProjectDispatcherTrait
+    IExternalDispatcher as IProjectDispatcher, IExternalDispatcherTrait as IProjectDispatcherTrait
 };
-use carbon_v3::contracts::minter::Minter;
-use carbon_v3::mock::usdcarb::USDCarb;
 
 // Utils for testing purposes
 
 use super::tests_lib::{
     get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, deploy_offsetter, deploy_erc20, deploy_minter, buy_utils,
-    helper_get_token_ids, helper_sum_balance, DEFAULT_REMAINING_MINTABLE_CC,
-    helper_check_vintage_balances, get_mock_absorptions_times_2, helper_expected_transfer_event,
-    helper_expected_transfer_single_events, helper_get_cc_amounts
+    default_setup_and_deploy, deploy_erc20, deploy_minter, buy_utils, helper_get_token_ids,
+    helper_sum_balance, helper_check_vintage_balances, get_mock_absorptions_times_2,
+    helper_expected_transfer_single_events, DEFAULT_REMAINING_MINTABLE_CC
 };
 
 // Constants
 
-use carbon_v3::models::constants::{MULTIPLIER_TONS_TO_MGRAMS};
+use carbon_v3::constants::MULTIPLIER_TONS_TO_MGRAMS;
+
 const PROJECT_CARBON: u256 = 42;
 
 // Signers
@@ -267,7 +263,7 @@ fn test_public_buy() {
     // };
 
     let expected_events = helper_expected_transfer_single_events(
-        project_address, minter_address, Zeroable::zero(), user_address, token_ids, cc_to_buy
+        project_address, minter_address, Zero::zero(), user_address, token_ids, cc_to_buy
     );
     spy.assert_emitted(@expected_events);
 
@@ -313,7 +309,7 @@ fn test_minimal_buy() {
     let token_ids = helper_get_token_ids(project_address);
 
     let expected_events = helper_expected_transfer_single_events(
-        project_address, minter_address, Zeroable::zero(), user_address, token_ids, cc_to_buy
+        project_address, minter_address, Zero::zero(), user_address, token_ids, cc_to_buy
     );
     spy.assert_emitted(@expected_events);
 }
@@ -356,7 +352,7 @@ fn test_minimal_buy_error() {
     let token_ids = helper_get_token_ids(project_address);
 
     let expected_events = helper_expected_transfer_single_events(
-        project_address, minter_address, Zeroable::zero(), user_address, token_ids, cc_to_buy
+        project_address, minter_address, Zero::zero(), user_address, token_ids, cc_to_buy
     );
     spy.assert_emitted(@expected_events);
 }
