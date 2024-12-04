@@ -6,18 +6,12 @@ use starknet::{ContractAddress, contract_address_const};
 
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
-use snforge_std as snf;
-use snforge_std::{
-    ContractClassTrait, test_address, spy_events, EventSpy, start_cheat_caller_address,
-    stop_cheat_caller_address
-};
-use snforge_std::cheatcodes::events::{EventsFilterTrait, EventSpyTrait, EventSpyAssertionsTrait};
+use snforge_std::{spy_events, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::cheatcodes::events::{EventSpyAssertionsTrait};
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-use carbon_v3::models::carbon_vintage::CarbonVintageType;
-use carbon_v3::components::vintage::VintageComponent;
-use carbon_v3::components::erc1155::interface::{IERC1155Dispatcher, IERC1155DispatcherTrait};
+use carbon_v3::models::CarbonVintageType;
 use carbon_v3::components::resale::interface::{
     IResaleHandlerDispatcher, IResaleHandlerDispatcherTrait
 };
@@ -25,11 +19,9 @@ use carbon_v3::components::resale::interface::{
 // Contracts
 
 use carbon_v3::contracts::project::{
-    Project, IExternalDispatcher as IProjectDispatcher,
-    IExternalDispatcherTrait as IProjectDispatcherTrait
+    IExternalDispatcher as IProjectDispatcher, IExternalDispatcherTrait as IProjectDispatcherTrait
 };
-use carbon_v3::contracts::minter::Minter;
-use carbon_v3::mock::usdcarb::USDCarb;
+
 
 // Utils for testing purposes
 

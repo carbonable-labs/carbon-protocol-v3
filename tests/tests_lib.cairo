@@ -6,29 +6,24 @@ use starknet::{ContractAddress, contract_address_const};
 
 use snforge_std as snf;
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, EventSpy, spy_events, EventSpyTrait,
-    EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address
+    ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, stop_cheat_caller_address
 };
 
 // Models
 
-use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::models::constants::{CC_DECIMALS_MULTIPLIER, MULTIPLIER_TONS_TO_MGRAMS};
+use carbon_v3::constants::{CC_DECIMALS_MULTIPLIER, MULTIPLIER_TONS_TO_MGRAMS};
 
 // Components
 
-use carbon_v3::components::vintage::interface::{
-    IVintage, IVintageDispatcher, IVintageDispatcherTrait
-};
-use carbon_v3::components::minter::interface::{IMint, IMintDispatcher, IMintDispatcherTrait};
+use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
+use carbon_v3::components::minter::interface::{IMintDispatcher, IMintDispatcherTrait};
 use openzeppelin::token::erc1155::ERC1155Component;
 
 
 // Contracts
 
 use carbon_v3::contracts::project::{
-    Project, IExternalDispatcher as IProjectDispatcher,
-    IExternalDispatcherTrait as IProjectDispatcherTrait
+    IExternalDispatcher as IProjectDispatcher, IExternalDispatcherTrait as IProjectDispatcherTrait
 };
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
@@ -37,10 +32,10 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 /// Mock Data
 ///
 
-const DEFAULT_REMAINING_MINTABLE_CC: u256 = 82500000000000;
-const STARTING_YEAR: u32 = 2024;
+pub const DEFAULT_REMAINING_MINTABLE_CC: u256 = 82500000000000;
+pub const STARTING_YEAR: u32 = 2024;
 
-fn get_mock_absorptions() -> Span<u256> {
+pub fn get_mock_absorptions() -> Span<u256> {
     let absorptions: Span<u256> = array![
         0,
         100000000000,
@@ -81,7 +76,7 @@ fn get_mock_absorptions() -> Span<u256> {
     yearly_absorptions
 }
 
-fn get_mock_absorptions_times_2() -> Span<u256> {
+pub fn get_mock_absorptions_times_2() -> Span<u256> {
     let yearly_absorptions: Span<u256> = get_mock_absorptions();
     let mut yearly_absorptions_times_2: Array<u256> = array![];
     let mut index = 0;
@@ -100,7 +95,7 @@ fn get_mock_absorptions_times_2() -> Span<u256> {
 /// Math functions
 ///
 
-fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
+pub fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
     let diff = if a > b {
         a - b
     } else {
@@ -113,7 +108,7 @@ fn equals_with_error(a: u256, b: u256, error: u256) -> bool {
 /// Deploy and setup functions
 ///
 
-fn deploy_project() -> ContractAddress {
+pub fn deploy_project() -> ContractAddress {
     let contract = snf::declare("Project").expect('Declaration failed').contract_class();
     let number_of_years: u64 = 20;
     let mut calldata: Array<felt252> = array![
@@ -124,7 +119,7 @@ fn deploy_project() -> ContractAddress {
     contract_address
 }
 
-fn setup_project(contract_address: ContractAddress, yearly_absorptions: Span<u256>) {
+pub fn setup_project(contract_address: ContractAddress, yearly_absorptions: Span<u256>) {
     let vintages = IVintageDispatcher { contract_address };
     // Fake the owner to call set_vintages and set_project_carbon which can only be run by owner
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
@@ -133,7 +128,7 @@ fn setup_project(contract_address: ContractAddress, yearly_absorptions: Span<u25
     stop_cheat_caller_address(contract_address);
 }
 
-fn default_setup_and_deploy() -> ContractAddress {
+pub fn default_setup_and_deploy() -> ContractAddress {
     let project_address = deploy_project();
     let yearly_absorptions: Span<u256> = get_mock_absorptions();
     setup_project(project_address, yearly_absorptions);
@@ -141,7 +136,7 @@ fn default_setup_and_deploy() -> ContractAddress {
 }
 
 /// Deploys the offsetter contract.
-fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
+pub fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
     let contract = snf::declare("Offsetter").expect('Declaration failed').contract_class();
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
@@ -154,7 +149,7 @@ fn deploy_offsetter(project_address: ContractAddress) -> ContractAddress {
 }
 
 /// Deploys the resale contract.
-fn deploy_resale(
+pub fn deploy_resale(
     project_address: ContractAddress, token_address: ContractAddress
 ) -> ContractAddress {
     let contract = snf::declare("Resale").expect('Declaration failed').contract_class();
@@ -170,7 +165,7 @@ fn deploy_resale(
 }
 
 /// Deploys a minter contract.
-fn deploy_minter(
+pub fn deploy_minter(
     project_address: ContractAddress, payment_address: ContractAddress
 ) -> ContractAddress {
     let contract = snf::declare("Minter").expect('Declaration failed').contract_class();
@@ -195,7 +190,7 @@ fn deploy_minter(
     contract_address
 }
 
-fn deploy_minter_specific_max_mintable(
+pub fn deploy_minter_specific_max_mintable(
     project_address: ContractAddress, payment_address: ContractAddress, max_mintable_cc: u256
 ) -> ContractAddress {
     let contract = snf::declare("Minter").expect('Declaration failed').contract_class();
@@ -221,7 +216,7 @@ fn deploy_minter_specific_max_mintable(
 }
 
 /// Deploy erc20 contract.
-fn deploy_erc20() -> ContractAddress {
+pub fn deploy_erc20() -> ContractAddress {
     let contract = snf::declare("USDCarb").expect('Declaration failed').contract_class();
     let owner: ContractAddress = contract_address_const::<'OWNER'>();
     let mut calldata: Array<felt252> = array![];
@@ -232,7 +227,7 @@ fn deploy_erc20() -> ContractAddress {
     contract_address
 }
 
-fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, ContractAddress) {
+pub fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, ContractAddress) {
     let project_address = deploy_project();
     let erc20_address = deploy_erc20();
     let minter_address = deploy_minter_specific_max_mintable(
@@ -259,7 +254,7 @@ fn fuzzing_setup(cc_supply: u256) -> (ContractAddress, ContractAddress, Contract
 /// That amount is minted across all vintages
 /// If Bob buys 100 carbon credits, and the vintage 2024 has 10% of the total supply,
 /// Bob will have 10 carbon credits in 2024
-fn buy_utils(
+pub fn buy_utils(
     owner_address: ContractAddress,
     caller_address: ContractAddress,
     minter_address: ContractAddress,
@@ -299,7 +294,7 @@ fn buy_utils(
 /// Tests functions to be called by the test runner
 ///
 
-fn perform_fuzzed_transfer(
+pub fn perform_fuzzed_transfer(
     raw_supply: u256,
     raw_cc_amount: u256,
     percentage_of_balance_to_send: u256,
@@ -365,7 +360,7 @@ fn perform_fuzzed_transfer(
     assert(equals_with_error(balance_vintage_receiver, 0, 100), 'Error balance vintage receiver');
 }
 
-fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
+pub fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
     let vintages = IVintageDispatcher { contract_address: project_address };
     let num_vintages: usize = vintages.get_num_vintages();
     let mut tokens: Array<u256> = Default::default();
@@ -381,7 +376,7 @@ fn helper_get_token_ids(project_address: ContractAddress) -> Span<u256> {
     tokens.span()
 }
 
-fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAddress) -> u256 {
+pub fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAddress) -> u256 {
     let project = IProjectDispatcher { contract_address: project_address };
     let vintage = IVintageDispatcher { contract_address: project_address };
     let num_vintages: usize = vintage.get_num_vintages();
@@ -400,7 +395,7 @@ fn helper_sum_balance(project_address: ContractAddress, user_address: ContractAd
     total_balance
 }
 
-fn helper_check_vintage_balances(
+pub fn helper_check_vintage_balances(
     project_address: ContractAddress, user_address: ContractAddress, total_cc_bought: u256
 ) {
     let project = IProjectDispatcher { contract_address: project_address };
@@ -424,7 +419,7 @@ fn helper_check_vintage_balances(
     };
 }
 
-fn helper_check_vintage_balance(
+pub fn helper_check_vintage_balance(
     project_address: ContractAddress,
     user_address: ContractAddress,
     token_id: u256,
@@ -442,7 +437,7 @@ fn helper_check_vintage_balance(
 }
 
 
-fn helper_get_cc_amounts(
+pub fn helper_get_cc_amounts(
     project_address: ContractAddress, token_ids: Span<u256>, cc_to_buy: u256
 ) -> Span<u256> {
     let project = IProjectDispatcher { contract_address: project_address };
@@ -461,7 +456,7 @@ fn helper_get_cc_amounts(
 }
 
 
-fn helper_expected_transfer_event(
+pub fn helper_expected_transfer_event(
     project_address: ContractAddress,
     operator: ContractAddress,
     from: ContractAddress,
@@ -495,7 +490,7 @@ fn helper_expected_transfer_event(
 }
 
 
-fn helper_expected_transfer_single_events(
+pub fn helper_expected_transfer_single_events(
     project_address: ContractAddress,
     operator: ContractAddress,
     from: ContractAddress,

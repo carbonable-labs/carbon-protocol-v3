@@ -4,32 +4,25 @@ use starknet::{ContractAddress, contract_address_const};
 
 // External deps
 
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-use snforge_std as snf;
-use snforge_std::{
-    ContractClassTrait, test_address, spy_events, EventSpy, start_cheat_caller_address,
-    stop_cheat_caller_address
-};
+use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 
 // Components
 
 use carbon_v3::components::vintage::interface::{IVintageDispatcher, IVintageDispatcherTrait};
-use carbon_v3::models::carbon_vintage::{CarbonVintage, CarbonVintageType};
-use carbon_v3::components::vintage::VintageComponent;
+use carbon_v3::models::{CarbonVintage, CarbonVintageType};
+
 
 // Contracts
 
 use carbon_v3::contracts::project::{
-    Project, IExternalDispatcher as IProjectDispatcher,
-    IExternalDispatcherTrait as IProjectDispatcherTrait
+    IExternalDispatcher as IProjectDispatcher, IExternalDispatcherTrait as IProjectDispatcherTrait
 };
 
 // Utils for testing purposes
 
 use super::tests_lib::{
-    get_mock_absorptions, equals_with_error, deploy_project, setup_project,
-    default_setup_and_deploy, fuzzing_setup, perform_fuzzed_transfer, buy_utils, deploy_offsetter,
-    deploy_minter, deploy_erc20, STARTING_YEAR
+    get_mock_absorptions, deploy_project, default_setup_and_deploy, buy_utils, deploy_minter,
+    deploy_erc20, STARTING_YEAR
 };
 
 // Constants
