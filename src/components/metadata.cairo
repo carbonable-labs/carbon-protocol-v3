@@ -1,7 +1,7 @@
 use starknet::{ClassHash, ContractAddress};
 
 #[starknet::interface]
-trait IMetadataHandler<TContractState> {
+pub trait IMetadataHandler<TContractState> {
     fn uri(self: @TContractState, token_id: u256) -> Span<felt252>;
     fn get_provider(self: @TContractState) -> ContractAddress;
     fn set_provider(ref self: TContractState, provider: ContractAddress);
@@ -10,17 +10,18 @@ trait IMetadataHandler<TContractState> {
 }
 
 #[starknet::interface]
-trait IMetadataDescriptor<TContractState> {
+pub trait IMetadataDescriptor<TContractState> {
     fn construct_uri(self: @TContractState, token_id: u256) -> Span<felt252>;
 }
 
 #[starknet::component]
-mod MetadataComponent {
+pub mod MetadataComponent {
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
     use super::{IMetadataDescriptorLibraryDispatcher, IMetadataDescriptorDispatcherTrait};
 
     #[storage]
-    struct Storage {
+    pub struct Storage {
         MetadataHandler_uri_implementation: ClassHash,
         MetadataHandler_provider: ContractAddress,
     }
@@ -60,7 +61,7 @@ mod MetadataComponent {
         }
 
         fn set_uri(ref self: ComponentState<TContractState>, class_hash: ClassHash,) {
-            assert(!class_hash.is_zero(), 'URI class hash cannot be zero');
+            assert(class_hash.into() != 0, 'URI class hash cannot be zero');
             let old_class_hash = self.MetadataHandler_uri_implementation.read();
             self.MetadataHandler_uri_implementation.write(class_hash);
             self.emit(MetadataUpgraded { old_class_hash, class_hash });
@@ -70,10 +71,7 @@ mod MetadataComponent {
 
 #[cfg(test)]
 mod TestMetadataComponent {
-    use starknet::ClassHash;
-    use super::MetadataComponent;
     use super::{IMetadataHandlerDispatcherTrait, IMetadataHandlerDispatcher};
-    use carbon_v3::mock::metadata::TestMetadata;
     use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 
     #[test]

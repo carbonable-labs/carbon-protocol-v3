@@ -1,7 +1,5 @@
-use starknet::ContractAddress;
-
 #[starknet::contract]
-mod Minter {
+pub mod Minter {
     use starknet::ContractAddress;
 
     // Ownable
@@ -10,8 +8,6 @@ mod Minter {
     use openzeppelin::upgrades::upgradeable::UpgradeableComponent;
     // Mint
     use carbon_v3::components::minter::mint::MintComponent;
-    // RBAC interface
-    use openzeppelin::access::accesscontrol::interface::IAccessControl;
 
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);

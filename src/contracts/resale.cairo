@@ -1,11 +1,9 @@
-use starknet::ContractAddress;
-
 #[starknet::contract]
 mod Resale {
     use starknet::ContractAddress;
 
     // Constants
-    const OWNER_ROLE: felt252 = selector!("Owner");
+    use carbon_v3::constants::OWNER_ROLE;
 
     // Ownable
     use openzeppelin::access::ownable::OwnableComponent;

@@ -1,7 +1,7 @@
 use starknet::{ContractAddress, ClassHash};
 
 #[starknet::interface]
-trait IExternal<TContractState> {
+pub trait IExternal<TContractState> {
     fn mint(ref self: TContractState, to: ContractAddress, token_id: u256, value: u256);
     fn burn(ref self: TContractState, from: ContractAddress, token_id: u256, value: u256);
     fn batch_mint(
@@ -76,26 +76,19 @@ trait IExternal<TContractState> {
 
 
 #[starknet::contract]
-mod Project {
-    use carbon_v3::components::vintage::interface::IVintageDispatcher;
+pub mod Project {
+    use core::num::traits::Zero;
     use starknet::{get_caller_address, ContractAddress, ClassHash};
 
-    // Ownable
+    use carbon_v3::components::erc1155::erc1155::{ERC1155Component, ERC1155HooksEmptyImpl};
+    use carbon_v3::components::vintage::vintage::VintageComponent;
+    use carbon_v3::components::metadata::MetadataComponent;
+
     use openzeppelin::access::ownable::OwnableComponent;
-    // Upgradable
     use openzeppelin::upgrades::upgradeable::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
-    //SRC5
     use openzeppelin::introspection::src5::SRC5Component;
-    // ERC1155
-    use carbon_v3::components::erc1155::{ERC1155Component, erc1155::ERC1155HooksEmptyImpl};
-    // Vintage
-    use carbon_v3::components::vintage::VintageComponent;
-    // Metadata
-    use carbon_v3::components::metadata::MetadataComponent;
-    // Access Control - RBAC
     use openzeppelin::access::accesscontrol::AccessControlComponent;
-    // ERC4906
     use erc4906::erc4906_component::ERC4906Component;
 
     component!(path: ERC1155Component, storage: erc1155, event: ERC1155Event);
@@ -131,13 +124,9 @@ mod Project {
     impl ERC4906InternalImpl = ERC4906Component::InternalImpl<ContractState>;
 
     // Constants
-    use carbon_v3::models::constants::CC_DECIMALS_MULTIPLIER;
-
-    const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
-    const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
-    const MINTER_ROLE: felt252 = selector!("Minter");
-    const OFFSETTER_ROLE: felt252 = selector!("Offsetter");
-    const OWNER_ROLE: felt252 = selector!("Owner");
+    use carbon_v3::constants::{
+        OWNER_ROLE, MINTER_ROLE, OFFSETTER_ROLE, IERC165_BACKWARD_COMPATIBLE_ID, OLD_IERC1155_ID
+    };
 
     #[storage]
     struct Storage {
@@ -191,9 +180,9 @@ mod Project {
     }
 
 
-    mod Errors {
-        const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';
-        const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: no equal array length';
+    pub mod Errors {
+        pub const UNEQUAL_ARRAYS_URI: felt252 = 'URI Array len do not match';
+        pub const INVALID_ARRAY_LENGTH: felt252 = 'ERC1155: no equal array length';
     }
 
     // Constructor
@@ -466,7 +455,7 @@ mod Project {
                     ERC1155Component::Event::TransferSingle(
                         ERC1155Component::TransferSingle {
                             operator: get_caller_address(),
-                            from: Zeroable::zero(),
+                            from: Zero::zero(),
                             to,
                             id: token_id,
                             value: cc_value,
@@ -495,7 +484,7 @@ mod Project {
                     .emit(
                         ERC1155Component::Event::TransferSingle(
                             ERC1155Component::TransferSingle {
-                                operator, from: Zeroable::zero(), to, id: token_id, value: cc_value,
+                                operator, from: Zero::zero(), to, id: token_id, value: cc_value,
                             }
                         )
                     );
@@ -509,7 +498,7 @@ mod Project {
         //         ERC1155Component::Event::TransferBatch(
         //             ERC1155Component::TransferBatch {
         //                 operator: get_caller_address(),
-        //                 from: Zeroable::zero(),
+        //                 from: Zero::zero(),
         //                 to,
         //                 ids: token_ids,
         //                 values: values_to_emit,
@@ -526,11 +515,7 @@ mod Project {
                 .emit(
                     ERC1155Component::Event::TransferSingle(
                         ERC1155Component::TransferSingle {
-                            operator: caller,
-                            from,
-                            to: Zeroable::zero(),
-                            id: token_id,
-                            value: cc_value,
+                            operator: caller, from, to: Zero::zero(), id: token_id, value: cc_value,
                         }
                     )
                 );
@@ -561,7 +546,7 @@ mod Project {
                             ERC1155Component::TransferSingle {
                                 operator: caller,
                                 from,
-                                to: Zeroable::zero(),
+                                to: Zero::zero(),
                                 id: token_id,
                                 value: cc_value,
                             }
@@ -577,7 +562,7 @@ mod Project {
         //             ERC1155Component::TransferBatch {
         //                 operator: get_caller_address(),
         //                 from,
-        //                 to: Zeroable::zero(),
+        //                 to: Zero::zero(),
         //                 ids: token_ids,
         //                 values: values_to_emit,
         //             }
