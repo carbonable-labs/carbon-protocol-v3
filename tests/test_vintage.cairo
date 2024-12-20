@@ -95,7 +95,7 @@ fn test_set_vintages() {
 }
 
 #[test]
-#[should_panic(expected: 'Caller does not have role')]
+#[should_panic(expected: 'Vintage: invalid caller')]
 fn test_set_vintages_without_owner_role() {
     let project_address = deploy_project();
     let yearly_absorptions = get_mock_absorptions();
@@ -225,7 +225,7 @@ fn test_update_vintage_status_invalid() {
 }
 
 #[test]
-#[should_panic(expected: 'Caller does not have role')]
+#[should_panic(expected: 'Vintage: invalid caller')]
 fn test_update_vintage_status_without_owner_role() {
     let project_address = deploy_project();
     let user_address: ContractAddress = contract_address_const::<'USER'>();

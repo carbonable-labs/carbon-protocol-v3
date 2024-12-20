@@ -77,6 +77,7 @@ pub mod VintageComponent {
     pub mod Errors {
         pub const INVALID_ARRAY_LENGTH: felt252 = 'Vintage: invalid array length';
         pub const INVALID_STARTING_YEAR: felt252 = 'Vintage: invalid starting year';
+        pub const INVALID_CALLER: felt252 = 'Vintage: invalid caller';
     }
 
     #[embeddable_as(VintageImpl)]
@@ -216,21 +217,16 @@ pub mod VintageComponent {
                 let supply = *yearly_absorptions.at(index);
                 let token_id = (index + 1).into();
                 let old_vintage = self.Vintage_vintages.entry(token_id).read();
-                let mut vintage = CarbonVintage {
+                let new_vintage = CarbonVintage {
                     year: (start_year + index).into(),
                     supply: supply,
                     failed: 0,
                     created: 0,
                     status: CarbonVintageType::Projected,
                 };
-                self.Vintage_vintages.entry(token_id).write(vintage);
+                self.Vintage_vintages.entry(token_id).write(new_vintage);
 
-                self
-                    .emit(
-                        VintageUpdate {
-                            token_id: index.into(), old_vintage: old_vintage, new_vintage: vintage
-                        }
-                    );
+                self.emit(VintageUpdate { token_id, old_vintage, new_vintage });
                 index += 1;
             };
         }
@@ -273,7 +269,7 @@ pub mod VintageComponent {
             // [Check] Caller has role
             let caller = get_caller_address();
             let has_role = self.get_contract().has_role(role, caller);
-            assert(has_role, 'Caller does not have role');
+            assert(has_role, Errors::INVALID_CALLER);
         }
     }
 }
