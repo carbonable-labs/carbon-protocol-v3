@@ -248,19 +248,6 @@ fn test_public_buy() {
     minter.public_buy(cc_to_buy);
 
     let token_ids = helper_get_token_ids(project_address);
-    // TODO: helper for amounts here?
-
-    // let mut cc_amounts: Array<u256> = Default::default();
-    // let mut index = 0;
-    // loop {
-    //     if index >= token_ids.len() {
-    //         break ();
-    //     }
-    //     let token_id = *token_ids.at(index);
-    //     let cc_value = project_contract.internal_to_cc(cc_to_buy, token_id);
-    //     cc_amounts.append(cc_value);
-    //     index += 1;
-    // };
 
     let expected_events = helper_expected_transfer_single_events(
         project_address, minter_address, Zero::zero(), user_address, token_ids, cc_to_buy
