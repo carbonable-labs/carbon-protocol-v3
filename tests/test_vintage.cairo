@@ -186,7 +186,7 @@ fn test_get_cc_decimals() {
     let vintages = IVintageDispatcher { contract_address: project_address };
 
     let cc_decimals = vintages.get_cc_decimals();
-    assert(cc_decimals == 8, 'CC decimals should be 8');
+    assert(cc_decimals == 9, 'CC decimals should be 9');
 }
 
 /// update_vintage_status
