@@ -633,7 +633,7 @@ fn test_decimals() {
     let project_contract = IProjectDispatcher { contract_address: project_address };
     let project_decimals = project_contract.decimals();
 
-    assert(project_decimals == 8, 'Decimals should be 8');
+    assert(project_decimals == 9, 'Decimals should be 9');
 }
 
 #[test]
