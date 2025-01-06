@@ -32,7 +32,7 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 /// Mock Data
 ///
 
-pub const DEFAULT_REMAINING_MINTABLE_CC: u256 = 82500000000000;
+pub const DEFAULT_REMAINING_MINTABLE_CC: u256 = 82_500_000_000_000;
 pub const STARTING_YEAR: u32 = 2024;
 
 pub fn get_mock_absorptions() -> Span<u256> {

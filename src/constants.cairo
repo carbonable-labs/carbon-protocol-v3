@@ -5,7 +5,7 @@
 
 pub const CC_DECIMALS_MULTIPLIER: u256 = 1_000_000_000_000_000_000;
 pub const MULTIPLIER_TONS_TO_MGRAMS: u256 = 1_000_000_000;
-pub const CC_DECIMALS: u8 = 8;
+pub const CC_DECIMALS: u8 = 9;
 
 pub const IERC165_BACKWARD_COMPATIBLE_ID: felt252 = 0x80ac58cd;
 pub const OLD_IERC1155_ID: felt252 = 0xd9b67a26;
