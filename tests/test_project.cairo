@@ -366,6 +366,32 @@ fn test_project_balance_of() {
     helper_check_vintage_balances(project_address, user_address, cc_to_buy);
 }
 
+/// Test get_balances
+#[test]
+fn test_project_get_balances() {
+    let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
+    let user_address: ContractAddress = contract_address_const::<'USER'>();
+    let project_address = default_setup_and_deploy();
+    let project_contract = IProjectDispatcher { contract_address: project_address };
+    let erc20_address = deploy_erc20();
+    let minter_address = deploy_minter(project_address, erc20_address);
+
+    start_cheat_caller_address(project_address, owner_address);
+    project_contract.grant_minter_role(minter_address);
+
+    let cc_to_buy = 100 * MULTIPLIER_TONS_TO_MGRAMS; // 100 CC
+    stop_cheat_caller_address(project_address);
+    buy_utils(owner_address, user_address, minter_address, cc_to_buy);
+
+    let bals = project_contract.get_balances(user_address);
+    let mut sum = 0_u256;
+    for i in 0..bals.len() {
+        sum += *bals[i];
+    };
+
+    assert(equals_with_error(sum, cc_to_buy, 100), 'Error of balance');
+}
+
 #[test]
 fn test_transfer_without_loss() {
     let owner_address: ContractAddress = contract_address_const::<'OWNER'>();
