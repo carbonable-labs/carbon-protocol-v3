@@ -1,7 +1,7 @@
 [package]
 name = "carbon_v3"
 version = "0.1.0"
-authors = ["Tekkac <tekkac@proton.me>"]
+authors = ["Tekkac <tekkac@proton.me>, julienbrs <julienbrs@proton.me>"]
 description = "Carbonable - Carbon Protocol V3"
 license = "Apache-2.0"
 repository = "https://github.com/carbonable-labs/carbon-protocol-v3"
