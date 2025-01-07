@@ -72,6 +72,7 @@ pub trait IExternal<TContractState> {
     fn cc_to_internal(self: @TContractState, cc_value_to_send: u256, token_id: u256) -> u256;
 
     fn internal_to_cc(self: @TContractState, internal_value_to_send: u256, token_id: u256) -> u256;
+    fn get_balances(self: @TContractState, account: ContractAddress) -> Span<u256>;
 }
 
 
@@ -425,6 +426,19 @@ pub mod Project {
             let initial_project_supply = self.vintage.get_initial_project_cc_supply();
             internal_value_to_send * vintage_supply / initial_project_supply
         }
+
+        fn get_balances(self: @ContractState, account: ContractAddress) -> Span<u256> {
+            let mut token_ids = array![];
+            let mut accounts = array![];
+            let num_vintages = self.vintage.get_num_vintages();
+            for i in 0
+                ..num_vintages {
+                    let token_id = (i + 1).into();
+                    token_ids.append(token_id);
+                    accounts.append(account);
+                };
+            super::IExternal::balance_of_batch(self, accounts.span(), token_ids.span())
+        }
     }
 
     #[abi(embed_v0)]
@@ -638,3 +652,4 @@ pub mod Project {
         }
     }
 }
+
