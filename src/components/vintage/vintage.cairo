@@ -88,8 +88,21 @@ pub mod VintageComponent {
         +IAccessControl<TContractState>
     > of IVintage<ComponentState<TContractState>> {
         fn get_project_carbon(self: @ComponentState<TContractState>) -> u256 {
-            self.Vintage_project_carbon.read()
+            let mut project_supply: u256 = 0;
+            let num_vintage = self.Vintage_vintages_len.read();
+            let mut index = 0;
+            loop {
+                if index >= num_vintage {
+                    break ();
+                }
+                let token_id = (index + 1).into();
+                let vintage_supply = self.get_carbon_vintage(token_id).supply;
+                project_supply += vintage_supply;
+                index += 1;
+            };
+            project_supply
         }
+
 
         fn get_num_vintages(self: @ComponentState<TContractState>) -> usize {
             self.Vintage_vintages_len.read()
