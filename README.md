@@ -26,7 +26,17 @@
  
 [![Tests](https://img.shields.io/badge/Tests-92%20passed-brightgreen)](README.md)
 
-Carbon Protocol V3 is a cutting-edge, open-source tool designed for the tokenization, trading, and management of carbon credits on Starknet.
+Carbon Protocol V3 is an open-source smart contract framework built on Starknet, designed for the tokenization, tracking, and lifecycle management of carbon credits. This version introduces a granular representation of carbon credits using the ERC‑1155 standard, enabling one token per credit per vintage, with native support for rebasable balances and FIFO offsetting via Merkle proofs.
+
+Protocol V3 addresses key limitations of earlier versions by offering:
+
+Precise accounting per vintage, improving auditability and traceability.
+
+Rebase mechanisms to automatically reflect post-audit adjustments without altering millions of individual balances.
+
+Low-cost, scalable operations thanks to gas-efficient smart contract design on Starknet.
+
+By combining trust-minimized infrastructure with fine-grained asset modeling, Carbon Protocol V3 sets a new standard for transparent and interoperable carbon market infrastructure.
 
 To learn more about key topics:
 - [Carbon-Protocol v2](https://github.com/Carbonable/carbon-protocol)
